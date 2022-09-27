@@ -2,13 +2,14 @@ import bodyParser from "body-parser"
 import Discord, { Intents, Client } from "discord.js"
 import express from "express"
 import fs from "fs"
+import axios from "axios"
 
 require('dotenv').config()
 
 let app = express()
 
 let config = require("../config.json")
-app.use(bodyParser.json({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)}))
+app.use(bodyParser.json({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576}))
 let files:{[key:string]:{filename:string,mime:string,messageids:string[]}} = {}
 
 // funcs
@@ -46,8 +47,61 @@ app.get("/", function(req,res) {
     })
 })
 
-app.post("/upload",(req,res) => {
-    res.sendStatus(404)
+app.post("/upload",async (req,res) => {
+    if (typeof req.body.text == "string" && typeof req.body.name == "string" && typeof req.body.type == "string") {
+        let uploadId = Math.random().toString().slice(2)
+        
+        if (!req.body.text || !req.body.name || !req.body.type) {res.status(400); res.send("[err] missing parameter"); return}
+        if (files[uploadId]) {res.status(500); res.send("[err] please try again"); return}
+        if (req.body.name.length > 64) {res.status(400); res.send("[err] name too long"); return}
+        if (req.body.type.length > 64) {res.status(400); res.send("[err] mime too long"); return}
+
+        // get buffer
+        let fBuffer = Buffer.from(req.body.text,')
+        console.log(fBuffer.byteLength)
+        if (fBuffer.byteLength >= (config.maxDiscordFileSize*config.maxDiscordFiles)) {res.status(400); res.send("[err] file too large"); return}
+        
+        // generate buffers to upload
+        let toUpload = []
+        for (let i = 0; i < Math.ceil(fBuffer.byteLength/config.maxDiscordFileSize); i++) {
+            toUpload.push(fBuffer.subarray(i*config.maxDiscordFileSize,Math.min(fBuffer.byteLength,(i+1)*config.maxDiscordFileSize)))
+        }
+
+        // begin uploading
+        let uploadTmplt:Discord.FileOptions[] = toUpload.map((e) => {return {name:Math.random().toString().slice(2),attachment:e}})
+        let uploadGroups = []
+        for (let i = 0; i < Math.ceil(uploadTmplt.length/10); i++) {
+            uploadGroups.push(uploadTmplt.slice(i*10,((i+1)*10)))
+        }
+
+        let msgIds = []
+
+        for (let i = 0; i < uploadGroups.length; i++) {
+            let ms = await uploadChannel.send({files:uploadGroups[i]}).catch((e) => {console.error(e)})
+            if (ms) {
+                msgIds.push(ms.id)
+            } else {
+                res.status(500); res.send("[err] please try again"); return
+            }
+        }
+
+        // save
+
+        files[uploadId] = {
+            filename:req.body.name,
+            messageids:msgIds,
+            mime:req.body.type
+        }
+
+        fs.writeFile(__dirname+"/../.data/files.json",JSON.stringify(files),(err) => {
+            if (err) {res.status(500); res.send("[err] please try again"); delete files[uploadId]; return}
+            res.send(uploadId)    
+        })
+
+    } else {
+        res.status(400)
+        res.send("[err] bad request")
+    }
 })
 
 app.get("/download/:fileId",(req,res) => {
@@ -66,13 +120,27 @@ app.get("/download/:fileId",(req,res) => {
 app.get("/file/:fileId",async (req,res) => {
     if (files[req.params.fileId]) {
         let file = files[req.params.fileId]
+        let bufToCombine = []
 
         for (let i = 0; i < file.messageids.length; i++) {
             let msg = await uploadChannel.messages.fetch(file.messageids[i]).catch(() => {return null})
             if (msg?.attachments) {
-                
+                let attach = Array.from(msg.attachments.values())
+                for (let i = 0; i < attach.length; i++) {
+                    let d = await axios.get(attach[i].url).catch((e) => {console.error(e)})
+                    if (d) {
+                        bufToCombine.push(Buffer.from(d.data,"binary"))
+                    } else {
+                        res.sendStatus(500);return
+                    }
+                }
             }
         }
+
+        let nb = Buffer.concat(bufToCombine)
+
+        res.setHeader('Content-Type',file.mime)
+        res.send(nb)
 
     } else {
         res.sendStatus(404)
