@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"command":"npx tsc",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"label": "Build (Bot Server)"
+		},
+		{
+			"type": "shell",
+			"command":"npx tsc\nnode ./out/index.js\ndel ./server_out/* -Recurse",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"label": "Build & Test"
+		}
+	]
+}
