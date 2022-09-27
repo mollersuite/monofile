@@ -1,4 +1,5 @@
 import bodyParser from "body-parser"
+import multer, {memoryStorage} from "multer"
 import Discord, { Intents, Client } from "discord.js"
 import express from "express"
 import fs from "fs"
@@ -7,6 +8,8 @@ import axios from "axios"
 require('dotenv').config()
 
 let app = express()
+
+const multerSetup = multer({storage:memoryStorage()})
 
 let config = require("../config.json")
 app.use(bodyParser.json({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576}))
@@ -36,7 +39,7 @@ fs.readFile(__dirname+"/../.data/files.json",(err,buf) => {
 let client = new Client({intents:[
     Intents.FLAGS.GUILD_MESSAGES,
     Intents.FLAGS.MESSAGE_CONTENT
-]})
+],restRequestTimeout:config.requestTimeout})
 
 let uploadChannel:Discord.TextBasedChannel
 
@@ -47,18 +50,18 @@ app.get("/", function(req,res) {
     })
 })
 
-app.post("/upload",async (req,res) => {
-    if (typeof req.body.text == "string" && typeof req.body.name == "string" && typeof req.body.type == "string") {
+app.post("/upload",multerSetup.single('file'),async (req,res) => {
+    if (req.file) {
+        if (!req.file.originalname || !req.file.mimetype) {res.status(400); res.send("[err] missing name/mime");return}
+
         let uploadId = Math.random().toString().slice(2)
         
-        if (!req.body.text || !req.body.name || !req.body.type) {res.status(400); res.send("[err] missing parameter"); return}
         if (files[uploadId]) {res.status(500); res.send("[err] please try again"); return}
-        if (req.body.name.length > 64) {res.status(400); res.send("[err] name too long"); return}
-        if (req.body.type.length > 64) {res.status(400); res.send("[err] mime too long"); return}
+        if (req.file.originalname.length > 64) {res.status(400); res.send("[err] name too long"); return}
+        if (req.file.mimetype.length > 64) {res.status(400); res.send("[err] mime too long"); return}
 
         // get buffer
-        let fBuffer = Buffer.from(req.body.text,')
-        console.log(fBuffer.byteLength)
+        let fBuffer = req.file.buffer
         if (fBuffer.byteLength >= (config.maxDiscordFileSize*config.maxDiscordFiles)) {res.status(400); res.send("[err] file too large"); return}
         
         // generate buffers to upload
@@ -88,9 +91,9 @@ app.post("/upload",async (req,res) => {
         // save
 
         files[uploadId] = {
-            filename:req.body.name,
+            filename:req.file.originalname,
             messageids:msgIds,
-            mime:req.body.type
+            mime:req.file.mimetype
         }
 
         fs.writeFile(__dirname+"/../.data/files.json",JSON.stringify(files),(err) => {
@@ -127,9 +130,9 @@ app.get("/file/:fileId",async (req,res) => {
             if (msg?.attachments) {
                 let attach = Array.from(msg.attachments.values())
                 for (let i = 0; i < attach.length; i++) {
-                    let d = await axios.get(attach[i].url).catch((e) => {console.error(e)})
+                    let d = await axios.get(attach[i].url,{responseType:"arraybuffer"}).catch((e) => {console.error(e)})
                     if (d) {
-                        bufToCombine.push(Buffer.from(d.data,"binary"))
+                        bufToCombine.push(d.data)
                     } else {
                         res.sendStatus(500);return
                     }

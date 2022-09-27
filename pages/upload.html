@@ -109,34 +109,30 @@
     FileUpload.addEventListener("input",() => {
         if (FileUpload.files[0]) {
             let file = FileUpload.files[0]
-            file.text().then((txt) => {
-                
-                updateBtnTxt("Uploading file. Please wait.")
 
-                let xmlhttp = new XMLHttpRequest()
+            updateBtnTxt("Uploading file. This may take a while, so stay put.")
 
-                xmlhttp.addEventListener("error",function(e) {
-                    updateBtnTxt(`Upload failed.<br/>${e.toString()}`)
-                    console.error(e)
-                })
+            let xmlhttp = new XMLHttpRequest()
 
-                xmlhttp.addEventListener("load",function() {
-                    if (xmlhttp.status == 200) {
-                        updateBtnTxt(`Upload complete.<br/>https://${location.hostname}/file/${xmlhttp.responseText}`)
-                    } else {
-                        updateBtnTxt(`Upload failed.<br/>${xmlhttp.responseText}`)
-                    }
-                })
-                
-                xmlhttp.open("POST","/upload")
-                xmlhttp.setRequestHeader("Content-Type","application/json")
-                xmlhttp.send(JSON.stringify({
-                    body:txt,
-                    name:file.name,
-                    type:file.type
-                }))
-                
+            xmlhttp.addEventListener("error",function(e) {
+                updateBtnTxt(`Upload failed.<br/>${e.toString()}`)
+                console.error(e)
             })
+
+            xmlhttp.addEventListener("load",function() {
+                if (xmlhttp.status == 200) {
+                    updateBtnTxt(`Upload complete.<br/>https://${location.hostname}/download/${xmlhttp.responseText}`)
+                } else {
+                    updateBtnTxt(`Upload failed.<br/>${xmlhttp.responseText}`)
+                }
+            })
+
+            let fd = new FormData()
+            fd.append('file',file)
+            
+            xmlhttp.open("POST","/upload")
+            xmlhttp.send(fd)
+
         }
     })
 </script>
