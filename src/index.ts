@@ -97,7 +97,7 @@ app.post("/upload",multerSetup.single('file'),async (req,res) => {
         }
 
         fs.writeFile(__dirname+"/../.data/files.json",JSON.stringify(files),(err) => {
-            if (err) {res.status(500); res.send("[err] please try again"); delete files[uploadId]; return}
+            if (err) {res.status(500); res.send("[err] please try again"); delete files[uploadId];return}
             res.send(uploadId)    
         })
 
@@ -130,7 +130,7 @@ app.get("/file/:fileId",async (req,res) => {
             if (msg?.attachments) {
                 let attach = Array.from(msg.attachments.values())
                 for (let i = 0; i < attach.length; i++) {
-                    let d = await axios.get(attach[i].url,{responseType:"arraybuffer"}).catch((e) => {console.error(e)})
+                    let d = await axios.get(attach[i].url,{responseType:"arraybuffer"}).catch((e:Error) => {console.error(e)})
                     if (d) {
                         bufToCombine.push(d.data)
                     } else {
@@ -140,10 +140,12 @@ app.get("/file/:fileId",async (req,res) => {
             }
         }
 
-        let nb = Buffer.concat(bufToCombine)
+        let nb:Buffer|null = Buffer.concat(bufToCombine)
 
         res.setHeader('Content-Type',file.mime)
         res.send(nb)
+
+        nb = null
 
     } else {
         res.sendStatus(404)
