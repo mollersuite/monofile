@@ -76,6 +76,7 @@
     </style>
 </head>
 <body>
+    <input type="text" id="CopyTB" value="" readonly style="opacity:0;width:10px;height:0%;">
     <div id="content">
         <h1>
             monofile
@@ -94,6 +95,7 @@
         <p style="font-family:monospace;position:relative;width:calc( 100% - 50px );left:25px;text-align: center;">
             Max filesize on instance: $MaxInstanceFilesize
         </p>
+        <p style="font-family:monospace;position:relative;width:calc( 100% - 50px );left:25px;text-align: center;font-size:12px;color:gray;">made by nbitzz — <a style="color:gray;font-family:monospace;font-size:12px;" href="https://github.com/nbitzz/monofile">github</a></p>
         <div style="width:100%;height:25px"></div>
     </div>
 </body>
@@ -121,7 +123,8 @@
 
             xmlhttp.addEventListener("load",function() {
                 if (xmlhttp.status == 200) {
-                    updateBtnTxt(`Upload complete.<br/>https://${location.hostname}/download/${xmlhttp.responseText}`)
+                    document.getElementById("CopyTB").value = `https://${location.hostname}/download/${xmlhttp.responseText}`
+                    updateBtnTxt(`Upload complete.<br/><a style="color:blue;font-family:monospace;" href="javascript:document.getElementById('CopyTB').focus();document.getElementById('CopyTB').select();document.execCommand('copy');">Copy URL</a> <a style="color:blue;font-family:monospace;" href="javascript:prompt('This is your download URL.', document.getElementById('CopyTB').value);null">View URL</a>`)
                 } else {
                     updateBtnTxt(`Upload failed.<br/>${xmlhttp.responseText}`)
                 }
