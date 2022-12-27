@@ -6,6 +6,7 @@ import fs from "fs"
 import axios, { AxiosResponse } from "axios"
 
 require('dotenv').config()
+let pkg = require(`${process.cwd()}/package.json`)
 
 let app = express()
 
@@ -21,7 +22,7 @@ function ThrowError(response:express.Response,code:number,errorMessage:string) {
     fs.readFile(__dirname+"/../pages/error.html",(err,buf) => {
         if (err) {response.sendStatus(500);console.log(err);return}
         response.status(code)
-        response.send(buf.toString().replace("$ErrorCode",code.toString()).replace("$ErrorMessage",errorMessage))
+        response.send(buf.toString().replace(/\$ErrorCode/g,code.toString()).replace(/\$ErrorMessage/g,errorMessage).replace(/\$Version/g,pkg.version))
     })
 }
 
@@ -103,14 +104,14 @@ let uploadFile = (settings:FileUploadSettings,fBuffer:Buffer) => {
 app.get("/", function(req,res) {
     fs.readFile(__dirname+"/../pages/upload.html",(err,buf) => {
         if (err) {res.sendStatus(500);console.log(err);return}
-        res.send(buf.toString().replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`))
+        res.send(buf.toString().replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`).replace(/\$Version/g,pkg.version))
     })
 })
 
 app.get("/clone", function(req,res) {
     fs.readFile(__dirname+"/../pages/clone.html",(err,buf) => {
         if (err) {res.sendStatus(500);console.log(err);return}
-        res.send(buf.toString().replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`))
+        res.send(buf.toString().replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`).replace(/\$Version/g,pkg.version))
     })
 })
 
@@ -142,7 +143,7 @@ app.get("/download/:fileId",(req,res) => {
 
         fs.readFile(__dirname+"/../pages/download.html",(err,buf) => {
             if (err) {res.sendStatus(500);console.log(err);return}
-            res.send(buf.toString().replace(/\$FileName/g,file.filename).replace(/\$FileId/g,req.params.fileId))
+            res.send(buf.toString().replace(/\$FileName/g,file.filename).replace(/\$FileId/g,req.params.fileId).replace(/\$Version/g,pkg.version))
         })
     } else {
         ThrowError(res,404,"File not found. <a href=\"javascript:history.back()\">Back</a> <a href=\"/\">Home</a>")
