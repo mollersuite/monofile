@@ -126,8 +126,8 @@ app.post("/upload",multerSetup.single('file'),async (req,res) => {
 })
 
 app.post("/clone",(req,res) => {
-    axios.get(req.body,{responseType:"blob"}).then((data:AxiosResponse) => {
-        uploadFile({name:req.body.split("/")[req.body.split("/").length] || "generic",mime:data.headers["content-type"]},Buffer.from(data.data))
+    axios.get(req.body,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
+        uploadFile({name:req.body.split("/")[req.body.split("/").length-1] || "generic",mime:data.headers["content-type"]},Buffer.from(data.data))
             .then((uID) => res.send(uID))
             .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
     }).catch((err) => {
