@@ -12,7 +12,8 @@ let app = express()
 
 const multerSetup = multer({storage:memoryStorage()})
 
-let config = require("../config.json")
+let config = require(`${process.cwd()}/config.json`)
+app.use("/static",express.static("assets"))
 app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
 let files:{[key:string]:{filename:string,mime:string,messageids:string[]}} = {}
 
@@ -146,7 +147,7 @@ app.get("/download/:fileId",(req,res) => {
             res.send(buf.toString().replace(/\$FileName/g,file.filename).replace(/\$FileId/g,req.params.fileId).replace(/\$Version/g,pkg.version))
         })
     } else {
-        ThrowError(res,404,"File not found. <a href=\"javascript:history.back()\">Back</a> <a href=\"/\">Home</a>")
+        ThrowError(res,404,"File not found.")
     }
 })
 
@@ -182,8 +183,12 @@ app.get("/file/:fileId",async (req,res) => {
     }
 })
 
+app.get("/server",(req,res) => {
+    res.send(JSON.stringify({...config,version:pkg.version}))
+})
+
 app.get("*",(req,res) => {
-    ThrowError(res,404,"Page not found. <a href=\"javascript:history.back()\">Back</a> <a href=\"/\">Home</a>")
+    ThrowError(res,404,"Page not found.")
 })
 
 
