@@ -3,7 +3,7 @@ import multer, {memoryStorage} from "multer"
 import Discord, { Intents, Client } from "discord.js"
 import express from "express"
 import fs from "fs"
-import axios from "axios"
+import axios, { AxiosResponse } from "axios"
 
 require('dotenv').config()
 
@@ -12,7 +12,7 @@ let app = express()
 const multerSetup = multer({storage:memoryStorage()})
 
 let config = require("../config.json")
-app.use(bodyParser.json({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576}))
+app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
 let files:{[key:string]:{filename:string,mime:string,messageids:string[]}} = {}
 
 // funcs
@@ -111,7 +111,7 @@ app.post("/upload",multerSetup.single('file'),async (req,res) => {
     if (req.file) {
         uploadFile({name:req.file.originalname,mime:req.file.mimetype},req.file.buffer)
             .then((uID) => res.send(uID))
-            .catch((stat) => {res.status(stat.status);res.send(stat.message)})
+            .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
     } else {
         res.status(400)
         res.send("[err] bad request")
@@ -119,7 +119,14 @@ app.post("/upload",multerSetup.single('file'),async (req,res) => {
 })
 
 app.post("/clone",(req,res) => {
-    console.log(req.body)
+    axios.get(req.body,{responseType:"blob"}).then((data:AxiosResponse) => {
+        uploadFile({name:req.body.split("/")[req.body.split("/").length],mime:data.headers["content-type"]},Buffer.from(data.data))
+            .then((uID) => res.send(uID))
+            .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
+    }).catch((err) => {
+        res.status(400)
+        res.send(`[err] failed to fetch data`)
+    })
 })
 
 app.get("/download/:fileId",(req,res) => {
