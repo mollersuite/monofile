@@ -107,6 +107,13 @@ app.get("/", function(req,res) {
     })
 })
 
+app.get("/clone", function(req,res) {
+    fs.readFile(__dirname+"/../pages/clone.html",(err,buf) => {
+        if (err) {res.sendStatus(500);console.log(err);return}
+        res.send(buf.toString().replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`))
+    })
+})
+
 app.post("/upload",multerSetup.single('file'),async (req,res) => {
     if (req.file) {
         uploadFile({name:req.file.originalname,mime:req.file.mimetype},req.file.buffer)
@@ -120,7 +127,7 @@ app.post("/upload",multerSetup.single('file'),async (req,res) => {
 
 app.post("/clone",(req,res) => {
     axios.get(req.body,{responseType:"blob"}).then((data:AxiosResponse) => {
-        uploadFile({name:req.body.split("/")[req.body.split("/").length],mime:data.headers["content-type"]},Buffer.from(data.data))
+        uploadFile({name:req.body.split("/")[req.body.split("/").length] || "generic",mime:data.headers["content-type"]},Buffer.from(data.data))
             .then((uID) => res.send(uID))
             .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
     }).catch((err) => {
