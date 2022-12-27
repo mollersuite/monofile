@@ -43,26 +43,23 @@ let client = new Client({intents:[
 
 let uploadChannel:Discord.TextBasedChannel
 
-app.get("/", function(req,res) {
-    fs.readFile(__dirname+"/../pages/upload.html",(err,buf) => {
-        if (err) {res.sendStatus(500);console.log(err);return}
-        res.send(buf.toString().replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`))
-    })
-})
+interface FileUploadSettings {
+    name?: string,
+    mime: string,
+}
 
-app.post("/upload",multerSetup.single('file'),async (req,res) => {
-    if (req.file) {
-        if (!req.file.originalname || !req.file.mimetype) {res.status(400); res.send("[err] missing name/mime");return}
+let uploadFile = (settings:FileUploadSettings,fBuffer:Buffer) => {
+    return new Promise<string>(async (resolve,reject) => {
+        if (!settings.name || !settings.mime) {reject({status:400,message:"missing name/mime"});return}
 
         let uploadId = Math.random().toString().slice(2)
         
-        if (files[uploadId]) {res.status(500); res.send("[err] please try again"); return}
-        if (req.file.originalname.length > 64) {res.status(400); res.send("[err] name too long"); return}
-        if (req.file.mimetype.length > 64) {res.status(400); res.send("[err] mime too long"); return}
+        if (files[uploadId]) {reject({status:500,message:"please try again"});return}
+        if (settings.name.length > 128) {reject({status:400,message:"name too long"}); return}
+        if (settings.name.length > 128) {reject({status:400,message:"mime too long"}); return}
 
         // get buffer
-        let fBuffer = req.file.buffer
-        if (fBuffer.byteLength >= (config.maxDiscordFileSize*config.maxDiscordFiles)) {res.status(400); res.send("[err] file too large"); return}
+        if (fBuffer.byteLength >= (config.maxDiscordFileSize*config.maxDiscordFiles)) {reject({status:400,message:"file too large"}); return}
         
         // generate buffers to upload
         let toUpload = []
@@ -84,27 +81,45 @@ app.post("/upload",multerSetup.single('file'),async (req,res) => {
             if (ms) {
                 msgIds.push(ms.id)
             } else {
-                res.status(500); res.send("[err] please try again"); return
+                reject({status:500,message:"please try again"}); return
             }
         }
 
         // save
 
         files[uploadId] = {
-            filename:req.file.originalname,
+            filename:settings.name,
             messageids:msgIds,
-            mime:req.file.mimetype
+            mime:settings.mime
         }
 
         fs.writeFile(__dirname+"/../.data/files.json",JSON.stringify(files),(err) => {
-            if (err) {res.status(500); res.send("[err] please try again"); delete files[uploadId];return}
-            res.send(uploadId)    
+            if (err) {reject({status:500,message:"please try again"}); delete files[uploadId];return}
+            resolve(uploadId)    
         })
+    })
+}
 
+app.get("/", function(req,res) {
+    fs.readFile(__dirname+"/../pages/upload.html",(err,buf) => {
+        if (err) {res.sendStatus(500);console.log(err);return}
+        res.send(buf.toString().replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`))
+    })
+})
+
+app.post("/upload",multerSetup.single('file'),async (req,res) => {
+    if (req.file) {
+        uploadFile({name:req.file.originalname,mime:req.file.mimetype},req.file.buffer)
+            .then((uID) => res.send(uID))
+            .catch((stat) => {res.status(stat.status);res.send(stat.message)})
     } else {
         res.status(400)
         res.send("[err] bad request")
     }
+})
+
+app.post("/clone",(req,res) => {
+    console.log(req.body)
 })
 
 app.get("/download/:fileId",(req,res) => {
