@@ -1,6 +1,6 @@
 import bodyParser from "body-parser"
 import multer, {memoryStorage} from "multer"
-import Discord, { Intents, Client } from "discord.js"
+import Discord, { IntentsBitField, Client } from "discord.js"
 import express from "express"
 import fs from "fs"
 import axios, { AxiosResponse } from "axios"
@@ -39,9 +39,9 @@ fs.readFile(__dirname+"/../.data/files.json",(err,buf) => {
 // discord
 
 let client = new Client({intents:[
-    Intents.FLAGS.GUILD_MESSAGES,
-    Intents.FLAGS.MESSAGE_CONTENT
-],restRequestTimeout:config.requestTimeout})
+    IntentsBitField.Flags.GuildMessages,
+    IntentsBitField.Flags.MessageContent
+],rest:{timeout:config.requestTimeout}})
 
 let uploadChannel:Discord.TextBasedChannel
 
@@ -71,7 +71,7 @@ let uploadFile = (settings:FileUploadSettings,fBuffer:Buffer) => {
         }
 
         // begin uploading
-        let uploadTmplt:Discord.FileOptions[] = toUpload.map((e) => {return {name:Math.random().toString().slice(2),attachment:e}})
+        let uploadTmplt:Discord.AttachmentBuilder[] = toUpload.map((e) => {return new Discord.AttachmentBuilder(e).setName(Math.random().toString().slice(2))})
         let uploadGroups = []
         for (let i = 0; i < Math.ceil(uploadTmplt.length/10); i++) {
             uploadGroups.push(uploadTmplt.slice(i*10,((i+1)*10)))
@@ -199,7 +199,7 @@ client.on("ready",() => {
 
     client.guilds.fetch(config.targetGuild).then((g) => {
         g.channels.fetch(config.targetChannel).then((a) => {
-            if (a?.isText()) {
+            if (a?.isTextBased()) {
                 uploadChannel = a
             }
         })
