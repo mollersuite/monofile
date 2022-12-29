@@ -48,13 +48,14 @@ let uploadChannel:Discord.TextBasedChannel
 interface FileUploadSettings {
     name?: string,
     mime: string,
+    uploadId?: string
 }
 
 let uploadFile = (settings:FileUploadSettings,fBuffer:Buffer) => {
     return new Promise<string>(async (resolve,reject) => {
         if (!settings.name || !settings.mime) {reject({status:400,message:"missing name/mime"});return}
 
-        let uploadId = Math.random().toString().slice(2)
+        let uploadId = settings.uploadId || Math.random().toString().slice(2)
         
         if (files[uploadId]) {reject({status:500,message:"please try again"});return}
         if (settings.name.length > 128) {reject({status:400,message:"name too long"}); return}
