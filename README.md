@@ -17,10 +17,11 @@ TOKEN=KILL-YOURSELF.NOW
 - [X] 1.1.2 fix file cloning with binary data
 - [X] 1.1.3 display current version on pages
 - [X] 1.1.4 serve /assets as static files & make /server endpoint
-- [ ] 1.2.0 add simple moderation tools
-- [ ] 1.2.1 prevent cloning of local/private ip addresses
-- [ ] 1.3.0 allow custom file ids
-- [ ] 1.4.0 accounts??? maybe?? (this probably won't happen)
+- [X] 1.2.0 add file parameters section + custom ids
+- [ ] 1.2.1 clean up this shitty code
+- [ ] 1.2.2 add id locks, allowing you to set a key for a file that allows you to overwrite the file in the future
+- [ ] 1.2.3 prevent cloning of local/private ip addresses
+- [ ] 1.3.0 add simple moderation tools
 - [ ] 2.0.0 rewrite using theUnfunny's code as a base/rewrite using monofile-core
 
 also todo: monofile-core (written in eris)

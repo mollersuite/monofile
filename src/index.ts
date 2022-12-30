@@ -1,3 +1,7 @@
+/*
+    i really should split this up into different modules
+*/
+
 import bodyParser from "body-parser"
 import multer, {memoryStorage} from "multer"
 import Discord, { IntentsBitField, Client } from "discord.js"
@@ -55,9 +59,11 @@ let uploadFile = (settings:FileUploadSettings,fBuffer:Buffer) => {
     return new Promise<string>(async (resolve,reject) => {
         if (!settings.name || !settings.mime) {reject({status:400,message:"missing name/mime"});return}
 
-        let uploadId = settings.uploadId || Math.random().toString().slice(2)
+        let uploadId = (settings.uploadId || Math.random().toString().slice(2)).toString();
+
+        if ((uploadId.match(/[A-Za-z0-9_\-]+/)||[])[0] != uploadId || uploadId.length > 30) {reject({status:400,message:"invalid id"});return}
         
-        if (files[uploadId]) {reject({status:500,message:"please try again"});return}
+        if (files[uploadId]) {reject({status:400,message:"a file with this id already exists"});return}
         if (settings.name.length > 128) {reject({status:400,message:"name too long"}); return}
         if (settings.name.length > 128) {reject({status:400,message:"mime too long"}); return}
 
@@ -104,24 +110,45 @@ let uploadFile = (settings:FileUploadSettings,fBuffer:Buffer) => {
 }
 
 app.get("/", function(req,res) {
-    fs.readFile(__dirname+"/../pages/upload.html",(err,buf) => {
+    fs.readFile(__dirname+"/../pages/base.html",(err,buf) => {
         if (err) {res.sendStatus(500);console.log(err);return}
-        res.send(buf.toString().replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`).replace(/\$Version/g,pkg.version))
+        res.send(
+            buf.toString()
+                .replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`)
+                .replace(/\$Version/g,pkg.version)
+                .replace(/\$Handler/g,"upload_file")
+                .replace(/\$UploadButtonText/g,"Upload file")
+                .replace(/\$otherPath/g,"/clone")
+                .replace(/\$otherText/g,"clone from url...")
+        )
     })
 })
 
 app.get("/clone", function(req,res) {
-    fs.readFile(__dirname+"/../pages/clone.html",(err,buf) => {
+    fs.readFile(__dirname+"/../pages/base.html",(err,buf) => {
         if (err) {res.sendStatus(500);console.log(err);return}
-        res.send(buf.toString().replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`).replace(/\$Version/g,pkg.version))
+        res.send(
+            buf.toString()
+                .replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`)
+                .replace(/\$Version/g,pkg.version)
+                .replace(/\$Handler/g,"clone_file")
+                .replace(/\$UploadButtonText/g,"Input a URL")
+                .replace(/\$otherPath/g,"/")
+                .replace(/\$otherText/g,"upload file...")
+        )
     })
 })
 
 app.post("/upload",multerSetup.single('file'),async (req,res) => {
     if (req.file) {
-        uploadFile({name:req.file.originalname,mime:req.file.mimetype},req.file.buffer)
-            .then((uID) => res.send(uID))
-            .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
+        try {
+            uploadFile({name:req.file.originalname,mime:req.file.mimetype,uploadId:req.header("monofile-upload-id")},req.file.buffer)
+                .then((uID) => res.send(uID))
+                .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
+        } catch {
+            res.status(400)
+            res.send("[err] bad request")
+        }
     } else {
         res.status(400)
         res.send("[err] bad request")
@@ -129,14 +156,24 @@ app.post("/upload",multerSetup.single('file'),async (req,res) => {
 })
 
 app.post("/clone",(req,res) => {
-    axios.get(req.body,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
-        uploadFile({name:req.body.split("/")[req.body.split("/").length-1] || "generic",mime:data.headers["content-type"]},Buffer.from(data.data))
-            .then((uID) => res.send(uID))
-            .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
-    }).catch((err) => {
-        res.status(400)
-        res.send(`[err] failed to fetch data`)
-    })
+    try {
+        let j = JSON.parse(req.body)
+        if (!j.url) {
+            res.status(400)
+            res.send("[err] invalid url")
+        }
+        axios.get(j.url,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
+            uploadFile({name:req.body.split("/")[req.body.split("/").length-1] || "generic",mime:data.headers["content-type"],uploadId:j.uploadId},Buffer.from(data.data))
+                .then((uID) => res.send(uID))
+                .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
+        }).catch((err) => {
+            res.status(400)
+            res.send(`[err] failed to fetch data`)
+        })
+    } catch {
+        res.status(500)
+        res.send("[err] an error occured")
+    }
 })
 
 app.get("/download/:fileId",(req,res) => {
@@ -191,8 +228,6 @@ app.get("/server",(req,res) => {
 app.get("*",(req,res) => {
     ThrowError(res,404,"Page not found.")
 })
-
-
 
 client.on("ready",() => {
     console.log("Discord OK!")

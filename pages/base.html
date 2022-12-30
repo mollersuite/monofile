@@ -37,29 +37,68 @@
             left:50%;
             transform:translate(-50%,0);
         }
-        #uploadButton {
-            width:100%;
-            height:100%;
-            background-color: #66AAFF;
+
+        button {
             color:black;
             font-weight:bold;
             border:none;
             position:absolute;
-            left:0px;
-            top:0px;
             font-size:20px;
         }
-        #uploadButton:hover {
+
+        button:hover {
             border: 1px solid gray;
         }
+
+        #uploadButton {
+            width:calc( 100% - 50px );
+            height:100%;
+            background-color: #66AAFF;
+            left:0px;
+            top:0px;
+        }
+
+        #optionsButton {
+            width:50px;
+            height:100%;
+            background-color: #AAAAAA;
+            left:calc( 100% - 50px );
+            top:0px;
+            font-size:15px;
+        }
+        
         .note {
             padding:5px;
             position:relative;
-            width:calc( 100% - 60px );
+            width:calc( 100% - 62px );
             left:25px;
             border:1px solid #AAAAAAFF;
             border-radius: 8px;
             background-color: #AAAAAA66;
+        }
+
+        /* this is horrible css lmao */
+
+        #options > input {
+            font-family:monospace;
+            width:250px;
+            font-size:14px;
+            border: 1px solid #777777;
+            background-color:#AAAAAA;
+            outline:none;
+            text-align:center;
+        }
+
+        #options {
+            height:30px;
+            display:none;
+        }
+
+        #customId {
+            position:absolute;
+            left:50%;
+            top:50%;
+            transform:translate(-50%,-50%)
         }
 
         @media only screen and (max-width: 450px) {
@@ -92,44 +131,41 @@
             </ul>
         </div>
         <div style="width:100%;height:25px"></div>
-        <div id="btnContainer"><button id="uploadButton">Input a URL</button></div>
+        <div id="btnContainer">
+            <button id="uploadButton">$UploadButtonText</button>
+            <button id="optionsButton">• • •</button>
+        </div>
+        <div id="options" class="note" style="border-radius:0px;">
+            <input id="customId" autocomplete="off" placeholder = "custom id (30char, no spaces)" maxlength="30">
+        </div>
         <p style="font-family:monospace;position:relative;width:calc( 100% - 50px );left:25px;text-align: center;">
             Max filesize on instance: $MaxInstanceFilesize
         </p>
-        <p style="font-family:monospace;position:relative;width:calc( 100% - 50px );left:25px;text-align: center;font-size:12px;color:gray;">made by nbitzz — <a style="color:gray;font-family:monospace;font-size:12px;" href="https://github.com/nbitzz/monofile">github</a> — <a style="color:gray;font-family:monospace;font-size:12px;" href="/">upload a file...</a></p>
+        <p style="font-family:monospace;position:relative;width:calc( 100% - 50px );left:25px;text-align: center;font-size:12px;color:gray;">made by nbitzz — <a style="color:gray;font-family:monospace;font-size:12px;" href="https://github.com/nbitzz/monofile">github</a> — <a style="color:gray;font-family:monospace;font-size:12px;" href="$otherPath">$otherText</a></p>
         <div style="width:100%;height:25px"></div>
     </div>
 </body>
 
+<!-- bad thing to do but i'm being rushed -->
+
 <script>
-    let updateBtnTxt = (btntxt) => {document.getElementById("btnContainer").innerHTML = `<div class="note" style="width:calc( 100% - 10px );height:calc( 100% - 10px );position:absolute;left:0px;top:0px;"><p style="font-family:monospace;position:relative;width:calc( 100% - 50px );left:25px;text-align: center;">${btntxt}</p></div>`}
-
-    document.getElementById("uploadButton").addEventListener("click",() => {
-        let ask = prompt("Input a URL to clone.")
-
-        if (ask) {
-            updateBtnTxt("Requesting clone. Please wait.")
-
-            let xmlhttp = new XMLHttpRequest()
-
-            xmlhttp.addEventListener("error",function(e) {
-                updateBtnTxt(`Upload failed.<br/>${e.toString()}`)
-                console.error(e)
-            })
-
-            xmlhttp.addEventListener("load",function() {
-                if (xmlhttp.status == 200) {
-                    document.getElementById("CopyTB").value = `https://${location.hostname}/download/${xmlhttp.responseText}`
-                    updateBtnTxt(`Upload complete.<br/><a style="color:blue;font-family:monospace;" href="javascript:document.getElementById('CopyTB').focus();document.getElementById('CopyTB').select();document.execCommand('copy');document.getElementById('CopyTB').blur();">Copy URL</a> <a style="color:blue;font-family:monospace;" href="javascript:prompt('This is your download URL.', document.getElementById('CopyTB').value);null">View URL</a>`)
-                } else {
-                    updateBtnTxt(`Upload failed.<br/>${xmlhttp.responseText}`)
-                }
-            })
-            
-            xmlhttp.open("POST","/clone")
-            xmlhttp.send(ask)
+    let uploading = false
+    const updateBtnTxt = (btntxt) => {document.getElementById("btnContainer").innerHTML = `<div class="note" style="width:calc( 100% - 10px );height:calc( 100% - 10px );position:absolute;left:0px;top:0px;"><p style="font-family:monospace;position:relative;width:calc( 100% - 50px );left:25px;text-align: center;">${btntxt}</p></div>`}
+    const getOptionsForUploading = () => {
+        uploading = true
+        document.getElementById("options").style.display = "none"
+        
+        return {
+            uploadId: document.getElementById("customId").value
         }
+    }
+
+    document.getElementById("optionsButton").addEventListener("click",() => {
+        let display = document.getElementById("options").style.display
+        if (!uploading) document.getElementById("options").style.display = !display || display == "none" ? "block" : "none"
     })
 </script>
+
+<script src="/static/script/$Handler.js"></script>
 
 </html>
