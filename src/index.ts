@@ -61,7 +61,7 @@ let uploadFile = (settings:FileUploadSettings,fBuffer:Buffer) => {
 
         let uploadId = (settings.uploadId || Math.random().toString().slice(2)).toString();
 
-        if ((uploadId.match(/[A-Za-z0-9_\-]+/)||[])[0] != uploadId || uploadId.length > 30) {reject({status:400,message:"invalid id"});return}
+        if ((uploadId.match(/[A-Za-z0-9_\-\.]+/)||[])[0] != uploadId || uploadId.length > 30) {reject({status:400,message:"invalid id"});return}
         
         if (files[uploadId]) {reject({status:400,message:"a file with this id already exists"});return}
         if (settings.name.length > 128) {reject({status:400,message:"name too long"}); return}
