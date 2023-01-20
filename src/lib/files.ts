@@ -1,4 +1,4 @@
-import { Client } from "discord.js";
+import Discord, { Client } from "discord.js";
 
 export interface FileUploadSettings {
     name?: string,
@@ -13,6 +13,8 @@ export interface Configuration {
     targetChannel: string,
     requestTimeout: number
 }
+
+/*  */
 
 export default class Files {
 
@@ -44,8 +46,8 @@ export default class Files {
             
             // generate buffers to upload
             let toUpload = []
-            for (let i = 0; i < Math.ceil(fBuffer.byteLength/config.maxDiscordFileSize); i++) {
-                toUpload.push(fBuffer.subarray(i*config.maxDiscordFileSize,Math.min(fBuffer.byteLength,(i+1)*config.maxDiscordFileSize)))
+            for (let i = 0; i < Math.ceil(fBuffer.byteLength/this.config.maxDiscordFileSize); i++) {
+                toUpload.push(fBuffer.subarray(i*this.config.maxDiscordFileSize,Math.min(fBuffer.byteLength,(i+1)*config.maxDiscordFileSize)))
             }
     
             // begin uploading
@@ -73,9 +75,17 @@ export default class Files {
                 messageids:msgIds,
                 mime:settings.mime
             }
+
+            /* similar save/load/etc system to your other projects, split */
+            /* you'll still need to do this later but whatever */
+            /* also might be a good idea to switch to fs/promises  */
     
             fs.writeFile(__dirname+"/../.data/files.json",JSON.stringify(files),(err) => {
-                if (err) {reject({status:500,message:"please try again"}); delete files[uploadId];return}
+                if (err) {
+                    reject({status:500,message:"please try again"}); 
+                    delete files[uploadId];
+                    return
+                }
                 resolve(uploadId)    
             })
         })
