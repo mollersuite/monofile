@@ -4,13 +4,14 @@
   "description": "Discord-based file sharing",
   "main": "index.js",
   "scripts": {
+    "start": "node ./out/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "Unlicense",
   "engines": {
-    "node": ">=v16.9.0"
+    "node": ">=v18"
   },
   "dependencies": {
     "@types/body-parser": "^1.19.2",
