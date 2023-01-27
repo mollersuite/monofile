@@ -21,7 +21,7 @@ const multerSetup = multer({storage:memoryStorage()})
 let config = require(`${process.cwd()}/config.json`)
 app.use("/static",express.static("assets"))
 app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
-let files:{[key:string]:{filename:string,mime:string,messageids:string[]}} = {}
+//let files:{[key:string]:{filename:string,mime:string,messageids:string[]}} = {}
 
 // funcs
 
@@ -37,10 +37,7 @@ function ThrowError(response:express.Response,code:number,errorMessage:string) {
 
 if (!fs.existsSync(__dirname+"/../.data/")) fs.mkdirSync(__dirname+"/../.data/")
 
-fs.readFile(__dirname+"/../.data/files.json",(err,buf) => {
-    if (err) {console.log(err);return}
-    files = JSON.parse(buf.toString() || "{}")
-})
+
 
 // discord
 
@@ -49,7 +46,7 @@ let client = new Client({intents:[
     IntentsBitField.Flags.MessageContent
 ],rest:{timeout:config.requestTimeout}})
 
-let uploadChannel:Discord.TextBasedChannel
+let files = new Files(client,config)
 
 app.get("/", function(req,res) {
     fs.readFile(__dirname+"/../pages/base.html",(err,buf) => {
@@ -86,7 +83,7 @@ app.get("/clone", function(req,res) {
 app.post("/upload",multerSetup.single('file'),async (req,res) => {
     if (req.file) {
         try {
-            uploadFile({name:req.file.originalname,mime:req.file.mimetype,uploadId:req.header("monofile-upload-id")},req.file.buffer)
+            files.uploadFile({name:req.file.originalname,mime:req.file.mimetype,uploadId:req.header("monofile-upload-id")},req.file.buffer)
                 .then((uID) => res.send(uID))
                 .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
         } catch {
@@ -134,35 +131,7 @@ app.get("/download/:fileId",(req,res) => {
 })
 
 app.get("/file/:fileId",async (req,res) => {
-    if (files[req.params.fileId]) {
-        let file = files[req.params.fileId]
-        let bufToCombine = []
-
-        for (let i = 0; i < file.messageids.length; i++) {
-            let msg = await uploadChannel.messages.fetch(file.messageids[i]).catch(() => {return null})
-            if (msg?.attachments) {
-                let attach = Array.from(msg.attachments.values())
-                for (let i = 0; i < attach.length; i++) {
-                    let d = await axios.get(attach[i].url,{responseType:"arraybuffer"}).catch((e:Error) => {console.error(e)})
-                    if (d) {
-                        bufToCombine.push(d.data)
-                    } else {
-                        res.sendStatus(500);return
-                    }
-                }
-            }
-        }
-
-        let nb:Buffer|null = Buffer.concat(bufToCombine)
-
-        res.setHeader('Content-Type',file.mime)
-        res.send(nb)
-
-        nb = null
-
-    } else {
-        res.sendStatus(404)
-    }
+    
 })
 
 app.get("/server",(req,res) => {
@@ -171,18 +140,6 @@ app.get("/server",(req,res) => {
 
 app.get("*",(req,res) => {
     ThrowError(res,404,"Page not found.")
-})
-
-client.on("ready",() => {
-    console.log("Discord OK!")
-
-    client.guilds.fetch(config.targetGuild).then((g) => {
-        g.channels.fetch(config.targetChannel).then((a) => {
-            if (a?.isTextBased()) {
-                uploadChannel = a
-            }
-        })
-    })
 })
 
 app.listen(3000,function() {

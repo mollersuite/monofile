@@ -1,6 +1,7 @@
+import axios from "axios";
 import Discord, { Client, TextBasedChannel } from "discord.js";
 import { readFile, writeFile } from "fs";
-
+import { Readable } from "node:stream"
 
 export let id_check_regex = /[A-Za-z0-9_\-\.]+/
 
@@ -40,8 +41,27 @@ export default class Files {
     uploadChannel?: TextBasedChannel
 
     constructor(client: Client, config: Configuration) {
+
         this.config = config;
         this.client = client;
+
+        client.on("ready",() => {
+            console.log("Discord OK!")
+        
+            client.guilds.fetch(config.targetGuild).then((g) => {
+                g.channels.fetch(config.targetChannel).then((a) => {
+                    if (a?.isTextBased()) {
+                        this.uploadChannel = a
+                    }
+                })
+            })
+        })
+
+        readFile(__dirname+"/../.data/files.json",(err,buf) => {
+            if (err) {console.log(err);return}
+            this.files = JSON.parse(buf.toString() || "{}")
+        })
+
     }
     
     uploadFile(settings:FileUploadSettings,fBuffer:Buffer):Promise<string|StatusCodeError> {
@@ -159,12 +179,59 @@ export default class Files {
 
     // todo: move read code here
 
-    readFile(uploadId: string):Promise<Buffer|StatusCodeError> {
+    readFile(uploadId: string):Promise<{dataStream:Readable,contentType:string}> {
+        return new Promise(async (resolve,reject) => {
+            if (!this.uploadChannel) {
+                reject({status:503,message:"server is not ready - please try again later"})
+                return
+            }
+
+            if (this.files[uploadId]) {
+                let file = this.files[uploadId]
+
+                let dataStream = new Readable()
+
+                resolve({
+                    contentType: file.mime,
+                    dataStream: dataStream
+                })
         
+                for (let i = 0; i < file.messageids.length; i++) {
+                    let msg = await this.uploadChannel.messages.fetch(file.messageids[i]).catch(() => {return null})
+                    if (msg?.attachments) {
+                        let attach = Array.from(msg.attachments.values())
+                        for (let i = 0; i < attach.length; i++) {
+                            let d = await axios.get(attach[i].url,{responseType:"arraybuffer"}).catch((e:Error) => {console.error(e)})
+                            if (d) {
+                                dataStream.push(d.data)
+                            } else {
+                                reject({status:500,message:"internal server error"})
+                                return
+                            }
+                        }
+                    }
+                }
+                
+            } else {
+                reject({status:404,message:"not found"})
+            }
+        })
     }
 
-    unlink():Promise<void> {
-        
+    unlink(uploadId:string):Promise<void> {
+        return new Promise((resolve,reject) => {
+            let tmp = this.files[uploadId];
+            delete this.files[uploadId];
+            writeFile(process.cwd()+"/.data/files.json",JSON.stringify(this.files),(err) => {
+                if (err) {
+                    this.files[uploadId] = tmp
+                    reject()
+                } else {
+                    resolve()
+                }
+            })
+
+        })
     }
 
 }

@@ -19,7 +19,7 @@ TOKEN=KILL-YOURSELF.NOW
 - [X] 1.1.4 serve /assets as static files & make /server endpoint
 - [X] 1.2.0 add file parameters section + custom ids
 - [X] 1.2.1 add file counter to main page
-- [ ] 1.2.2 clean up this shitty code
+- [X] 1.2.2 clean up this shitty code
 - [ ] 1.2.3 add id locks, allowing you to set a key for a file that allows you to overwrite the file in the future
 - [ ] 1.2.4 prevent cloning of local/private ip addresses
 - [ ] 1.3.0 add simple moderation tools
