@@ -106,7 +106,7 @@ app.post("/clone",(req,res) => {
             res.send("[err] invalid url")
         }
         axios.get(j.url,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
-            files.uploadFile({name:req.body.split("/")[req.body.split("/").length-1] || "generic",mime:data.headers["content-type"],uploadId:j.uploadId},Buffer.from(data.data))
+            files.uploadFile({name:j.url.split("/")[req.body.split("/").length-1] || "generic",mime:data.headers["content-type"],uploadId:j.uploadId},Buffer.from(data.data))
                 .then((uID) => res.send(uID))
                 .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
         }).catch((err) => {
@@ -128,7 +128,17 @@ app.get("/download/:fileId",(req,res) => {
 
         fs.readFile(__dirname+"/../pages/download.html",(err,buf) => {
             if (err) {res.sendStatus(500);console.log(err);return}
-            res.send(buf.toString().replace(/\$FileId/g,req.params.fileId).replace(/\$Version/g,pkg.version).replace(/\$FileName/g,file.filename))
+            res.send(
+                buf.toString()
+                .replace(/\$FileId/g,req.params.fileId)
+                .replace(/\$Version/g,pkg.version)
+                .replace(/\$FileName/g,
+                    file.filename
+                        .replace(/\&/g,"&amp;")
+                        .replace(/\</g,"&lt;")
+                        .replace(/\>/g,"&gt;")
+                )
+            )
         })
     } else {
         ThrowError(res,404,"File not found.")
