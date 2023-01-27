@@ -59,7 +59,7 @@ app.get("/", function(req,res) {
                 .replace(/\$UploadButtonText/g,"Upload file")
                 .replace(/\$otherPath/g,"/clone")
                 .replace(/\$otherText/g,"clone from url...")
-                .replace(/\$FileNum/g,Object.keys(files).length.toString())
+                .replace(/\$FileNum/g,Object.keys(files.files).length.toString())
         )
     })
 })
@@ -75,7 +75,7 @@ app.get("/clone", function(req,res) {
                 .replace(/\$UploadButtonText/g,"Input a URL")
                 .replace(/\$otherPath/g,"/")
                 .replace(/\$otherText/g,"upload file...")
-                .replace(/\$FileNum/g,Object.keys(files).length.toString())
+                .replace(/\$FileNum/g,Object.keys(files.files).length.toString())
         )
     })
 })
@@ -104,10 +104,11 @@ app.post("/clone",(req,res) => {
             res.send("[err] invalid url")
         }
         axios.get(j.url,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
-            uploadFile({name:req.body.split("/")[req.body.split("/").length-1] || "generic",mime:data.headers["content-type"],uploadId:j.uploadId},Buffer.from(data.data))
+            files.uploadFile({name:req.body.split("/")[req.body.split("/").length-1] || "generic",mime:data.headers["content-type"],uploadId:j.uploadId},Buffer.from(data.data))
                 .then((uID) => res.send(uID))
                 .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
         }).catch((err) => {
+            console.log(err)
             res.status(400)
             res.send(`[err] failed to fetch data`)
         })
@@ -134,7 +135,8 @@ app.get("/file/:fileId",async (req,res) => {
     let f = await files.readFileStream(req.params.fileId)
 
     res.setHeader("Content-Type",f.contentType)
-    f.pipe(res)
+    res.status(200)
+    f.dataStream.pipe(res)
 })
 
 app.get("/server",(req,res) => {

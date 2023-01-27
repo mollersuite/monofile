@@ -57,7 +57,7 @@ export default class Files {
             })
         })
 
-        readFile(__dirname+"/../.data/files.json",(err,buf) => {
+        readFile(process.cwd()+"/.data/files.json",(err,buf) => {
             if (err) {console.log(err);return}
             this.files = JSON.parse(buf.toString() || "{}")
         })
@@ -143,21 +143,22 @@ export default class Files {
             }
     
             // save
+                console.log("writing")
 
-            return this.writeFile(
+            resolve(await this.writeFile(
                 uploadId,
                 {
                     filename:settings.name,
                     messageids:msgIds,
                     mime:settings.mime
                 }
-            )
+            ))
         })
     }
     
     // fs
 
-    writeFile(uploadId: string, file: FilePointer):Promise<string|StatusCodeError> {
+    writeFile(uploadId: string, file: FilePointer):Promise<string> {
         return new Promise((resolve, reject) => {
 
             this.files[uploadId] = file
@@ -169,6 +170,8 @@ export default class Files {
                     delete this.files[uploadId];
                     return
                 }
+                
+                console.log("written")
 
                 resolve(uploadId)
                 
@@ -189,7 +192,9 @@ export default class Files {
             if (this.files[uploadId]) {
                 let file = this.files[uploadId]
 
-                let dataStream = new Readable()
+                let dataStream = new Readable({
+                    read(){}
+                })
 
                 resolve({
                     contentType: file.mime,
@@ -206,11 +211,14 @@ export default class Files {
                                 dataStream.push(d.data)
                             } else {
                                 reject({status:500,message:"internal server error"})
+                                dataStream.destroy(new Error("file read error"))
                                 return
                             }
                         }
                     }
                 }
+
+                dataStream.push(null)
                 
             } else {
                 reject({status:404,message:"not found"})
@@ -232,6 +240,10 @@ export default class Files {
             })
 
         })
+    }
+
+    getFilePointer(uploadId:string):FilePointer {
+        return this.files[uploadId]
     }
 
 }
