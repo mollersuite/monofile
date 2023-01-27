@@ -118,8 +118,8 @@ app.post("/clone",(req,res) => {
 })
 
 app.get("/download/:fileId",(req,res) => {
-    if (files[req.params.fileId]) {
-        let file = files[req.params.fileId]
+    if (files.getFilePointer(req.params.fileId)) {
+        let file = files.getFilePointer(req.params.fileId)
 
         fs.readFile(__dirname+"/../pages/download.html",(err,buf) => {
             if (err) {res.sendStatus(500);console.log(err);return}
@@ -131,7 +131,10 @@ app.get("/download/:fileId",(req,res) => {
 })
 
 app.get("/file/:fileId",async (req,res) => {
-    
+    let f = await files.readFileStream(req.params.fileId)
+
+    res.setHeader("Content-Type",f.contentType)
+    f.pipe(res)
 })
 
 app.get("/server",(req,res) => {
