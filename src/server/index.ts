@@ -8,6 +8,7 @@ import Discord, { IntentsBitField, Client } from "discord.js"
 import express from "express"
 import fs from "fs"
 import axios, { AxiosResponse } from "axios"
+import ServeError from "./lib/errors"
 
 import Files from "./lib/files"
 require("dotenv").config()
@@ -20,14 +21,6 @@ let config = require(`${process.cwd()}/config.json`)
 app.use("/static",express.static("assets"))
 app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
 // funcs
-
-function ThrowError(response:express.Response,code:number,errorMessage:string) {
-    fs.readFile(__dirname+"/../pages/error.html",(err,buf) => {
-        if (err) {response.sendStatus(500);console.log(err);return}
-        response.status(code)
-        response.send(buf.toString().replace(/\$ErrorCode/g,code.toString()).replace(/\$ErrorMessage/g,errorMessage).replace(/\$Version/g,pkg.version))
-    })
-}
 
 // init data
 
@@ -87,7 +80,10 @@ app.post("/upload",multerSetup.single('file'),async (req,res) => {
         try {
             files.uploadFile({name:req.file.originalname,mime:req.file.mimetype,uploadId:req.header("monofile-upload-id")},req.file.buffer)
                 .then((uID) => res.send(uID))
-                .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
+                .catch((stat) => {
+                    res.status(stat.status);
+                    res.send(`[err] ${stat.message}`)
+                })
         } catch {
             res.status(400)
             res.send("[err] bad request")
@@ -108,7 +104,10 @@ app.post("/clone",(req,res) => {
         axios.get(j.url,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
             files.uploadFile({name:j.url.split("/")[req.body.split("/").length-1] || "generic",mime:data.headers["content-type"],uploadId:j.uploadId},Buffer.from(data.data))
                 .then((uID) => res.send(uID))
-                .catch((stat) => {res.status(stat.status);res.send(`[err] ${stat.message}`)})
+                .catch((stat) => {
+                    res.status(stat.status);
+                    res.send(`[err] ${stat.message}`)
+                })
         }).catch((err) => {
             console.log(err)
             res.status(400)
@@ -141,7 +140,7 @@ app.get("/download/:fileId",(req,res) => {
             )
         })
     } else {
-        ThrowError(res,404,"File not found.")
+        ServeError(res,404,"File not found.")
     }
 })
 
@@ -151,12 +150,12 @@ app.get("/file/:fileId",async (req,res) => {
         res.status(200)
         f.dataStream.pipe(res)
     }).catch((err) => {
-        ThrowError(res,err.status,err.message)
+        ServeError(res,err.status,err.message)
     })
 })
 
 app.get("*",(req,res) => {
-    ThrowError(res,404,"Page not found.")
+    ServeError(res,404,"Page not found.")
 })
 
 app.get("/server",(req,res) => {
