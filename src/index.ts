@@ -10,19 +10,15 @@ import fs from "fs"
 import axios, { AxiosResponse } from "axios"
 
 import Files from "./lib/files"
-require('dotenv').config()
-
-let pkg = require(`${process.cwd()}/package.json`)
-
-let app = express()
+require("dotenv").config()
 
 const multerSetup = multer({storage:memoryStorage()})
-
+let pkg = require(`${process.cwd()}/package.json`)
+let app = express()
 let config = require(`${process.cwd()}/config.json`)
+
 app.use("/static",express.static("assets"))
 app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
-//let files:{[key:string]:{filename:string,mime:string,messageids:string[]}} = {}
-
 // funcs
 
 function ThrowError(response:express.Response,code:number,errorMessage:string) {
@@ -47,6 +43,10 @@ let client = new Client({intents:[
 ],rest:{timeout:config.requestTimeout}})
 
 let files = new Files(client,config)
+
+// routes (could probably make these use routers)
+
+// index, clone
 
 app.get("/", function(req,res) {
     fs.readFile(__dirname+"/../pages/base.html",(err,buf) => {
@@ -79,6 +79,8 @@ app.get("/clone", function(req,res) {
         )
     })
 })
+
+// upload handlers
 
 app.post("/upload",multerSetup.single('file'),async (req,res) => {
     if (req.file) {
@@ -118,6 +120,8 @@ app.post("/clone",(req,res) => {
     }
 })
 
+// serve files & download page
+
 app.get("/download/:fileId",(req,res) => {
     if (files.getFilePointer(req.params.fileId)) {
         let file = files.getFilePointer(req.params.fileId)
@@ -132,22 +136,26 @@ app.get("/download/:fileId",(req,res) => {
 })
 
 app.get("/file/:fileId",async (req,res) => {
-    let f = await files.readFileStream(req.params.fileId)
-
-    res.setHeader("Content-Type",f.contentType)
-    res.status(200)
-    f.dataStream.pipe(res)
-})
-
-app.get("/server",(req,res) => {
-    res.send(JSON.stringify({...config,version:pkg.version}))
+    files.readFileStream(req.params.fileId).then(f => {
+        res.setHeader("Content-Type",f.contentType)
+        res.status(200)
+        f.dataStream.pipe(res)
+    }).catch((err) => {
+        ThrowError(res,err.status,err.message)
+    })
 })
 
 app.get("*",(req,res) => {
     ThrowError(res,404,"Page not found.")
 })
 
-app.listen(3000,function() {
+app.get("/server",(req,res) => {
+    res.send(JSON.stringify({...config,version:pkg.version}))
+})
+
+// listen on 3000 or MONOFILE_PORT
+
+app.listen(process.env.MONOFILE_PORT || 3000,function() {
     console.log("Web OK!")
 })
 
