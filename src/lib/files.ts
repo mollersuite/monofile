@@ -143,7 +143,6 @@ export default class Files {
             }
     
             // save
-                console.log("writing")
 
             resolve(await this.writeFile(
                 uploadId,
@@ -170,8 +169,6 @@ export default class Files {
                     delete this.files[uploadId];
                     return
                 }
-                
-                console.log("written")
 
                 resolve(uploadId)
                 
