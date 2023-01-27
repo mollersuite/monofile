@@ -179,7 +179,7 @@ export default class Files {
 
     // todo: move read code here
 
-    readFile(uploadId: string):Promise<{dataStream:Readable,contentType:string}> {
+    readFileStream(uploadId: string):Promise<{dataStream:Readable,contentType:string}> {
         return new Promise(async (resolve,reject) => {
             if (!this.uploadChannel) {
                 reject({status:503,message:"server is not ready - please try again later"})
