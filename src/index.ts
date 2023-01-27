@@ -128,7 +128,7 @@ app.get("/download/:fileId",(req,res) => {
 
         fs.readFile(__dirname+"/../pages/download.html",(err,buf) => {
             if (err) {res.sendStatus(500);console.log(err);return}
-            res.send(buf.toString().replace(/\$FileName/g,file.filename).replace(/\$FileId/g,req.params.fileId).replace(/\$Version/g,pkg.version))
+            res.send(buf.toString().replace(/\$FileId/g,req.params.fileId).replace(/\$Version/g,pkg.version).replace(/\$FileName/g,file.filename))
         })
     } else {
         ThrowError(res,404,"File not found.")
