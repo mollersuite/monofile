@@ -1,0 +1,22 @@
+@use "base";
+@use "app/topbar";
+
+.menuBtn {
+    text-decoration:none;
+    font-size:16px;
+    transition-duration: 100ms;
+
+    color:#555555;
+    background-color: #00000000;
+    border:none;
+    margin:0 0 0 0;
+    cursor:pointer;
+
+    position:relative;
+    top:-1px;
+
+    &:hover {
+        color:slategray;
+        transition-duration: 100ms;
+    }
+}    

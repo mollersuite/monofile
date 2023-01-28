@@ -18,7 +18,10 @@ let pkg = require(`${process.cwd()}/package.json`)
 let app = express()
 let config = require(`${process.cwd()}/config.json`)
 
-app.use("/static",express.static("assets"))
+app.use("/static/assets",express.static("assets"))
+app.use("/static/style",express.static("out/style"))
+app.use("/static/js",express.static("out/client"))
+
 app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
 // funcs
 
@@ -42,35 +45,7 @@ let files = new Files(client,config)
 // index, clone
 
 app.get("/", function(req,res) {
-    fs.readFile(__dirname+"/../pages/base.html",(err,buf) => {
-        if (err) {res.sendStatus(500);console.log(err);return}
-        res.send(
-            buf.toString()
-                .replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`)
-                .replace(/\$Version/g,pkg.version)
-                .replace(/\$Handler/g,"upload_file")
-                .replace(/\$UploadButtonText/g,"Upload file")
-                .replace(/\$otherPath/g,"/clone")
-                .replace(/\$otherText/g,"clone from url...")
-                .replace(/\$FileNum/g,Object.keys(files.files).length.toString())
-        )
-    })
-})
-
-app.get("/clone", function(req,res) {
-    fs.readFile(__dirname+"/../pages/base.html",(err,buf) => {
-        if (err) {res.sendStatus(500);console.log(err);return}
-        res.send(
-            buf.toString()
-                .replace("$MaxInstanceFilesize",`${(config.maxDiscordFileSize*config.maxDiscordFiles)/1048576}MB`)
-                .replace(/\$Version/g,pkg.version)
-                .replace(/\$Handler/g,"clone_file")
-                .replace(/\$UploadButtonText/g,"Input a URL")
-                .replace(/\$otherPath/g,"/")
-                .replace(/\$otherText/g,"upload file...")
-                .replace(/\$FileNum/g,Object.keys(files.files).length.toString())
-        )
-    })
+    res.sendFile(process.cwd()+"/pages/index.html")
 })
 
 // upload handlers
@@ -140,7 +115,7 @@ app.get("/download/:fileId",(req,res) => {
             )
         })
     } else {
-        ServeError(res,404,"File not found.")
+        ServeError(res,404,"file not found")
     }
 })
 
@@ -155,11 +130,15 @@ app.get("/file/:fileId",async (req,res) => {
 })
 
 app.get("*",(req,res) => {
-    ServeError(res,404,"Page not found.")
+    ServeError(res,404,"page not found")
 })
 
 app.get("/server",(req,res) => {
-    res.send(JSON.stringify({...config,version:pkg.version}))
+    res.send(JSON.stringify({
+        ...config,
+        version:pkg.version,
+        files:files.files.length
+    }))
 })
 
 // listen on 3000 or MONOFILE_PORT

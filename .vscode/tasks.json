@@ -12,7 +12,7 @@
 		},
 		{
 			"type": "shell",
-			"command":"tsc\nsass src/style:out/style\nrollup -c\nnpx tsc\nnode ./out/index.js\ndel ./out/* -Recurse",
+			"command":"tsc\nsass src/style:out/style\nrollup -c\nnode ./out/server/index.js\ndel ./out/* -Recurse",
 			"group": {
 				"kind": "build",
 				"isDefault": true
