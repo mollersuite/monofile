@@ -18,17 +18,4 @@
 
     column-gap:5px;
 
-    .monofile_ico {
-        width:26px;
-        height:26px;
-        border:2px solid base.$darkish;
-        border-radius:100%;
-        transition-duration: 100ms;
-
-        &:hover {
-            border:2px solid #999999;
-            transition-duration: 100ms;
-        }
-    }
-
 }

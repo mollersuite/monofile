@@ -46,5 +46,11 @@ $darkish: rgb(54, 62, 70);
 */
 
 body {
+    background-color: rgb(30, 33, 36); // this is here so that
+                                         // pulling down to refresh
+                                         // on mobile looks good
+}
+
+#appContent {
     background-color: $Background
 }

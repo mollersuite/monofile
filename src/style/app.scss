@@ -1,5 +1,6 @@
 @use "base";
 @use "app/topbar";
+@use "app/pulldown";
 
 .menuBtn {
     text-decoration:none;
@@ -19,4 +20,12 @@
         color:slategray;
         transition-duration: 100ms;
     }
-}    
+}
+
+#appContent {
+    position:absolute;
+    left:0px;
+    top:40px;
+    width:100%;
+    height: calc( 100% - 40px );
+}
