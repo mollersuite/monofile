@@ -22,7 +22,8 @@ TOKEN=KILL-YOURSELF.NOW
 - [X] 1.2.2 clean up this shitty code
 - [X] 1.2.3 bugfixes
 - [ ] 1.3.0 new ui; accounts; utility endpoints; multi file uploads
-- [ ] 1.3.1 disable cloning of local ips
+- [ ] 1.3.1 self-destruct option
+- [ ] 1.3.2 disable cloning of local ips
 - [ ] 1.4.0 admin panel
 - [ ] 2.0.0 rewrite using theUnfunny's code as a base/rewrite using monofile-core
 
