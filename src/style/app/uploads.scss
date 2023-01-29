@@ -3,14 +3,18 @@
     left:50%;
     top:50%;
     transform:translate(-50%,-50%);
-    padding:10px;
+    padding:5px 10px 10px 10px;
     
     background-color:#222222;
     color:#ddd;
 
-    h1, p {
+    h1, p, a {
         margin: 0px;
         font-size: 14px;
+    }
+
+    a {
+        color:#999;
     }
 
     h1 {
@@ -66,18 +70,28 @@
             column-gap:10px;
 
             button {
-                background-color:#444444;
-                color:white;
+                background-color:#333333;
+                color:#DDDDDD;
                 border:none;
-                border-radius: 8px;
                 padding:5px;
                 
                 flex-basis:50%;
                 flex-grow:1;
+                transition-duration:250ms;
+                cursor:pointer;
 
                 @media screen and (max-width: 500px) {
                     font-size:16px;
                     padding:10px;
+                }
+
+                &:hover {
+                    @media screen and (min-width: 500px) {
+                        transition-duration:250ms;
+                        flex-basis: 60%;
+                    }
+                    background-color:#393939;
+                    color: #ffffff;
                 }
             }
         }
