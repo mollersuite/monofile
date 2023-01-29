@@ -6,7 +6,7 @@ import bodyParser from "body-parser"
 import multer, {memoryStorage} from "multer"
 import Discord, { IntentsBitField, Client } from "discord.js"
 import express from "express"
-import fs from "fs"
+import fs, { link } from "fs"
 import axios, { AxiosResponse } from "axios"
 import ServeError from "./lib/errors"
 
@@ -129,17 +129,19 @@ app.get("/file/:fileId",async (req,res) => {
     })
 })
 
-app.get("*",(req,res) => {
-    ServeError(res,404,"page not found")
-})
-
 app.get("/server",(req,res) => {
     res.send(JSON.stringify({
         ...config,
         version:pkg.version,
-        files:files.files.length
+        files:Object.keys(files.files).length
     }))
 })
+
+app.get("*",(req,res) => {
+    ServeError(res,404,"page not found")
+})
+
+
 
 // listen on 3000 or MONOFILE_PORT
 

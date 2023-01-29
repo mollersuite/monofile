@@ -1,6 +1,7 @@
 <script>
     import { onMount } from "svelte";
     import Topbar from "./elem/Topbar.svelte";
+    import UploadWindow from "./elem/UploadWindow.svelte";
     
     /**
      * @type Topbar
@@ -22,7 +23,9 @@
 <Topbar bind:this={topbar} />
 <div id="appContent">
     <button id="overlay" bind:this={overlay} />
-    <div class="pulldown">
+    <div class="pulldown" style:display="none">
         
     </div>
+
+    <UploadWindow/>
 </div>

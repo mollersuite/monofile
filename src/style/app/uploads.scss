@@ -1,0 +1,37 @@
+#uploadWindow {
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    padding:10px;
+    border-radius:8px;
+    
+    background-color:#222222;
+    color:#ddd;
+
+    h1, p {
+        margin: 0px;
+        font-size: 14px;
+    }
+
+    h1 {
+        font-weight:600;
+        font-size: 25px;
+    }
+
+    .number {
+        font-family: "Inconsolata", monospace;
+    }
+
+    @media screen and (max-width: 500px) {
+        width: calc( 100% - 20px );
+        height: calc( 100% - 20px );
+        border-radius:0px;
+        background-color:#00000000;
+        
+        transform:none;
+        left:10px;
+        top:10px;
+        padding:0px;
+    }
+}
