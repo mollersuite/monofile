@@ -29,4 +29,9 @@
     top:40px;
     width:100%;
     height: calc( 100% - 40px );
+    background-image: linear-gradient(#333,base.$Background);
+
+    @media screen and (max-width:500px) {
+        background-image: linear-gradient(#303030,base.$Background);
+    }
 }

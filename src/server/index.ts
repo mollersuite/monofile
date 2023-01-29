@@ -119,7 +119,7 @@ app.get("/download/:fileId",(req,res) => {
     }
 })
 
-app.get("/file/:fileId",async (req,res) => {
+let fgRQH = async (req:express.Request,res:express.Response) => {
     files.readFileStream(req.params.fileId).then(f => {
         res.setHeader("Content-Type",f.contentType)
         res.status(200)
@@ -127,7 +127,7 @@ app.get("/file/:fileId",async (req,res) => {
     }).catch((err) => {
         ServeError(res,err.status,err.message)
     })
-})
+}
 
 app.get("/server",(req,res) => {
     res.send(JSON.stringify({
@@ -137,11 +137,17 @@ app.get("/server",(req,res) => {
     }))
 })
 
-app.get("*",(req,res) => {
-    ServeError(res,404,"page not found")
-})
+app.get("/file/:fileId",fgRQH)
+app.get("/:fileId",fgRQH)
 
-
+/*
+    routes should be in this order:
+    
+    index
+    api
+    dl pages
+    file serving
+*/
 
 // listen on 3000 or MONOFILE_PORT
 

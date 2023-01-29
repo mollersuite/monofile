@@ -4,7 +4,6 @@
     top:50%;
     transform:translate(-50%,-50%);
     padding:10px;
-    border-radius:8px;
     
     background-color:#222222;
     color:#ddd;
@@ -21,6 +20,67 @@
 
     .number {
         font-family: "Inconsolata", monospace;
+    }
+    
+    #add_new_files {
+        background-color:#191919;
+        border: 1px solid gray;
+        width:350px;
+        padding: 0px 0px 10px 0px;
+
+        @media screen and (max-width: 500px) {
+            width:100%;
+        }
+
+        p {
+            font-family: "Fira Code", monospace;
+            text-align: left;
+            margin: 0px 0px 0px 10px;
+            font-size: 30px;
+
+            span {
+                font-size:16px;
+                position:relative;
+                top:-4px;
+                left:10px;
+            }
+
+            @media screen and (max-width:500px) {
+                font-size: 40px;
+
+                span {
+                    font-size:20px;
+                    position:relative;
+                    top:-6px;
+                    left:10px;
+                }
+            }
+        }
+
+        #file_add_btns {
+            width:calc( 100% - 20px );
+            margin:auto;
+            position:relative;
+            display:flex;
+            flex-direction:row;
+            column-gap:10px;
+
+            button {
+                background-color:#444444;
+                color:white;
+                border:none;
+                border-radius: 8px;
+                padding:5px;
+                
+                flex-basis:50%;
+                flex-grow:1;
+
+                @media screen and (max-width: 500px) {
+                    font-size:16px;
+                    padding:10px;
+                }
+            }
+        }
     }
 
     @media screen and (max-width: 500px) {
