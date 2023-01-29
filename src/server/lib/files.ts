@@ -4,7 +4,17 @@ import { readFile, writeFile } from "fs";
 import { Readable } from "node:stream"
 
 export let id_check_regex = /[A-Za-z0-9_\-\.]+/
+export let alphanum = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
+// bad solution but whatever
+
+export function generateFileId() {
+    let fid = ""
+    for (let i = 0; i < 5; i++) {
+        fid += alphanum[Math.floor(Math.random()*alphanum.length)]
+    }
+    return fid
+}
 
 export interface FileUploadSettings {
     name?: string,
@@ -76,7 +86,7 @@ export default class Files {
                 return
             }
     
-            let uploadId = (settings.uploadId || Math.random().toString().slice(2)).toString();
+            let uploadId = (settings.uploadId || generateFileId()).toString();
     
             if ((uploadId.match(id_check_regex) || [])[0] != uploadId || uploadId.length > 30) {
                 reject({status:400,message:"invalid id"});return
