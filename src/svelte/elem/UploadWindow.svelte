@@ -2,6 +2,8 @@
 
     // stats
 
+    import AttachmentZone from "./uploader/AttachmentZone.svelte";
+
     let ServerStats = {}
 
     fetch("/server").then(async (data) => {
@@ -10,6 +12,7 @@
     
     // uploads
 
+    let attachmentZone;
     let uploads = new Map()
 
 </script>
@@ -22,7 +25,7 @@
 
     <div>
         {#each Array.from(uploads.entries()) as upload (upload[0])}
-            <div class="Upload">
+            <div class="file">
                 
             </div>
         {/each}
@@ -30,21 +33,21 @@
 
     <div style:height="10px" />
     
-    <div id="add_new_files">
-        <p>+<span>add files</span></p>
-        <div id="file_add_btns">
-            <button>upload file...</button><button>clone url...</button>
-        </div>
-    </div>
+    {#if uploads.size < 1}
+        <AttachmentZone bind:this={attachmentZone}/>
+    {/if}
 
     <div style:height="10px" />
    
     <p style:color="#999999" style:text-align="center">
         Hosting <span class="number" style:font-weight="600">{ServerStats.files || "•••"}</span> files
+        —
+        Maximum filesize is <span class="number" style:font-weight="600">{((ServerStats.maxDiscordFileSize || 0)*(ServerStats.maxDiscordFiles || 0))/1048576 || "•••"}MB</span>
         <br />
     </p>
 
     <p style:color="#999999" style:text-align="center" style:font-size="12px">
         Made with ❤ by <a href="https://github.com/nbitzz" style:font-size="12px">@nbitzz</a> — <a href="https://github.com/nbitzz/monofile" style:font-size="12px">source</a>
     </p>
+    <div style:height="10px" />
 </div>
