@@ -1,4 +1,5 @@
 @use "uploader/add_new_files";
+@use "uploader/file";
 
 #uploadWindow {
     position:absolute;
@@ -6,8 +7,13 @@
     top:50%;
     transform:translate(-50%,-50%);
     padding:10px 15px 10px 15px;
+    display:flex;
+    flex-direction: column;
     
     width:350px;
+    @media screen and (min-width:500px) {
+        max-height: calc( 100% - 80px );
+    }
 
     background-color:#222222;
     color:#ddd;
@@ -28,6 +34,32 @@
 
     .number {
         font-family: "Inconsolata", monospace;
+    }
+
+    .uploadContainer {
+        overflow:auto;
+    }
+
+    button {
+        cursor:pointer;
+        background-color:#393939;
+        color:#DDDDDD;
+        border:none;
+        outline:none;
+        padding:5px;
+        transition-duration: 250ms;
+        /*overflow:clip;*/
+
+        @media screen and (max-width: 500px) {
+            font-size:16px;
+            padding:10px;
+        }
+
+        &:hover {
+            transition-duration: 250ms;
+            background-color:#434343;
+            color: #ffffff;
+        }
     }
 
     @media screen and (max-width: 500px) {

@@ -53,7 +53,13 @@ app.get("/", function(req,res) {
 app.post("/upload",multerSetup.single('file'),async (req,res) => {
     if (req.file) {
         try {
-            files.uploadFile({name:req.file.originalname,mime:req.file.mimetype,uploadId:req.header("monofile-upload-id")},req.file.buffer)
+            let prm = req.header("monofile-params")
+            let params:{[key:string]:any} = {}
+            if (prm) {
+                params = JSON.parse(prm)
+            }
+
+            files.uploadFile({uploadId:params.uploadId,name:req.file.originalname,mime:req.file.mimetype},req.file.buffer)
                 .then((uID) => res.send(uID))
                 .catch((stat) => {
                     res.status(stat.status);

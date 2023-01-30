@@ -1,5 +1,7 @@
 <script>
+    import { createEventDispatcher } from "svelte";
     import { circIn, circOut } from "svelte/easing"
+    import { _void } from "../transition/_void"
 
     let uploadTypes = {
         files: 1,
@@ -7,32 +9,22 @@
     }
 
     let uploadType = undefined
-
-    function _void(node, { duration, easingFunc, op }) {
-        let rect = node.getBoundingClientRect()
-
-        return {
-            duration: duration||300,
-            css: t => {
-                let eased = (easingFunc || circIn)(t)
-
-                return `
-                    white-space: nowrap;
-                    height: ${(eased)*(rect.height)}px;
-                    padding: 0px;
-                    opacity:${eased};
-                    overflow: clip;
-                `
-            }
-        }
-    }
+    let dispatch = createEventDispatcher();
 
     // file upload
+
+    /**
+     * @type HTMLInputElement
+     */
     let fileUpload;
 
     $: {
         if (fileUpload) {
             fileUpload.addEventListener("change",() => {
+                dispatch("addFiles",{
+                    type: "upload",
+                    files: Array.from(fileUpload.files)
+                })
                 uploadType = undefined
             })
         }
@@ -53,6 +45,10 @@
         if (cloneButton && cloneUrlTextbox) {
             cloneButton.addEventListener("click",() => {
                 if (cloneUrlTextbox.value) {
+                    dispatch("addFiles",{
+                        type: "clone",
+                        url: cloneUrlTextbox.value
+                    })
                     uploadType = undefined;
                 } else {
                     cloneUrlTextbox.animate([
