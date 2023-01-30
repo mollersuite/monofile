@@ -1,0 +1,11 @@
+// probably dont need to import the entire
+// uploads css file
+// so i might just make a separate file with mixins
+// and import them
+
+@use "app/uploads";
+@use "base";
+
+body {
+    background-color: base.$Background;
+}

@@ -10,92 +10,26 @@
     <meta name="title" content="$FileName">
     <meta name="description" content="ID: $FileId">
 
-    <style>
-
-        * {
-            font-family: sans-serif;
-        }
-        h1,h2 {
-            text-align:center;
-        }
-        #content {
-            position:fixed;
-            left:50%;
-            top:50%;
-            transform:translate(-50%,-50%);
-            background-color:white;
-            width:450px;
-            /*height:100%;*/
-        }
-        body {
-            background-color: darkgray;
-        }
-        #btnContainer {
-            width:calc( 100% - 50px );
-            height:50px;
-            position:relative;
-            left:50%;
-            transform:translate(-50%,0);
-        }
-        #dlbtn {
-            width:100%;
-            height:100%;
-            background-color: #66AAFF;
-            border:none;
-            position:absolute;
-            left:0px;
-            top:0px;
-            text-decoration: none;
-            display:flex; /* This is a mess but I give up. */
-            flex-direction: column;
-            justify-content: center;
-        }
-        #btnContainer:hover {
-            outline: 1px solid gray;
-        }
-        #dlbtn > p {
-            color:black;
-            font-weight:bold;
-            font-size:20px;
-            text-align: center;      
-            width:100%;
-            line-height:20px;
-        }
-        .note {
-            padding:5px;
-            position:relative;
-            width:calc( 100% - 60px );
-            left:25px;
-            border:1px solid #AAAAAAFF;
-            border-radius: 8px;
-            background-color: #AAAAAA66;
-        }
-
-        @media only screen and (max-width: 450px) {
-            #content {
-                position:fixed;
-                left:0%;
-                top:0%;
-                transform:translate(0%,0%);
-                background-color:white;
-                width:100%;
-                height:100%;
-            }
-        }
-
-    </style>
+    <link
+        rel="stylesheet"
+        href="/static/style/downloads.css"
+    >
 </head>
 <body>
-    <div id="content">
+    <div id="uploadWindow">
         <h1>
             $FileName
         </h1>
-        <h2 style="font-family:monospace">file id: $FileId</h2>
-        <div id="btnContainer"><a id="dlbtn" href="/file/$FileId" download="$FileName"><p>Download file</p></a></div>
-        <p style="font-family:monospace;position:relative;width:calc( 100% - 50px );left:25px;text-align: center;">
-            May take a while to download. Stay put.
+        <p style="color:#999999">
+            file id <span class="number">$FileId</span>
         </p>
-        <div style="width:100%;height:25px"></div>
+
+        <button style="position:relative;width:100%;top:10px;">
+            <a id="dlbtn" href="/file/$FileId" download="$FileName" style="position:absolute;left:0px;top:0px;height:100%;width:100%;"></a>
+            download
+        </button>
+        
+        <div style="min-height:20px" />
     </div>
 </body>
 

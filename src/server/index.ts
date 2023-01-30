@@ -106,7 +106,7 @@ app.get("/download/:fileId",(req,res) => {
     if (files.getFilePointer(req.params.fileId)) {
         let file = files.getFilePointer(req.params.fileId)
 
-        fs.readFile(__dirname+"/../pages/download.html",(err,buf) => {
+        fs.readFile(process.cwd()+"/pages/download.html",(err,buf) => {
             if (err) {res.sendStatus(500);console.log(err);return}
             res.send(
                 buf.toString()
