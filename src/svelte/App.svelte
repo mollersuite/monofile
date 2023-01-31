@@ -1,33 +1,23 @@
 <script>
     import { onMount } from "svelte";
     import Topbar from "./elem/Topbar.svelte";
+    import PulldownManager from "./elem/PulldownManager.svelte";
     import UploadWindow from "./elem/UploadWindow.svelte";
     
-    /**
+    /** 
      * @type Topbar
      */
     let topbar;
-    
-    /**
-     * @type HTMLButtonElement
-    */
-    let overlay;
 
-    onMount(() => {
-        overlay.addEventListener("click", () => {
-            overlay.style.display = ""
-        })
-    })
+    /**
+     * @type PulldownManager
+    */
+    let pulldownManager;
 </script>
 
-<Topbar bind:this={topbar} />
+<Topbar bind:this={topbar} pulldown={pulldownManager} />
 <div id="appContent">
-    <button id="overlay" bind:this={overlay} />
-    <div class="pulldown" style:display="none">
-        
-    </div>
+    <PulldownManager bind:this={pulldownManager} />
 
     <UploadWindow/>
 </div>
-
-<p class="background-t">monofile</p>

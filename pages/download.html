@@ -16,20 +16,22 @@
     >
 </head>
 <body>
-    <div id="uploadWindow">
-        <h1>
-            $FileName
-        </h1>
-        <p style="color:#999999">
-            file id <span class="number">$FileId</span>
-        </p>
+    <div id="appContent">
+        <div id="uploadWindow">
+            <h1>
+                $FileName
+            </h1>
+            <p style="color:#999999">
+                file id <span class="number">$FileId</span>
+            </p>
 
-        <button style="position:relative;width:100%;top:10px;">
-            <a id="dlbtn" href="/file/$FileId" download="$FileName" style="position:absolute;left:0px;top:0px;height:100%;width:100%;"></a>
-            download
-        </button>
-        
-        <div style="min-height:20px" />
+            <button style="position:relative;width:100%;top:10px;">
+                <a id="dlbtn" href="/file/$FileId" download="$FileName" style="position:absolute;left:0px;top:0px;height:100%;width:100%;"></a>
+                download
+            </button>
+            
+            <div style="min-height:20px" />
+        </div>
     </div>
 </body>
 

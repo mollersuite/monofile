@@ -11,18 +11,26 @@
             font-size: 30px;
 
             span {
-                font-size:16px;
                 position:relative;
-                top:-4px;
-                left:10px;
+
+                &._add_files_txt {
+                    font-size:16px;
+                    top:-4px;
+                    left:10px;
+
+                    @media screen and (max-width:500px) {
+                        font-size:20px;
+                        top:-6px;
+                        left:10px;
+                    }
+                }
             }
 
             @media screen and (max-width:500px) {
                 font-size: 40px;
 
-                span {
+                span._add_files_txt {
                     font-size:20px;
-                    position:relative;
                     top:-6px;
                     left:10px;
                 }

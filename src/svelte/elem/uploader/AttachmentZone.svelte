@@ -1,6 +1,7 @@
 <script>
     import { createEventDispatcher } from "svelte";
     import { circIn, circOut } from "svelte/easing"
+    import { fade } from "svelte/transition";
     import { _void } from "../transition/_void"
 
     let uploadTypes = {
@@ -66,7 +67,9 @@
 <!-- there are 100% better ways to do this but idgaf, it's still easier to manage than <1.3 lmao -->
 
 <div id="add_new_files" transition:_void={{duration:200}}>
-    <p>+<span>add files</span></p>
+    <p>
+        +<span class="_add_files_txt">add files</span>
+    </p>
     {#if !uploadType}
         <div id="file_add_btns" out:_void in:_void={{easingFunc:circOut}}>
             <button on:click={() => uploadType = uploadTypes.files} >upload files...</button>

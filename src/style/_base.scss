@@ -54,3 +54,30 @@ body {
 #appContent {
     background-color: $Background
 }
+
+/*
+    scrollbars
+*/
+
+* {
+    /* nice scrollbars aren't needed on mobile so */
+    @media screen and (min-width:500px) {
+        
+        &::-webkit-scrollbar {
+            width:5px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background-color:#191919;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background-color:#333;
+
+            &:hover {
+                background-color:#373737;
+            }
+        }
+    
+    }
+}

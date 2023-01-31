@@ -6,6 +6,15 @@
 @use "app/uploads";
 @use "base";
 
-body {
-    background-color: base.$Background;
+#appContent {
+    position:absolute;
+    left:0px;
+    top:0px;
+    width:100%;
+    height:100%;
+    background-image: linear-gradient(#333,base.$Background);
+
+    @media screen and (max-width:500px) {
+        background-image: linear-gradient(#303030,base.$Background);
+    }
 }
