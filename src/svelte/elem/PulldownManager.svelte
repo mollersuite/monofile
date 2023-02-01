@@ -1,6 +1,8 @@
 <script context="module">
     import { writable } from "svelte/store";
-    export const pulldownOpen = writable(0); 
+    import { allPulldowns } from "./pulldowns/Pulldown.svelte";
+
+    export const pulldownOpen = writable(false); 
 </script>
 
 <script>
@@ -11,8 +13,8 @@
         return $pulldownOpen
     }
 
-    export function openPulldown() {
-        pulldownOpen.set(true)
+    export function openPulldown(name) {
+        pulldownOpen.set(name)
     }
 
     export function closePulldown() {
@@ -25,7 +27,9 @@
 </script>
 {#if $pulldownOpen}
     <div class="pulldown" transition:fade={{duration:200}}>
-        
+        <!-- I'm not sure how I could do this any better, so... yeah -->
+
+
     </div>
 
     <button 
