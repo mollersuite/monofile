@@ -1,20 +1,11 @@
-<script context="module">
-    import { writable } from "svelte/store";
-
-    export const allPulldowns = writable(new Map());
-</script>
 <script>
-    import { pulldownOpen } from "../PulldownManager.svelte";
 
-    export let name;
+    import { fade } from "svelte/transition";
 
-    allPulldowns
-        .set(name,this)
 </script>
-
 <div 
-    class="pulldown_display" 
-    style:display={$pulldownOpen == name ? "block" : "none"}
+    class="pulldown_display"
+    transition:fade={{duration:200}} 
 >
     <slot />
 </div>

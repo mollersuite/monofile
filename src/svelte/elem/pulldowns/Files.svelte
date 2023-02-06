@@ -3,5 +3,5 @@
 </script>
 
 <Pulldown>
-    <p>accs</p>
+    <p>no</p>
 </Pulldown>

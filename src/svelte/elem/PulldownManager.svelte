@@ -1,6 +1,17 @@
 <script context="module">
     import { writable } from "svelte/store";
-    import { allPulldowns } from "./pulldowns/Pulldown.svelte";
+
+    // can't find a better way to do this
+    import Files from "./pulldowns/Files.svelte";
+    import Accounts from "./pulldowns/Accounts.svelte";
+    import FAQ from "./pulldowns/FAQ.svelte";
+
+    export let allPulldowns = new Map()
+
+    allPulldowns
+        .set("account",Accounts)
+        .set("faq",FAQ)
+        .set("files",Files)
 
     export const pulldownOpen = writable(false); 
 </script>
@@ -8,7 +19,7 @@
 <script>
     import { onMount } from "svelte";
     import { fade, scale } from "svelte/transition";
-    
+
     export function isOpen() {
         return $pulldownOpen
     }
@@ -27,9 +38,7 @@
 </script>
 {#if $pulldownOpen}
     <div class="pulldown" transition:fade={{duration:200}}>
-        <!-- I'm not sure how I could do this any better, so... yeah -->
-
-
+        <svelte:component this={allPulldowns.get($pulldownOpen)} />
     </div>
 
     <button 

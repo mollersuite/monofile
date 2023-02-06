@@ -3,5 +3,5 @@
 </script>
 
 <Pulldown>
-    <p>accs</p>
+    <p>faq: how do i kms</p>
 </Pulldown>
