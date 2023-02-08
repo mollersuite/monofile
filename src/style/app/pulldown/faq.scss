@@ -1,6 +1,22 @@
 .pulldown_display[name=faq] {
+
+    overflow-y:auto;
+
     .faqGroup {
-        h2 {}
-        p {}
+        padding:10px;
+
+        h2 {
+            font-weight: 400;
+            color:#DDDDDD;
+            font-size:16px;
+            margin:0 0 0 0;
+        }
+
+        p {
+            color:#999999;
+            font-size:16px;
+            margin:0 0 0 0;
+        }
     }
+
 }

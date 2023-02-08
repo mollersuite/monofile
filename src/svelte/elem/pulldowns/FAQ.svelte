@@ -3,15 +3,19 @@
 
     let faq = [
         {
-            question : "test",
-            answer   : "abc"
+            question : "Are my files compressed on upload?",
+            answer   : "No. Files should stay completely unchanged on download."
+        },
+        {
+            question : "How do I replace a file that I have previously uploaded?",
+            answer   : "You can modify the content of a file that is linked to a file ID by reuploading the file using the same custom ID."
         }
     ]
 </script>
 
 <Pulldown name="faq">
     {#each faq as question}
-        <div style="faqGroup">
+        <div class="faqGroup">
             <h2>{question.question}</h2>
             <p>{question.answer}</p>
         </div>

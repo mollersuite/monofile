@@ -7,7 +7,7 @@
 </script>
 <div 
     class="pulldown_display"
-    name=name
+    name={name}
     transition:fade={{duration:200}} 
 >
     <slot />

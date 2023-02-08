@@ -1,0 +1,17 @@
+.pulldown_display[name=accounts] {
+    .notLoggedIn {
+        
+        text-align:center;
+
+        h1 {
+            font-weight:600;
+            font-size:24px;
+        }
+
+        .flavor {
+            font-size:14px;
+            color:#999999;
+        }
+
+    }
+}
