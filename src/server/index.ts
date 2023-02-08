@@ -118,6 +118,7 @@ app.get("/download/:fileId",(req,res) => {
                         .replace(/\</g,"&lt;")
                         .replace(/\>/g,"&gt;")
                 )
+                .replace(/\$metaTags/g,file.mime.startsWith("image/") ? `<meta name="og:image" content="https://${req.headers.host}/file/${req.params.fileId}" />` : "")
             )
         })
     } else {
