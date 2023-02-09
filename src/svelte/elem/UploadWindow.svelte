@@ -1,5 +1,6 @@
 <script>
     import { _void } from "./transition/_void.js";
+    import { padding_scaleY } from "./transition/padding_scaleY.js"
     import { fade } from "svelte/transition";
     import { circIn, circOut } from "svelte/easing";
 
@@ -109,23 +110,6 @@
     }
 
     // animation
-
-    function padding_scaleY(node, { duration, easingFunc, padY, padX, op }) {
-        let rect = node.getBoundingClientRect()
-
-        return {
-            duration: duration||300,
-            css: t => {
-                let eased = (easingFunc || circOut)(t)
-
-                return `
-                    height: ${eased*(rect.height-(padY||0))}px;
-                    ${padX&&padY ? `padding: ${(eased)*(padY)}px ${(padX)}px;` : ""}
-                    ${op ? `opacity: ${eased};` : ""}
-                `
-            }
-        }
-    }
     
     function fileTransition(node) {
         return {
