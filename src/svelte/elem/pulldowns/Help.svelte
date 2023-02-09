@@ -1,3 +1,5 @@
+<!-- i'm lazy, could probably just use plain html here but hwatever, mgiht make this grab from the server idk -->
+
 <script>
     import Pulldown from "./Pulldown.svelte"
 

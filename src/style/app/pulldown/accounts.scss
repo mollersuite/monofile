@@ -8,7 +8,8 @@
             text-align:center;
 
             @media screen and (max-width:500px) {
-                transform:scale(1.35) translateY(-50%);
+                /* lazy */
+                transform:scale(1.15) translateY(-50%);
             }
 
             h1 {
