@@ -14,15 +14,20 @@
         }
 
         button {
+            --col: #999999;
+
             background-color: #232323;
-            color:#999999;
+            color:var(--col);
             font-size:14px;
-            border:1px solid #999999;
-            padding:2px 10px 2px 10px;
+            border:1px solid var(--col);
+            padding:2px 20px 2px 20px;
             cursor:pointer;
+            transition-duration:250ms;
 
             &:hover {
                 background-color:#333333;
+                transition-duration:250ms;
+                --col:#BBBBBB;
             }
         }
     }

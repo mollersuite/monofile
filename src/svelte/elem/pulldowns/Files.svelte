@@ -8,7 +8,7 @@
     <div class="notLoggedIn">
         <div style:height="2px" style:background-color="#66AAFF" />
         <div style:height="10px" />
-        <p class="flavor"><em>Log in to view uploads & collections</em></p>
+        <p class="flavor">Log in to view uploads & collections</p>
         <button on:click={$pulldownManager.openPulldown("account")}>OK</button>
         <div style:height="14px" />
     </div>
