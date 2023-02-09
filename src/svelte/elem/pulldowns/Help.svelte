@@ -13,7 +13,7 @@
     ]
 </script>
 
-<Pulldown name="faq">
+<Pulldown name="help">
     {#each faq as question}
         <div class="faqGroup">
             <h2>{question.question}</h2>

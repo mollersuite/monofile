@@ -4,13 +4,13 @@
     // can't find a better way to do this
     import Files from "./pulldowns/Files.svelte";
     import Accounts from "./pulldowns/Accounts.svelte";
-    import FAQ from "./pulldowns/FAQ.svelte";
+    import Help from "./pulldowns/Help.svelte";
 
     export let allPulldowns = new Map()
 
     allPulldowns
         .set("account",Accounts)
-        .set("faq",FAQ)
+        .set("help",Help)
         .set("files",Files)
 
     export const pulldownOpen = writable(false); 

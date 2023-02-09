@@ -23,7 +23,7 @@
 
     <button class="menuBtn" on:click={() => pulldown.openPulldown("files")}>files</button>
     <button class="menuBtn" on:click={() => pulldown.openPulldown("account")}>account</button>
-    <button class="menuBtn" on:click={() => pulldown.openPulldown("faq")}>faq</button>
+    <button class="menuBtn" on:click={() => pulldown.openPulldown("help")}>help</button>
 
     <div /> <!-- not sure what's offcenter but something is
                  so this div is here to ""fix"" that        -->

@@ -1,16 +1,47 @@
 .pulldown_display[name=accounts] {
     .notLoggedIn {
-        
-        text-align:center;
+        div {
+            position:absolute;
+            top:50%;
+            transform:translateY(-50%);
+            width:100%;
+            text-align:center;
 
-        h1 {
-            font-weight:600;
-            font-size:24px;
-        }
+            @media screen and (max-width:500px) {
+                transform:scale(1.35) translateY(-50%);
+            }
 
-        .flavor {
-            font-size:14px;
-            color:#999999;
+            h1 {
+                font-weight:600;
+                font-size:24px;
+            }
+
+            .flavor {
+                font-size:14px;
+                color:#999999;
+                margin: 0 0 10px 0;
+            }
+
+            a {
+                text-decoration: none;
+                color:#999999;
+                font-size:14px;
+
+                &::after {
+                    content:" ➜";
+                    font-size:0px;
+                    opacity: 0;
+                    transition-duration:250ms;
+                }
+
+                &:hover {
+                    &::after {
+                        font-size:13px;
+                        opacity: 1;
+                        transition-duration:250ms;
+                    }
+                }
+            }
         }
 
     }
