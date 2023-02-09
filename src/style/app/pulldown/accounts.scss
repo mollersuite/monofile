@@ -7,18 +7,24 @@
             width:100%;
             text-align:center;
 
-            @media screen and (max-width:500px) {
-                /* lazy */
-                transform:scale(1.15) translateY(-50%);
-            }
-
             h1 {
                 font-weight:600;
                 font-size:24px;
+
+                @media screen and (max-width:500px) {
+                    font-size:30px;
+                }
             }
 
             .flavor {
                 font-size:14px;
+
+                /* good enoough */
+
+                @media screen and (max-width:500px) {
+                    font-size:16px;
+                }
+
                 color:#999999;
                 margin: 0 0 10px 0;
             }
@@ -27,6 +33,10 @@
                 text-decoration: none;
                 color:#999999;
                 font-size:14px;
+
+                @media screen and (max-width:500px) {
+                    font-size:16px;
+                }
 
                 &::after {
                     content:" ➜";
