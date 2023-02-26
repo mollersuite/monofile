@@ -4,6 +4,7 @@
     "targetGuild": "1024080490677936248",
     "targetChannel": "1024080525993971913",
     "requestTimeout":120000,
+    "maxUploadIdLength":30,
 
     "accounts": {
         "registrationEnabled": true,

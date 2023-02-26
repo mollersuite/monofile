@@ -1,17 +1,19 @@
 <script>
     import Pulldown from "./Pulldown.svelte"
-    import { pulldownManager } from "../stores.mjs";
+    import { account, pulldownManager } from "../stores.mjs";
 </script>
 
 <Pulldown name="files">
 
-    <div class="notLoggedIn">
-        <div style:height="2px" style:background-color="#66AAFF" />
-        <div style:height="10px" />
-        <p class="flavor">Log in to view uploads & collections</p>
-        <button on:click={$pulldownManager.openPulldown("account")}>OK</button>
-        <div style:height="14px" />
-    </div>
+    {#if !$account.username}
+        <div class="notLoggedIn">
+            <div style:height="2px" style:background-color="#66AAFF" />
+            <div style:height="10px" />
+            <p class="flavor">Log in to view uploads & collections</p>
+            <button on:click={$pulldownManager.openPulldown("account")}>OK</button>
+            <div style:height="14px" />
+        </div>
+    {/if}
 
     <!-- 
         put scrolling div containing options here

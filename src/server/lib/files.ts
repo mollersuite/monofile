@@ -1,9 +1,10 @@
 import axios from "axios";
 import Discord, { Client, TextBasedChannel } from "discord.js";
 import { readFile, writeFile } from "fs";
-import { Readable } from "node:stream"
+import { Readable } from "node:stream";
+import { files } from "./accounts";
 
-export let id_check_regex = /[A-Za-z0-9_\-\.]+/
+export let id_check_regex = /[A-Za-z0-9_\-\.\!]+/
 export let alphanum = Array.from("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
 
 // bad solution but whatever
@@ -29,6 +30,7 @@ export interface Configuration {
     targetGuild: string,
     targetChannel: string,
     requestTimeout: number,
+    maxUploadIdLength: number,
 
     accounts: {
         registrationEnabled: boolean,
@@ -40,7 +42,8 @@ export interface FilePointer {
     filename:string,
     mime:string,
     messageids:string[],
-    owner?:string
+    owner?:string,
+    sizeInBytes?:number
 }
 
 export interface StatusCodeError {
@@ -100,12 +103,12 @@ export default class Files {
     
             let uploadId = (settings.uploadId || generateFileId()).toString();
     
-            if ((uploadId.match(id_check_regex) || [])[0] != uploadId || uploadId.length > 30) {
+            if ((uploadId.match(id_check_regex) || [])[0] != uploadId || uploadId.length > this.config.maxUploadIdLength) {
                 reject({status:400,message:"invalid id"});return
             }
             
-            if (this.files[uploadId]) {
-                reject({status:400,message:"a file with this id already exists"});
+            if (this.files[uploadId] && (settings.owner ? this.files[uploadId].owner != settings.owner : true)) {
+                reject({status:400,message:"you are not the owner of this file id"});
                 return
             }
 
@@ -166,12 +169,17 @@ export default class Files {
     
             // save
 
+            if (settings.owner) {
+                files.index(settings.owner,uploadId)
+            }
+
             resolve(await this.writeFile(
                 uploadId,
                 {
                     filename:settings.name,
                     messageids:msgIds,
                     mime:settings.mime,
+                    sizeInBytes:fBuffer.byteLength,
 
                     owner:settings.owner
                 }

@@ -123,7 +123,7 @@
 <div id="uploadWindow">
     <h1>monofile</h1>
     <p style:color="#999999">
-        <span class="number">{$serverStats.version ? `v${$serverStats.version}` : "•••"}</span>&nbsp;&nbsp—&nbsp;&nbsp;Discord based file sharing
+        <span class="number">{$serverStats.version ? `v${$serverStats.version}` : "•••"}</span>&nbsp;&nbsp;—&nbsp;&nbsp;Discord based file sharing
     </p>
 
     <div style:min-height="10px" />

@@ -5,6 +5,7 @@ import Discord, { IntentsBitField, Client } from "discord.js"
 import express from "express"
 import fs, { link } from "fs"
 import axios, { AxiosResponse } from "axios"
+import bytes from "bytes";
 
 import ServeError from "./lib/errors"
 import Files from "./lib/files"
@@ -130,13 +131,14 @@ app.get("/download/:fileId",(req,res) => {
                 buf.toString()
                 .replace(/\$FileId/g,req.params.fileId)
                 .replace(/\$Version/g,pkg.version)
+                .replace(/\$FileSize/g,file.sizeInBytes ? bytes(file.sizeInBytes) : "[File size unknown]")
                 .replace(/\$FileName/g,
                     file.filename
                         .replace(/\&/g,"&amp;")
                         .replace(/\</g,"&lt;")
                         .replace(/\>/g,"&gt;")
                 )
-                .replace(/\$metaTags/g,
+                .replace(/\<\!\-\-metaTags\-\-\>/g,
                     file.mime.startsWith("image/") 
                     ? `<meta name="og:image" content="https://${req.headers.host}/file/${req.params.fileId}" />` 
                     : (

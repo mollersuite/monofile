@@ -84,6 +84,30 @@ export namespace password {
     }
 }
 
+export namespace files {
+    export function index(accountId:string,fileId:string) {
+        // maybe replace with a obj like
+        // { x:true }
+        // for faster lookups? not sure if it would be faster
+        let acc = Accounts.find(e => e.id == accountId)
+        if (!acc) return
+        if (acc.files.find(e => e == fileId)) return
+
+        acc.files.push(fileId)
+        save()
+    }
+
+    export function deindex(accountId:string,fileId:string) {
+        let acc = Accounts.find(e => e.id == accountId)
+        if (!acc) return
+        let fi = acc.files.findIndex(e => e == fileId)
+        if (fi) {
+            acc.files.splice(fi,1)
+            save()
+        }
+    }
+}
+
 export function save() {
     writeFile(`${process.cwd()}/.data/accounts.json`,JSON.stringify(Accounts))
         .catch((err) => console.error(err))
