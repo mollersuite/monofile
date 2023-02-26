@@ -62,10 +62,29 @@
                 background-color:#333333;
                 color:#dddddd;
                 outline:none;
-                
+
                 @media screen and (max-width: 500px) {
                     font-size:16px;
                     padding:10px;
+                }
+            }
+
+            .pwError {
+                div {
+                    border:none;
+                    border-radius:0;
+                    width:100%;
+                    padding:5px;
+                    background-color:#663333;
+                    color:#dddddd;
+                    outline:none;
+                    font-size:14px;
+                    text-align:left;
+                    
+                    @media screen and (max-width: 500px) {
+                        font-size:16px;
+                        padding:10px;
+                    }
                 }
             }
 
@@ -116,5 +135,54 @@
             */
         }
 
+    }
+
+    .loggedIn {
+        position:absolute;
+        left:10px;
+        top:10px;
+        width:calc( 100% - 20px );
+        height:calc( 100% - 20px );
+
+        h1 {
+            font-weight:600;
+            font-size:20px;
+            color: #AAAAAA;
+        }
+
+        .accountOptions {
+            button {
+                position:relative;
+                width:100%;
+                cursor:pointer;
+                height:50px;
+                background-color: #191919;
+                border:none;
+                border-bottom:1px solid #AAAAAA;
+                transition-duration:150ms;
+
+                img {
+                    position:absolute;
+                    left:13px;
+                    top:50%;
+                    transform:translateY(-50%);
+                }
+
+                p {
+                    position:absolute;
+                    top:50%;
+                    left:50px;
+                    color:#DDDDDD;
+                    transform:translateY(-50%);
+                    font-size:14px;
+                }
+
+                &:hover {
+                    transition-duration:150ms;
+                    background-color: #252525;
+                }
+
+            }
+        }
     }
 }

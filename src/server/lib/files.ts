@@ -19,7 +19,8 @@ export function generateFileId() {
 export interface FileUploadSettings {
     name?: string,
     mime: string,
-    uploadId?: string
+    uploadId?: string,
+    owner?:string
 }
 
 export interface Configuration {
@@ -27,13 +28,19 @@ export interface Configuration {
     maxDiscordFileSize: number,
     targetGuild: string,
     targetChannel: string,
-    requestTimeout: number
+    requestTimeout: number,
+
+    accounts: {
+        registrationEnabled: boolean,
+        requiredForUpload: boolean
+    }
 }
 
 export interface FilePointer {
     filename:string,
     mime:string,
-    messageids:string[]
+    messageids:string[],
+    owner?:string
 }
 
 export interface StatusCodeError {
@@ -83,6 +90,11 @@ export default class Files {
 
             if (!settings.name || !settings.mime) {
                 reject({status:400,message:"missing name/mime"});
+                return
+            }
+
+            if (!settings.owner && this.config.accounts.requiredForUpload) {
+                reject({status:401,message:"an account is required for upload"});
                 return
             }
     
@@ -159,7 +171,9 @@ export default class Files {
                 {
                     filename:settings.name,
                     messageids:msgIds,
-                    mime:settings.mime
+                    mime:settings.mime,
+
+                    owner:settings.owner
                 }
             ))
         })

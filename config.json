@@ -3,5 +3,10 @@
     "maxDiscordFileSize": 8388608,
     "targetGuild": "1024080490677936248",
     "targetChannel": "1024080525993971913",
-    "requestTimeout":120000
+    "requestTimeout":120000,
+
+    "accounts": {
+        "registrationEnabled": true,
+        "requiredForUpload": true
+    }
 }

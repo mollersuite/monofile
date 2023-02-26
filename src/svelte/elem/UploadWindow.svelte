@@ -3,18 +3,11 @@
     import { padding_scaleY } from "./transition/padding_scaleY.js"
     import { fade } from "svelte/transition";
     import { circIn, circOut } from "svelte/easing";
+    import { serverStats, refresh_stats, account } from "./stores.mjs";
 
     import AttachmentZone from "./uploader/AttachmentZone.svelte";
 
     // stats
-
-    let ServerStats = {}
-
-    let refresh_stats = () => {
-        fetch("/server").then(async (data) => {
-            ServerStats = await data.json()
-        })
-    }
 
     refresh_stats()
     
@@ -118,7 +111,7 @@
                 let eased = circOut(t)
 
                 return `
-                    height: ${eased*(node.offsetHeight-20)}px;
+                    height: ${eased*(node.offsetHeight-22)}px;
                     padding: ${eased*10}px 10px;
                 `
             }
@@ -130,7 +123,7 @@
 <div id="uploadWindow">
     <h1>monofile</h1>
     <p style:color="#999999">
-        <span class="number">{ServerStats.version ? `v${ServerStats.version}` : "•••"}</span>&nbsp;&nbsp—&nbsp;&nbsp;Discord based file sharing
+        <span class="number">{$serverStats.version ? `v${$serverStats.version}` : "•••"}</span>&nbsp;&nbsp—&nbsp;&nbsp;Discord based file sharing
     </p>
 
     <div style:min-height="10px" />
@@ -195,18 +188,30 @@
     </div>
     
     {#if uploadInProgress == false}
-        <AttachmentZone bind:this={attachmentZone} on:addFiles={handle_file_upload}/>
-        <div style:min-height="10px" transition:padding_scaleY />
-        {#if Object.keys(uploads).length > 0}
-            <button in:padding_scaleY={{easingFunc:circOut}} out:_void on:click={upload_files}>upload</button>
-            <div transition:_void style:min-height="10px" />
+        
+        <!-- if required for upload, check if logged in -->
+        {#if ($serverStats.accounts||{}).requiredForUpload ? !!$account.username : true}
+            
+            <AttachmentZone bind:this={attachmentZone} on:addFiles={handle_file_upload}/>
+            <div style:min-height="10px" transition:_void={{rTarg:"height",prop:"min-height"}} />
+            {#if Object.keys(uploads).length > 0}
+                <button in:padding_scaleY={{easingFunc:circOut}} out:_void on:click={upload_files}>upload</button>
+                <div transition:_void={{rTarg:"height",prop:"min-height"}} style:min-height="10px" />
+            {/if}
+
+        {:else}
+
+            <p transition:_void style:color="#999999" style:text-align="center">Please log in to upload files.</p>
+            <div transition:_void={{rTarg:"height",prop:"min-height"}} style:min-height="10px" />
+
         {/if}
+        
     {/if}
    
     <p style:color="#999999" style:text-align="center">
-        Hosting <span class="number" style:font-weight="600">{ServerStats.files || "•••"}</span> files
+        Hosting <span class="number" style:font-weight="600">{$serverStats.files || "•••"}</span> files
         —
-        Maximum filesize is <span class="number" style:font-weight="600">{((ServerStats.maxDiscordFileSize || 0)*(ServerStats.maxDiscordFiles || 0))/1048576 || "•••"}MB</span>
+        Maximum filesize is <span class="number" style:font-weight="600">{(($serverStats.maxDiscordFileSize || 0)*($serverStats.maxDiscordFiles || 0))/1048576 || "•••"}MB</span>
         <br />
     </p>
 

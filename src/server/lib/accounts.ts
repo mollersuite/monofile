@@ -8,14 +8,15 @@ import { readFile, writeFile } from "fs/promises"
 export let Accounts: Account[] = []
 
 export interface Account {
-    id      : string
-    username: string
-    password: {
-        hash: string
-        salt: string
+    id          : string
+    username    : string
+    password    : {
+        hash    : string
+        salt    : string
     }
-    accounts: string[]
-    admin   : boolean
+    files       : string[]
+    collections : string[]
+    admin       : boolean
 }
 
 export function create(username:string,pwd:string,admin:boolean=false) {
@@ -26,7 +27,8 @@ export function create(username:string,pwd:string,admin:boolean=false) {
             id:     accId,
             username: username,
             password: password.hash(pwd),
-            accounts: [],
+            files: [],
+            collections: [],
             admin: admin
         }
     )
@@ -79,39 +81,6 @@ export namespace password {
         if (!acc) return
 
         return acc.password.hash == hash(password,acc.password.salt).hash
-    }
-}
-
-export namespace rbxaccounts {
-    export function add(id:string,name:string) {
-        let acc = getFromId(id)
-        if (!acc) return
-        
-        /* check for account that already has name */
-        let idx = acc.accounts.findIndex(e=>e==name)
-        if (idx > -1) return
-
-        acc.accounts = [...acc.accounts,name]
-        save()
-        return
-    }
-
-    export function remove(id:string,name:string) {
-        let acc = getFromId(id)
-        if (!acc) return
-        let idx = acc.accounts.findIndex(e=>e==name)
-        if (idx < 0) return
-        acc.accounts.splice(idx,1)
-        save()
-        return
-    }
-
-    export function clear(id:string) {
-        let acc = getFromId(id)
-        if (!acc) return
-        acc.accounts = []
-        save()
-        return
     }
 }
 

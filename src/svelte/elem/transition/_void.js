@@ -1,6 +1,6 @@
 import { circIn, circOut } from "svelte/easing"
 
-export function _void(node, { duration, easingFunc, op, prop }) {
+export function _void(node, { duration, easingFunc, op, prop, rTarg }) {
     let rect = node.getBoundingClientRect()
 
     return {
@@ -10,7 +10,7 @@ export function _void(node, { duration, easingFunc, op, prop }) {
 
             return `
                 white-space: nowrap;
-                ${prop||"height"}: ${(eased)*(rect[prop||"height"])}px;
+                ${prop||"height"}: ${(eased)*(rect[rTarg||prop||"height"])}px;
                 padding: 0px;
                 opacity:${eased};
                 overflow: clip;

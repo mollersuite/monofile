@@ -20,6 +20,7 @@ export default async function ServeError(
     }
 
     // serve error
+    res.statusMessage = reason
     res.status(code)
     res.send(
         errorPage

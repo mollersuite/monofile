@@ -1,16 +1,17 @@
-/*
-    i really should split this up into different modules
-*/
-
 import bodyParser from "body-parser"
 import multer, {memoryStorage} from "multer"
+import cookieParser from "cookie-parser";
 import Discord, { IntentsBitField, Client } from "discord.js"
 import express from "express"
 import fs, { link } from "fs"
 import axios, { AxiosResponse } from "axios"
-import ServeError from "./lib/errors"
 
+import ServeError from "./lib/errors"
 import Files from "./lib/files"
+import * as auth from "./lib/auth"
+import * as Accounts from "./lib/accounts"
+
+import { authRoutes } from "./routes/authRoutes";
 require("dotenv").config()
 
 const multerSetup = multer({storage:memoryStorage()})
@@ -23,6 +24,9 @@ app.use("/static/style",express.static("out/style"))
 app.use("/static/js",express.static("out/client"))
 
 app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
+app.use(cookieParser())
+
+app.use("/auth",authRoutes)
 // funcs
 
 // init data
@@ -59,7 +63,13 @@ app.post("/upload",multerSetup.single('file'),async (req,res) => {
                 params = JSON.parse(prm)
             }
 
-            files.uploadFile({uploadId:params.uploadId,name:req.file.originalname,mime:req.file.mimetype},req.file.buffer)
+            files.uploadFile({
+                owner: auth.validate(req.cookies.auth),
+
+                uploadId:params.uploadId,
+                name:req.file.originalname,
+                mime:req.file.mimetype
+            },req.file.buffer)
                 .then((uID) => res.send(uID))
                 .catch((stat) => {
                     res.status(stat.status);
@@ -83,12 +93,20 @@ app.post("/clone",(req,res) => {
             res.send("[err] invalid url")
         }
         axios.get(j.url,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
-            files.uploadFile({name:j.url.split("/")[req.body.split("/").length-1] || "generic",mime:data.headers["content-type"],uploadId:j.uploadId},Buffer.from(data.data))
+
+            files.uploadFile({
+                owner: auth.validate(req.cookies.auth),
+
+                name:j.url.split("/")[req.body.split("/").length-1] || "generic",
+                mime:data.headers["content-type"],
+                uploadId:j.uploadId
+            },Buffer.from(data.data))
                 .then((uID) => res.send(uID))
                 .catch((stat) => {
                     res.status(stat.status);
                     res.send(`[err] ${stat.message}`)
                 })
+
         }).catch((err) => {
             console.log(err)
             res.status(400)
@@ -118,7 +136,15 @@ app.get("/download/:fileId",(req,res) => {
                         .replace(/\</g,"&lt;")
                         .replace(/\>/g,"&gt;")
                 )
-                .replace(/\$metaTags/g,file.mime.startsWith("image/") ? `<meta name="og:image" content="https://${req.headers.host}/file/${req.params.fileId}" />` : "")
+                .replace(/\$metaTags/g,
+                    file.mime.startsWith("image/") 
+                    ? `<meta name="og:image" content="https://${req.headers.host}/file/${req.params.fileId}" />` 
+                    : (
+                        file.mime.startsWith("video/")
+                        ? `<meta name="og:video:url" content="https://${req.headers.host}/file/${req.params.fileId}" />\n<meta name="og:video:type" content="${file.mime.replace(/\"/g,"")}">`
+                        : ""
+                    )
+                )
             )
         })
     } else {

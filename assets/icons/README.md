@@ -1,0 +1,1 @@
+Icons are part of Microsoft's Fluent icons
