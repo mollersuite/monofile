@@ -7,6 +7,6 @@
 
     "accounts": {
         "registrationEnabled": true,
-        "requiredForUpload": true
+        "requiredForUpload": false
     }
 }
