@@ -152,10 +152,10 @@ app.get("/download/:fileId",(req,res) => {
                 )
                 .replace(/\<\!\-\-preview\-\-\>/g,
                     file.mime.startsWith("image/") 
-                    ? `<div style="min-height:10px"></div><img src="http${req.secure ? "s" :""}://${req.headers.host}/file/${req.params.fileId}" />` 
+                    ? `<div style="min-height:10px"></div><img src="/file/${req.params.fileId}" />` 
                     : (
                         file.mime.startsWith("video/")
-                        ? `<div style="min-height:10px"></div><video src="http${req.secure ? "s" :""}://${req.headers.host}/file/${req.params.fileId}" controls></video>`
+                        ? `<div style="min-height:10px"></div><video src="/file/${req.params.fileId}" controls></video>`
                         : ""
                     )
                 )
