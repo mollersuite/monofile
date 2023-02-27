@@ -215,7 +215,7 @@ export default class Files {
 
     // todo: move read code here
 
-    readFileStream(uploadId: string):Promise<{dataStream:Readable,contentType:string}> {
+    readFileStream(uploadId: string):Promise<{dataStream:Readable,contentType:string,byteSize?:number}> {
         return new Promise(async (resolve,reject) => {
             if (!this.uploadChannel) {
                 reject({status:503,message:"server is not ready - please try again later"})
@@ -231,7 +231,8 @@ export default class Files {
 
                 resolve({
                     contentType: file.mime,
-                    dataStream: dataStream
+                    dataStream: dataStream,
+                    byteSize: file.sizeInBytes
                 })
         
                 for (let i = 0; i < file.messageids.length; i++) {

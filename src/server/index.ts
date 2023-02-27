@@ -170,6 +170,9 @@ app.get("/download/:fileId",(req,res) => {
 let fgRQH = async (req:express.Request,res:express.Response) => {
     files.readFileStream(req.params.fileId).then(f => {
         res.setHeader("Content-Type",f.contentType)
+        if (f.byteSize) {
+            res.setHeader("Content-Length",f.byteSize)
+        }
         res.status(200)
         f.dataStream.pipe(res)
     }).catch((err) => {
