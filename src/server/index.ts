@@ -143,10 +143,23 @@ app.get("/download/:fileId",(req,res) => {
                     ? `<meta name="og:image" content="https://${req.headers.host}/file/${req.params.fileId}" />` 
                     : (
                         file.mime.startsWith("video/")
-                        ? `<meta name="og:video:url" content="https://${req.headers.host}/file/${req.params.fileId}" />\n<meta name="og:video:type" content="${file.mime.replace(/\"/g,"")}">`
+                        ? `<meta name="og:video" content="https://${req.headers.host}/file/${req.params.fileId}" />
+                        <meta name="og:video:url" content="https://${req.headers.host}/file/${req.params.fileId}" />
+                        <meta name="og:video:secure_url" content="https://${req.headers.host}/file/${req.params.fileId}">
+                        <meta name="og:video:type" content="${file.mime.replace(/\"/g,"")}">`
                         : ""
                     )
                 )
+                .replace(/\<\!\-\-preview\-\-\>/g,
+                    file.mime.startsWith("image/") 
+                    ? `<div style="min-height:10px"></div><img src="http${req.secure ? "s" :""}://${req.headers.host}/file/${req.params.fileId}" />` 
+                    : (
+                        file.mime.startsWith("video/")
+                        ? `<div style="min-height:10px"></div><video src="http${req.secure ? "s" :""}://${req.headers.host}/file/${req.params.fileId}" controls></video>`
+                        : ""
+                    )
+                )
+                .replace(/\$Uploader/g,file.anonymous||!file.owner ? "Anonymous" : `@${Accounts.getFromId(file.owner)?.username || "Deleted User"}`)
             )
         })
     } else {

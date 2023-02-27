@@ -13,17 +13,5 @@ export default [
             resolve(),
             svelte({})
         ]
-    },
-    {
-        input: "src/client/collection.js",
-        output: {
-            file: 'out/client/collection.js',
-            format: 'esm',
-            sourcemap:true
-        },
-        plugins: [
-            resolve(),
-            svelte({})
-        ]
     }
 ]

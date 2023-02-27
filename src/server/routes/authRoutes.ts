@@ -123,6 +123,52 @@ authRoutes.post("/logout", (req,res) => {
     res.send("logged out")
 })
 
+authRoutes.post("/change_password", (req,res) => {
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    if (!acc) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+
+    let body:{[key:string]:any}
+    try {
+        body = JSON.parse(req.body)
+    } catch {
+        ServeError(res,400,"bad request")
+        return
+    }
+
+    if (body.password.length < 8) {
+        ServeError(res,400,"password must be 8 characters or longer")
+        return
+    }
+
+    let accId = acc.id
+
+    Accounts.password.set(accId,req.body.password)
+
+    auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
+        auth.invalidate(v.token)
+    })
+
+    res.send("password changed - logged out all sessions")
+})
+
+authRoutes.post("/logout_sessions", (req,res) => {
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    if (!acc) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+
+    let accId = acc.id
+
+    auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
+        auth.invalidate(v.token)
+    })
+
+    res.send("logged out all sessions")
+})
 
 authRoutes.get("/me", (req,res) => {
     if (!auth.validate(req.cookies.auth)) {
@@ -133,5 +179,12 @@ authRoutes.get("/me", (req,res) => {
     // lazy rn so
 
     let acc = Accounts.getFromToken(req.cookies.auth)
-    res.send(acc)
+    if (acc) {
+        let accId = acc.id
+        res.send({
+            ...acc,
+            sessionCount: auth.AuthTokens.filter(e => e.account == accId && e.expire > Date.now()).length,
+            sessionExpires: auth.AuthTokens.find(e => e.token == req.cookies.auth)?.expire
+        })
+    }
 })

@@ -36,11 +36,10 @@
                         message: res.statusText
                     }
                 })
+            } else {
+                authError = null, username = "", password = "";
+                fetchAccountData();
             }
-
-            fetchAccountData();
-
-
         }).catch(() => {})
     }
 
@@ -106,26 +105,88 @@
 
         <div class="loggedIn" transition:fade={{duration:200}}>
             <h1>
-                Hey there, <span class="monospace" style:font-size="18px">@{$account.username}</span>
+                Hey there, <span class="monospace">@{$account.username}</span>
             </h1>
 
-            <div style:min-height="10px" style:border-bottom="1px solid #AAAAAA" />
-
             <div class="accountOptions">
+
+                <div class="category">
+                    <p>Account</p>
+                </div>
+
                 <button>
-                    <img src="/static/assets/icons/change_password.svg" alt="change password">
-                    <p>Change password</p>
+                    <img src="/static/assets/icons/change_username.svg" alt="change username">
+                    <p>Change username</p>
                 </button>
 
                 <button>
-                    <img src="/static/assets/icons/delete_account.svg" alt="delete account">
-                    <p>Delete account</p>
+                    <img src="/static/assets/icons/change_password.svg" alt="change password">
+                    <p>Change password<span><br />You will be logged out</span></p>
+                </button>
+                
+                {#if !$account.admin}
+                    <button>
+                        <img src="/static/assets/icons/delete_account.svg" alt="delete account">
+                        <p>Delete account</p>
+                    </button>
+                {/if}
+
+                <div class="category">
+                    <p>Uploads</p>
+                </div>
+
+                <button>
+                    <img src="/static/assets/icons/public.svg" alt="public">
+                    <p>Default file visibility<span><br />Uploads will be <strong>public</strong> by default</span></p>
+                </button>
+
+                <button>
+                    <img src="/static/assets/icons/update.svg" alt="update">
+                    <p>Make all of my files public<span><br />Matches your default file visibility</p>
+                </button>
+                
+                <div class="category">
+                    <p>Sessions</p>
+                </div>
+
+                <button on:click={() => fetch(`/auth/logout_sessions`,{method:"POST"}).then(() => fetchAccountData())}>
+                    <img src="/static/assets/icons/logout_all.svg" alt="logout_all">
+                    <p>Log out all sessions<span><br />{$account.sessionCount} session(s) active</span></p>
                 </button>
 
                 <button on:click={() => fetch(`/auth/logout`,{method:"POST"}).then(() => fetchAccountData())}>
                     <img src="/static/assets/icons/logout.svg" alt="logout">
-                    <p>Log out</p>
+                    <p>Log out<span><br />Session expires {new Date($account.sessionExpires).toLocaleDateString()}</span></p>
                 </button>
+                
+                {#if $account.admin}
+
+                    <div class="category">
+                        <p>Admin</p>
+                    </div>
+
+                    <button>
+                        <img src="/static/assets/icons/delete_account.svg" alt="delete account">
+                        <p>Delete user account</p>
+                    </button>
+
+                    <button>
+                        <img src="/static/assets/icons/change_password.svg" alt="change password">
+                        <p>Change user password</p>
+                    </button>
+
+                    <button>
+                        <img src="/static/assets/icons/admin/elevate_user.svg" alt="elevate account">
+                        <p>Elevate account to admin</p>
+                    </button>
+
+                    <button>
+                        <img src="/static/assets/icons/admin/delete_file.svg" alt="delete file">
+                        <p>Delete file</p>
+                    </button>
+
+                {/if}
+                <p style="font-size:12px;color:#AAAAAA;text-align:center;" class="monospace"><br />{$account.id}</p>
             </div>
         </div>
         

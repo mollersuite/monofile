@@ -8,9 +8,9 @@
 
     <!--metaTags-->
 
-    <meta name="og:site_name" content="monofile $Version">
+    <meta name="og:site_name" content="$Uploader">
     <meta name="title" content="$FileName">
-    <meta name="description" content="$FileSize file on monofile, the Discord-based file sharing service">
+    <meta name="description" content="$FileSize file on monofile $Version, the Discord-based file sharing service">
 
     <link
         rel="stylesheet"
@@ -24,10 +24,10 @@
                 $FileName
             </h1>
             <p style="color:#999999">
-                <span class="number">$FileSize</span>&nbsp;&nbsp;—&nbsp;&nbsp;file id <span class="number">$FileId</span>
+                <span class="number">$FileSize</span>&nbsp;&nbsp;—&nbsp;&nbsp;uploaded by <span class="number">$Uploader</span>
             </p>
 
-            <!-- todo: previews -->
+            <!--preview-->
 
             <button style="position:relative;width:100%;top:10px;">
                 <a id="dlbtn" href="/file/$FileId" download="$FileName" style="position:absolute;left:0px;top:0px;height:100%;width:100%;"></a>

@@ -21,7 +21,8 @@ export interface FileUploadSettings {
     name?: string,
     mime: string,
     uploadId?: string,
-    owner?:string
+    owner?:string,
+    anonymous?:boolean
 }
 
 export interface Configuration {
@@ -43,7 +44,9 @@ export interface FilePointer {
     mime:string,
     messageids:string[],
     owner?:string,
-    sizeInBytes?:number
+    sizeInBytes?:number,
+    tag?:string,
+    anonymous?:boolean
 }
 
 export interface StatusCodeError {
@@ -181,7 +184,8 @@ export default class Files {
                     mime:settings.mime,
                     sizeInBytes:fBuffer.byteLength,
 
-                    owner:settings.owner
+                    owner:settings.owner,
+                    anonymous: typeof settings.anonymous == "boolean" ? settings.anonymous : false
                 }
             ))
         })
@@ -258,6 +262,9 @@ export default class Files {
     unlink(uploadId:string):Promise<void> {
         return new Promise((resolve,reject) => {
             let tmp = this.files[uploadId];
+            if (tmp.owner) {
+                files.deindex(tmp.owner,uploadId)
+            }
             delete this.files[uploadId];
             writeFile(process.cwd()+"/.data/files.json",JSON.stringify(this.files),(err) => {
                 if (err) {

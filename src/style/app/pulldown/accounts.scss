@@ -143,14 +143,27 @@
         top:10px;
         width:calc( 100% - 20px );
         height:calc( 100% - 20px );
+        overflow-y:auto;
 
         h1 {
             font-weight:600;
             font-size:20px;
             color: #AAAAAA;
+
+            @media screen and (max-width:500px) {
+                font-size:24px;
+            }
+
+            .monospace {
+                font-size:18px;
+                @media screen and (max-width:500px) {
+                    font-size:22px;
+                }
+            }
         }
 
         .accountOptions {
+
             button {
                 position:relative;
                 width:100%;
@@ -169,12 +182,18 @@
                 }
 
                 p {
+                    text-align:left;
                     position:absolute;
                     top:50%;
                     left:50px;
                     color:#DDDDDD;
                     transform:translateY(-50%);
                     font-size:14px;
+
+                    span {
+                        color:#777777;
+                        font-size:12px;
+                    }
                 }
 
                 &:hover {
@@ -182,6 +201,38 @@
                     background-color: #252525;
                 }
 
+                @media screen and (max-width:500px) {
+                    height:70px;
+                    p {
+                        font-size:16px;
+                        left:70px;
+
+                        span {
+                            font-size:14px;
+                        }
+                    }
+
+                    img {
+                        width:30px;
+                        height:30px;
+                        left:20px;
+                    }
+                }
+
+            }
+
+            .category {
+                border-bottom: 1px solid #AAAAAA;
+
+                p {
+                    color: #AAAAAA;
+                    font-size: 14px;
+                    margin: 10px 0px 3px 0px;
+
+                    @media screen and (max-width:500px) {
+                        font-size:16px;
+                    }
+                }
             }
         }
     }
