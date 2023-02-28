@@ -121,7 +121,7 @@
 
                 <button>
                     <img src="/static/assets/icons/change_password.svg" alt="change password">
-                    <p>Change password<span><br />You will be logged out</span></p>
+                    <p>Change password<span><br />You will be logged out of all sessions</span></p>
                 </button>
                 
                 {#if !$account.admin}
@@ -178,6 +178,11 @@
                     <button>
                         <img src="/static/assets/icons/admin/elevate_user.svg" alt="elevate account">
                         <p>Elevate account to admin</p>
+                    </button>
+
+                    <button>
+                        <img src="/static/assets/icons/link.svg" alt="delete file">
+                        <p>Change file owner</p>
                     </button>
 
                     <button>

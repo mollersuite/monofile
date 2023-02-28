@@ -13,6 +13,8 @@ import * as auth from "./lib/auth"
 import * as Accounts from "./lib/accounts"
 
 import { authRoutes } from "./routes/authRoutes";
+import { fileApiRoutes, setFilesObj } from "./routes/fileApiRoutes";
+
 require("dotenv").config()
 
 const multerSetup = multer({storage:memoryStorage()})
@@ -28,6 +30,7 @@ app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles
 app.use(cookieParser())
 
 app.use("/auth",authRoutes)
+app.use("/files",fileApiRoutes)
 // funcs
 
 // init data
@@ -44,6 +47,8 @@ let client = new Client({intents:[
 ],rest:{timeout:config.requestTimeout}})
 
 let files = new Files(client,config)
+
+setFilesObj(files)
 
 // routes (could probably make these use routers)
 
@@ -125,6 +130,11 @@ app.get("/download/:fileId",(req,res) => {
     if (files.getFilePointer(req.params.fileId)) {
         let file = files.getFilePointer(req.params.fileId)
 
+        if (file.visibility == "private" && Accounts.getFromToken(req.cookies.auth)?.id != file.owner) {
+            ServeError(res,403,"you do not own this file")
+            return
+        }
+
         fs.readFile(process.cwd()+"/pages/download.html",(err,buf) => {
             if (err) {res.sendStatus(500);console.log(err);return}
             res.send(
@@ -159,7 +169,7 @@ app.get("/download/:fileId",(req,res) => {
                         : ""
                     )
                 )
-                .replace(/\$Uploader/g,file.anonymous||!file.owner ? "Anonymous" : `@${Accounts.getFromId(file.owner)?.username || "Deleted User"}`)
+                .replace(/\$Uploader/g,!file.owner||file.visibility=="anonymous" ? "Anonymous" : `@${Accounts.getFromId(file.owner)?.username || "Deleted User"}`)
             )
         })
     } else {
@@ -168,16 +178,31 @@ app.get("/download/:fileId",(req,res) => {
 })
 
 let fgRQH = async (req:express.Request,res:express.Response) => {
-    files.readFileStream(req.params.fileId).then(f => {
-        res.setHeader("Content-Type",f.contentType)
-        if (f.byteSize) {
-            res.setHeader("Content-Length",f.byteSize)
+    
+    let file = files.getFilePointer(req.params.fileId)
+    
+    if (file) {
+        
+        if (file.visibility == "private" && Accounts.getFromToken(req.cookies.auth)?.id != file.owner) {
+            ServeError(res,403,"you do not own this file")
+            return
         }
-        res.status(200)
-        f.dataStream.pipe(res)
-    }).catch((err) => {
-        ServeError(res,err.status,err.message)
-    })
+
+        // todo: make readfilestream just the stream since we already have filepointer
+        files.readFileStream(req.params.fileId).then(f => {
+            res.setHeader("Content-Type",f.contentType)
+            if (f.byteSize) {
+                res.setHeader("Content-Length",f.byteSize)
+            }
+            res.status(200)
+            f.dataStream.pipe(res)
+        }).catch((err) => {
+            ServeError(res,err.status,err.message)
+        })
+
+    }
+
+    
 }
 
 app.get("/server",(req,res) => {

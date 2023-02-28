@@ -1,6 +1,7 @@
 import crypto from "crypto"
 import * as auth from "./auth";
 import { readFile, writeFile } from "fs/promises"
+import { FileVisibility } from "./files";
 
 // this is probably horrible
 // but i don't even care anymore
@@ -8,15 +9,16 @@ import { readFile, writeFile } from "fs/promises"
 export let Accounts: Account[] = []
 
 export interface Account {
-    id          : string
-    username    : string
-    password    : {
-        hash    : string
-        salt    : string
+    id                    : string
+    username              : string
+    password              : {
+        hash              : string
+        salt              : string
     }
-    files       : string[]
-    collections : string[]
-    admin       : boolean
+    files                 : string[]
+    collections           : string[]
+    admin                 : boolean
+    defaultFileVisibility : FileVisibility
 }
 
 export function create(username:string,pwd:string,admin:boolean=false) {
@@ -29,7 +31,8 @@ export function create(username:string,pwd:string,admin:boolean=false) {
             password: password.hash(pwd),
             files: [],
             collections: [],
-            admin: admin
+            admin: admin,
+            defaultFileVisibility: "public"
         }
     )
 
