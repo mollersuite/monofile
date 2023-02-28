@@ -16,7 +16,6 @@ export interface Account {
         salt              : string
     }
     files                 : string[]
-    collections           : string[]
     admin                 : boolean
     defaultFileVisibility : FileVisibility
 }
@@ -30,7 +29,6 @@ export function create(username:string,pwd:string,admin:boolean=false) {
             username: username,
             password: password.hash(pwd),
             files: [],
-            collections: [],
             admin: admin,
             defaultFileVisibility: "public"
         }

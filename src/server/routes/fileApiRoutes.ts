@@ -30,12 +30,12 @@ fileApiRoutes.get("/list", (req,res) => {
     
     if (!acc) return
 
-    res.send(JSON.stringify(acc.files.map((e) => {
+    res.send(acc.files.map((e) => {
         return {
             ...files.getFilePointer(e),
             messageids: null,
             id:e
         }
-    })))
+    }))
 
 })
