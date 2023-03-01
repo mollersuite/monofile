@@ -138,7 +138,7 @@ authRoutes.post("/change_password", (req,res) => {
         return
     }
 
-    if (body.password.length < 8) {
+    if (typeof body.password != "string" || body.password.length < 8) {
         ServeError(res,400,"password must be 8 characters or longer")
         return
     }

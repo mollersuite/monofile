@@ -1,0 +1,99 @@
+.optPicker {
+
+    button, .inp {
+        position:relative;
+        width:100%;
+        height:50px;
+        background-color: #191919;
+        border:none;
+        border-bottom:1px solid #AAAAAA;
+        transition-duration:150ms;
+
+        img {
+            position:absolute;
+            left:13px;
+            top:50%;
+            transform:translateY(-50%);
+        }
+
+        p,input {
+            text-align:left;
+            position:absolute;
+            top:50%;
+            left:50px;
+            color:#DDDDDD;
+            transform:translateY(-50%);
+            font-size:14px;
+            background-color:#00000000;
+            border:none;
+
+            span {
+                color:#777777;
+                font-size:12px;
+            }
+        }
+
+        input {
+            height:100%;
+            width:calc(100% - 50px);
+            outline:none; /* bad idea but i don't even care anymore */
+            margin:0px;
+            padding:0px;
+        }
+
+        @media screen and (max-width:500px) {
+            height:70px;
+            p,input {
+                font-size:16px;
+                left:70px;
+
+                span {
+                    font-size:14px;
+                }
+            }
+
+            input {
+                width:calc( 100% - 70px );
+            }
+
+            img {
+                width:30px;
+                height:30px;
+                left:20px;
+            }
+        }
+
+    }
+
+    button {
+        cursor:pointer;
+
+        &:hover {
+            transition-duration:150ms;
+            background-color: #252525;
+        }
+    }
+
+    .category {
+        border-bottom: 1px solid #AAAAAA;
+
+        p {
+            color: #AAAAAA;
+            font-size: 14px;
+            margin: 10px 0px 3px 0px;
+
+            @media screen and (max-width:500px) {
+                font-size:16px;
+            }
+        }
+    }
+}
+
+.modal {
+    position:absolute;
+    background-color:#191919;
+    width:100%;
+    transform:translateY(-100%);
+    top:100%;
+    left:0%;
+}

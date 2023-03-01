@@ -4,12 +4,16 @@
     import { circIn,circOut } from "svelte/easing"
     import { account, fetchAccountData, serverStats } from "../stores.mjs";
     import { fade } from "svelte/transition";
+    import OptionPicker from "../prompts/OptionPicker.svelte";
+    import { pwdChng } from "../prompts/passwordChange";
 
     let targetAction
     let inProgress
     let authError
 
     let pwErr
+
+    let optPicker;
 
     // lazy
 
@@ -59,6 +63,7 @@
 </script>
 
 <Pulldown name="accounts">
+    <OptionPicker bind:this={optPicker} />
     {#if Object.keys($account).length == 0}
 
         <div class="notLoggedIn" transition:fade={{duration:200}}>
@@ -108,7 +113,7 @@
                 Hey there, <span class="monospace">@{$account.username}</span>
             </h1>
 
-            <div class="accountOptions">
+            <div class="optPicker">
 
                 <div class="category">
                     <p>Account</p>
@@ -119,7 +124,7 @@
                     <p>Change username</p>
                 </button>
 
-                <button>
+                <button on:click={() => pwdChng(optPicker)}>
                     <img src="/static/assets/icons/change_password.svg" alt="change password">
                     <p>Change password<span><br />You will be logged out of all sessions</span></p>
                 </button>

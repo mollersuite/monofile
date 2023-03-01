@@ -2,17 +2,17 @@
 @use "pulldown/help";
 @use "pulldown/accounts";
 @use "pulldown/files";
+@use "pulldown/modals";
 
-#overlay {
+#overlay, .modalContainer {
     position:absolute;
     left:0px;
     height: 100%;
     width:100%;
     top:0px;
-    opacity:0.25;
     border:none;
     outline:none;
-    background-color:#AAAAAA;
+    background-color:rgba(170, 170, 170, 0.25);
 
     z-index: 1000;
 }
