@@ -130,7 +130,7 @@
                 </button>
                 
                 {#if !$account.admin}
-                    <button>
+                    <button on:click={() => accOpts.deleteAccount(optPicker)}>
                         <img src="/static/assets/icons/delete_account.svg" alt="delete account">
                         <p>Delete account</p>
                     </button>

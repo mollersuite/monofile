@@ -41,7 +41,7 @@
             <div class="optPicker">
 
                 <div class="category">
-                    <p>{activeModal.title}</p>
+                    <p style:margin-bottom="10px">{activeModal.title}</p>
                 </div>
                 
                 {#each activeModal.modal as option (option.id)}
