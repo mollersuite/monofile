@@ -5,7 +5,7 @@
     import { account, fetchAccountData, serverStats } from "../stores.mjs";
     import { fade } from "svelte/transition";
     import OptionPicker from "../prompts/OptionPicker.svelte";
-    import { pwdChng } from "../prompts/passwordChange";
+    import * as accOpts from "../prompts/account";
 
     let targetAction
     let inProgress
@@ -124,7 +124,7 @@
                     <p>Change username</p>
                 </button>
 
-                <button on:click={() => pwdChng(optPicker)}>
+                <button on:click={() => accOpts.pwdChng(optPicker)}>
                     <img src="/static/assets/icons/change_password.svg" alt="change password">
                     <p>Change password<span><br />You will be logged out of all sessions</span></p>
                 </button>
