@@ -145,7 +145,7 @@ authRoutes.post("/change_password", (req,res) => {
 
     let accId = acc.id
 
-    Accounts.password.set(accId,req.body.password)
+    Accounts.password.set(accId,body.password)
 
     auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
         auth.invalidate(v.token)
