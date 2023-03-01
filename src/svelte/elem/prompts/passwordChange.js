@@ -1,3 +1,5 @@
+import { fetchAccountData } from "../stores.mjs"
+
 export function pwdChng(optPicker) {
     optPicker.picker("Change password",[
         {
