@@ -2,6 +2,7 @@ import bodyParser from "body-parser";
 import { Router } from "express";
 import * as Accounts from "../lib/accounts";
 import * as auth from "../lib/auth";
+import bytes from "bytes"
 
 import ServeError from "../lib/errors";
 import Files from "../lib/files";
@@ -31,10 +32,13 @@ fileApiRoutes.get("/list", (req,res) => {
     if (!acc) return
 
     res.send(acc.files.map((e) => {
+        let fp = files.getFilePointer(e)
         return {
-            ...files.getFilePointer(e),
+            ...fp,
             messageids: null,
-            id:e
+            owner: null,
+            id:e,
+            sizeDisplay: fp.sizeInBytes ? bytes(fp.sizeInBytes) : "[File size unknown]"
         }
     }))
 
