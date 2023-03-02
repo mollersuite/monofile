@@ -127,6 +127,21 @@ export default class Files {
                 reject({status:400,message:"mime too long"}); 
                 return
             }
+
+            // reserve file, hopefully should prevent
+            // large files breaking
+
+            let ogf = this.files[uploadId]
+
+            this.files[uploadId] = {
+                    filename:settings.name,
+                    messageids:[],
+                    mime:settings.mime,
+                    sizeInBytes:0,
+
+                    owner:settings.owner,
+                    visibility: settings.owner ? "private" : "public"
+                }
     
             // get buffer
             if (fBuffer.byteLength >= (this.config.maxDiscordFileSize*this.config.maxDiscordFiles)) {
@@ -169,6 +184,8 @@ export default class Files {
                 if (ms) {
                     msgIds.push(ms.id)
                 } else {
+                    if (!ogf) delete this.files[uploadId]
+                    else this.files[uploadId] = ogf
                     reject({status:500,message:"please try again"}); return
                 }
             }
@@ -204,7 +221,7 @@ export default class Files {
             writeFile(process.cwd()+"/.data/files.json",JSON.stringify(this.files),(err) => {
                 
                 if (err) {
-                    reject({status:500,message:"please try again"}); 
+                    reject({status:500,message:"server may be misconfigured, contact admin for help"}); 
                     delete this.files[uploadId];
                     return
                 }

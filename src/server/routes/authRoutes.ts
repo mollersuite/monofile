@@ -4,6 +4,7 @@ import * as Accounts from "../lib/accounts";
 import * as auth from "../lib/auth";
 
 import ServeError from "../lib/errors";
+import Files, { FileVisibility } from "../lib/files";
 
 let parser = bodyParser.json({
     type: ["text/plain","application/json"]
@@ -13,6 +14,11 @@ export let authRoutes = Router();
 
 let config = require(`${process.cwd()}/config.json`)
 
+let files:Files
+
+export function auth_setFilesObj(newFiles:Files) {
+    files = newFiles
+}
 
 authRoutes.post("/login", parser, (req,res) => {
     let body:{[key:string]:any}
@@ -121,6 +127,101 @@ authRoutes.post("/logout", (req,res) => {
 
     auth.invalidate(req.cookies.auth)
     res.send("logged out")
+})
+
+authRoutes.post("/dfv", (req,res) => {
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    if (!acc) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+
+    let body:{[key:string]:any}
+    try {
+        body = JSON.parse(req.body)
+    } catch {
+        ServeError(res,400,"bad request")
+        return
+    }
+
+    if (['public','private','anonymous'].find(e => e == body.defaultFileVisibility)) {
+        acc.defaultFileVisibility = body.defaultFileVisibility
+        Accounts.save()
+        res.send(`dfv has been set to ${acc.defaultFileVisibility}`)
+    } else {
+        res.status(400)
+        res.send("invalid dfv")
+    }
+})
+
+authRoutes.post("/delete_account", (req,res) => {
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    if (!acc) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+
+    let body:{[key:string]:any}
+    try {
+        body = JSON.parse(req.body)
+    } catch {
+        ServeError(res,400,"bad request")
+        return
+    }
+
+    let accId = acc.id
+
+    auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
+        auth.invalidate(v.token)
+    })
+    
+    if (body.deleteFiles) {
+        acc.files.forEach((v) => {
+            files.unlink(v)
+        })
+    }
+
+    Accounts.deleteAccount(accId)
+
+    res.send("account deleted")
+})
+
+authRoutes.post("/change_username", (req,res) => {
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    if (!acc) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+
+    let body:{[key:string]:any}
+    try {
+        body = JSON.parse(req.body)
+    } catch {
+        ServeError(res,400,"bad request")
+        return
+    }
+
+    if (typeof body.username != "string" || body.username.length < 3 || body.username.length > 20) {
+        ServeError(res,400,"username must be between 3 and 20 characters in length")
+        return
+    }
+
+    let _acc = Accounts.getFromUsername(body.username)
+
+    if (_acc) {
+        ServeError(res,400,"account with this username already exists")
+        return
+    }
+
+    if ((body.username.match(/[A-Za-z0-9_\-\.]+/) || [])[0] != body.username) {
+        ServeError(res,400,"username contains invalid characters")
+        return
+    }
+
+    acc.username = body.username
+    Accounts.save()
+
+    res.send("username changed")
 })
 
 authRoutes.post("/change_password", (req,res) => {

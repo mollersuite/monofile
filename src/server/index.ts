@@ -12,7 +12,7 @@ import Files from "./lib/files"
 import * as auth from "./lib/auth"
 import * as Accounts from "./lib/accounts"
 
-import { authRoutes } from "./routes/authRoutes";
+import { authRoutes, auth_setFilesObj } from "./routes/authRoutes";
 import { fileApiRoutes, setFilesObj } from "./routes/fileApiRoutes";
 
 require("dotenv").config()
@@ -49,6 +49,7 @@ let client = new Client({intents:[
 let files = new Files(client,config)
 
 setFilesObj(files)
+auth_setFilesObj(files)
 
 // routes (could probably make these use routers)
 

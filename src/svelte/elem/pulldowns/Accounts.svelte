@@ -6,6 +6,7 @@
     import { fade } from "svelte/transition";
     import OptionPicker from "../prompts/OptionPicker.svelte";
     import * as accOpts from "../prompts/account";
+    import * as uplOpts from "../prompts/uploads";
 
     let targetAction
     let inProgress
@@ -119,7 +120,7 @@
                     <p>Account</p>
                 </div>
 
-                <button>
+                <button on:click={() => accOpts.userChange(optPicker)}>
                     <img src="/static/assets/icons/change_username.svg" alt="change username">
                     <p>Change username</p>
                 </button>
@@ -140,14 +141,14 @@
                     <p>Uploads</p>
                 </div>
 
-                <button>
-                    <img src="/static/assets/icons/public.svg" alt="public">
-                    <p>Default file visibility<span><br />Uploads will be <strong>public</strong> by default</span></p>
+                <button on:click={() => uplOpts.dfv(optPicker)}>
+                    <img src={`/static/assets/icons/${$account.defaultFileVisibility || "public"}.svg`} alt={$account.defaultFileVisibility || "public"}>
+                    <p>Default file visibility<span><br />Uploads will be <strong>{$account.defaultFileVisibility || "public"}</strong> by default</span></p>
                 </button>
 
                 <button>
                     <img src="/static/assets/icons/update.svg" alt="update">
-                    <p>Make all of my files public<span><br />Matches your default file visibility</p>
+                    <p>Make all of my files {$account.defaultFileVisibility || "public"}<span><br />Matches your default file visibility</p>
                 </button>
                 
                 <div class="category">
