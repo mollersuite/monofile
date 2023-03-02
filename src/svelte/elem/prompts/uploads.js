@@ -36,3 +36,30 @@ export function dfv(optPicker) {
         }
     })
 }
+
+export function update_all_files(optPicker) {
+    optPicker.picker("You sure?",[
+        {
+            name: "Yeah",
+            icon: "/static/assets/icons/update.svg",
+            description: `This will make all of your files ${get(account).defaultFileVisibility || "public"}`,
+            id: true
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected) {
+            fetch(`/files/action`,{method:"POST", body:JSON.stringify({
+                target:get(account).files,
+                action: {
+                    visibility: get(account).defaultFileVisibility
+                }
+            })}).then((response) => {
+                
+                if (response.status != 200) {
+                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                }
+
+                fetchAccountData()
+            })
+        }
+    })
+}

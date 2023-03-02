@@ -146,7 +146,7 @@
                     <p>Default file visibility<span><br />Uploads will be <strong>{$account.defaultFileVisibility || "public"}</strong> by default</span></p>
                 </button>
 
-                <button>
+                <button on:click={() => uplOpts.update_all_files(optPicker)}>
                     <img src="/static/assets/icons/update.svg" alt="update">
                     <p>Make all of my files {$account.defaultFileVisibility || "public"}<span><br />Matches your default file visibility</p>
                 </button>

@@ -65,7 +65,7 @@ export function userChange(optPicker) {
             inputSettings: {}
         },
         {
-            name: "OK",
+            name: "Update username",
             icon: "/static/assets/icons/update.svg",
             description: "",
             id: true
@@ -97,7 +97,7 @@ export function pwdChng(optPicker) {
             }
         },
         {
-            name: "OK",
+            name: "Update password",
             icon: "/static/assets/icons/update.svg",
             description: "This will log you out of all sessions",
             id: true
