@@ -21,15 +21,7 @@ export function auth_setFilesObj(newFiles:Files) {
 }
 
 authRoutes.post("/login", parser, (req,res) => {
-    let body:{[key:string]:any}
-    try {
-        body = JSON.parse(req.body)
-    } catch {
-        ServeError(res,400,"bad request")
-        return
-    }
-
-    if (typeof body.username != "string" || typeof body.password != "string") {
+    if (typeof req.body.username != "string" || typeof req.body.password != "string") {
         ServeError(res,400,"please provide a username or password")
         return
     }
@@ -40,14 +32,14 @@ authRoutes.post("/login", parser, (req,res) => {
         check if account exists  
     */
 
-    let acc = Accounts.getFromUsername(body.username)
+    let acc = Accounts.getFromUsername(req.body.username)
 
     if (!acc) {
         ServeError(res,401,"username or password incorrect")
         return
     }
 
-    if (!Accounts.password.check(acc.id,body.password)) {
+    if (!Accounts.password.check(acc.id,req.body.password)) {
         ServeError(res,401,"username or password incorrect")
         return
     }
@@ -67,17 +59,9 @@ authRoutes.post("/create", parser, (req,res) => {
         return
     }
 
-    let body:{[key:string]:any}
-    try {
-        body = JSON.parse(req.body)
-    } catch {
-        ServeError(res,400,"bad request")
-        return
-    }
-
     if (auth.validate(req.cookies.auth)) return
 
-    if (typeof body.username != "string" || typeof body.password != "string") {
+    if (typeof req.body.username != "string" || typeof req.body.password != "string") {
         ServeError(res,400,"please provide a username or password")
         return
     }
@@ -86,29 +70,29 @@ authRoutes.post("/create", parser, (req,res) => {
         check if account exists  
     */
 
-    let acc = Accounts.getFromUsername(body.username)
+    let acc = Accounts.getFromUsername(req.body.username)
 
     if (acc) {
         ServeError(res,400,"account with this username already exists")
         return
     }
 
-    if (body.username.length < 3 || body.username.length > 20) {
+    if (req.body.username.length < 3 || req.body.username.length > 20) {
         ServeError(res,400,"username must be over or equal to 3 characters or under or equal to 20 characters in length")
         return
     }
 
-    if ((body.username.match(/[A-Za-z0-9_\-\.]+/) || [])[0] != body.username) {
+    if ((req.body.username.match(/[A-Za-z0-9_\-\.]+/) || [])[0] != req.body.username) {
         ServeError(res,400,"username contains invalid characters")
         return
     }
 
-    if (body.password.length < 8) {
+    if (req.body.password.length < 8) {
         ServeError(res,400,"password must be 8 characters or longer")
         return
     }
 
-    let newAcc = Accounts.create(body.username,body.password)
+    let newAcc = Accounts.create(req.body.username,req.body.password)
 
     /*
         assign token
@@ -193,32 +177,24 @@ authRoutes.post("/change_username", (req,res) => {
         return
     }
 
-    let body:{[key:string]:any}
-    try {
-        body = JSON.parse(req.body)
-    } catch {
-        ServeError(res,400,"bad request")
-        return
-    }
-
-    if (typeof body.username != "string" || body.username.length < 3 || body.username.length > 20) {
+    if (typeof req.body.username != "string" || req.body.username.length < 3 || req.body.username.length > 20) {
         ServeError(res,400,"username must be between 3 and 20 characters in length")
         return
     }
 
-    let _acc = Accounts.getFromUsername(body.username)
+    let _acc = Accounts.getFromUsername(req.body.username)
 
     if (_acc) {
         ServeError(res,400,"account with this username already exists")
         return
     }
 
-    if ((body.username.match(/[A-Za-z0-9_\-\.]+/) || [])[0] != body.username) {
+    if ((req.body.username.match(/[A-Za-z0-9_\-\.]+/) || [])[0] != req.body.username) {
         ServeError(res,400,"username contains invalid characters")
         return
     }
 
-    acc.username = body.username
+    acc.username = req.body.username
     Accounts.save()
 
     res.send("username changed")
@@ -231,22 +207,14 @@ authRoutes.post("/change_password", (req,res) => {
         return
     }
 
-    let body:{[key:string]:any}
-    try {
-        body = JSON.parse(req.body)
-    } catch {
-        ServeError(res,400,"bad request")
-        return
-    }
-
-    if (typeof body.password != "string" || body.password.length < 8) {
+    if (typeof req.body.password != "string" || req.body.password.length < 8) {
         ServeError(res,400,"password must be 8 characters or longer")
         return
     }
 
     let accId = acc.id
 
-    Accounts.password.set(accId,body.password)
+    Accounts.password.set(accId,req.body.password)
 
     auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
         auth.invalidate(v.token)

@@ -26,7 +26,7 @@ app.use("/static/assets",express.static("assets"))
 app.use("/static/style",express.static("out/style"))
 app.use("/static/js",express.static("out/client"))
 
-app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
+//app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
 app.use(cookieParser())
 
 app.use("/auth",authRoutes)
@@ -94,19 +94,14 @@ app.post("/upload",multerSetup.single('file'),async (req,res) => {
 
 app.post("/clone",(req,res) => {
     try {
-        let j = JSON.parse(req.body)
-        if (!j.url) {
-            res.status(400)
-            res.send("[err] invalid url")
-        }
-        axios.get(j.url,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
+        axios.get(req.body.url,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
 
             files.uploadFile({
                 owner: auth.validate(req.cookies.auth),
 
-                name:j.url.split("/")[req.body.split("/").length-1] || "generic",
+                name:req.body.url.split("/")[req.body.split("/").length-1] || "generic",
                 mime:data.headers["content-type"],
-                uploadId:j.uploadId
+                uploadId:req.body.uploadId
             },Buffer.from(data.data))
                 .then((uID) => res.send(uID))
                 .catch((stat) => {

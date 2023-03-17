@@ -43,3 +43,16 @@ fileApiRoutes.get("/list", (req,res) => {
     }))
 
 })
+
+fileApiRoutes.post("/action", (req,res) => {
+
+    if (!auth.validate(req.cookies.auth)) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    
+    if (!acc) return
+
+})
