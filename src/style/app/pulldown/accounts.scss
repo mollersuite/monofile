@@ -139,10 +139,18 @@
 
     .loggedIn {
         position:absolute;
-        left:10px;
-        top:10px;
+
+        /*
+            left:10px;
+            top:10px;
+        */
+
+        left:0px;
+        top:0px;
         width:calc( 100% - 20px );
         height:calc( 100% - 20px );
+        padding:10px;
+
         overflow-y:auto;
 
         h1 {

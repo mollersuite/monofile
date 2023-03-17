@@ -31,4 +31,73 @@
             }
         }
     }
+
+    .loggedIn {
+        display: flex;
+        flex-direction: column;
+        max-height:100%;
+        overflow:hidden;
+
+        .searchBar {
+            transition-duration:150ms;
+            background-color:#171717;
+            width:100%;
+            padding:8px;
+            color:#dddddd;
+            border:none;
+            border-bottom: 1px solid #aaaaaa;
+            outline: none;
+            border-radius:0px;
+            font-size:14px;
+
+            &:focus {
+                transition-duration:150ms;
+                border-bottom: 1px solid #dddddd;
+            }
+
+            @media screen and (max-width: 500px) {
+                padding:12px;
+                font-size:16px;
+            }
+        }
+
+        .fileList {
+            overflow-y:auto;
+            overflow-x:hidden;
+            padding:5px 0;
+
+            .flFile {
+                padding: 3px 8px;
+
+                @media screen and (max-width: 500px) {
+                    padding:7px 12px;
+                }
+
+                .detail {
+                    color:#777777;
+                    font-size:14px;
+
+                    @media screen and (max-width: 500px) {
+                        font-size:16px;
+                    }
+                }
+
+                h2 {
+                    font-size:18px;
+                    text-overflow:ellipsis;
+                    overflow:hidden;
+                    font-weight:600;
+
+                    @media screen and (max-width: 500px) {
+                        font-size:20px;
+                    }
+                }
+
+                p, h2 {
+                    margin:0 0 0 0;
+                    white-space: nowrap;
+                }
+            }
+        }
+    }
 }
