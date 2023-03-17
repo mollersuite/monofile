@@ -17,13 +17,14 @@ echo "TOKEN=INSERT-TOKEN.HERE" > .env
 ```
 
 Invite your bot to a server, then give it a channel to post in:
-```json
-config.json
---------------------------------------------
-...
+```js
+// config.json
+{
+    ...
     "targetGuild": "1024080490677936248",
     "targetChannel": "1024080525993971913",
-...
+    ...
+}
 ```
 
 Then, compile and start.
