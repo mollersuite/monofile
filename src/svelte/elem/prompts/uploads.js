@@ -63,3 +63,30 @@ export function update_all_files(optPicker) {
         }
     })
 }
+
+export function fileOptions(optPicker,file) {
+    optPicker.picker(file.filename,[
+        {
+            name: file.tag ? "Remove tag" : "Tag file",
+            icon: `/static/assets/icons/${file.tag ? "tag_remove" : "tag"}.svg`,
+            description: file.tag || `File has no tag`,
+            id: "tag"
+        },
+        {
+            name: "Change file visibility",
+            icon: `/static/assets/icons/${file.visibility||"public"}.svg`,
+            description: `File is currently ${file.visibility||"public"}`,
+            id: "changeFileVisibility"
+        },
+        {
+            name: "Delete file",
+            icon: `/static/assets/icons/admin/delete_file.svg`,
+            description: ``,
+            id: "delete"
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected) {
+            
+        }
+    })
+}

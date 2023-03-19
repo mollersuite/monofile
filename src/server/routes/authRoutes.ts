@@ -113,23 +113,15 @@ authRoutes.post("/logout", (req,res) => {
     res.send("logged out")
 })
 
-authRoutes.post("/dfv", (req,res) => {
+authRoutes.post("/dfv", parser, (req,res) => {
     let acc = Accounts.getFromToken(req.cookies.auth)
     if (!acc) {
         ServeError(res, 401, "not logged in")
         return
     }
 
-    let body:{[key:string]:any}
-    try {
-        body = JSON.parse(req.body)
-    } catch {
-        ServeError(res,400,"bad request")
-        return
-    }
-
-    if (['public','private','anonymous'].find(e => e == body.defaultFileVisibility)) {
-        acc.defaultFileVisibility = body.defaultFileVisibility
+    if (['public','private','anonymous'].find(e => e == req.body.defaultFileVisibility)) {
+        acc.defaultFileVisibility = req.body.defaultFileVisibility
         Accounts.save()
         res.send(`dfv has been set to ${acc.defaultFileVisibility}`)
     } else {
@@ -138,28 +130,19 @@ authRoutes.post("/dfv", (req,res) => {
     }
 })
 
-authRoutes.post("/delete_account", (req,res) => {
+authRoutes.post("/delete_account", parser, (req,res) => {
     let acc = Accounts.getFromToken(req.cookies.auth)
     if (!acc) {
         ServeError(res, 401, "not logged in")
         return
     }
-
-    let body:{[key:string]:any}
-    try {
-        body = JSON.parse(req.body)
-    } catch {
-        ServeError(res,400,"bad request")
-        return
-    }
-
     let accId = acc.id
 
     auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
         auth.invalidate(v.token)
     })
     
-    if (body.deleteFiles) {
+    if (req.body.deleteFiles) {
         acc.files.forEach((v) => {
             files.unlink(v)
         })
@@ -170,7 +153,7 @@ authRoutes.post("/delete_account", (req,res) => {
     res.send("account deleted")
 })
 
-authRoutes.post("/change_username", (req,res) => {
+authRoutes.post("/change_username", parser, (req,res) => {
     let acc = Accounts.getFromToken(req.cookies.auth)
     if (!acc) {
         ServeError(res, 401, "not logged in")
@@ -200,7 +183,7 @@ authRoutes.post("/change_username", (req,res) => {
     res.send("username changed")
 })
 
-authRoutes.post("/change_password", (req,res) => {
+authRoutes.post("/change_password", parser, (req,res) => {
     let acc = Accounts.getFromToken(req.cookies.auth)
     if (!acc) {
         ServeError(res, 401, "not logged in")
