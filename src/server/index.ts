@@ -92,7 +92,7 @@ app.post("/upload",multerSetup.single('file'),async (req,res) => {
     }
 })
 
-app.post("/clone",(req,res) => {
+app.post("/clone", bodyParser.json({type: ["text/plain","application/json"]}) ,(req,res) => {
     try {
         axios.get(req.body.url,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
 
