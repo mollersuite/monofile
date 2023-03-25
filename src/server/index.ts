@@ -99,7 +99,7 @@ app.post("/clone", bodyParser.json({type: ["text/plain","application/json"]}) ,(
             files.uploadFile({
                 owner: auth.validate(req.cookies.auth),
 
-                name:req.body.url.split("/")[req.body.split("/").length-1] || "generic",
+                name:req.body.url.split("/")[req.body.url.split("/").length-1] || "generic",
                 mime:data.headers["content-type"],
                 uploadId:req.body.uploadId
             },Buffer.from(data.data))
