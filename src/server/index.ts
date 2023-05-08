@@ -152,7 +152,7 @@ app.get("/download/:fileId",(req,res) => {
                         ? `<meta name="og:video" content="https://${req.headers.host}/file/${req.params.fileId}" />
                         <meta name="og:video:url" content="https://${req.headers.host}/file/${req.params.fileId}" />
                         <meta name="og:video:secure_url" content="https://${req.headers.host}/file/${req.params.fileId}">
-                        <meta name="og:video:type" content="${file.mime.replace(/\"/g,"")}">`
+                        <meta name="og:video:type" content="video.other">`
                         : ""
                     )
                 )
