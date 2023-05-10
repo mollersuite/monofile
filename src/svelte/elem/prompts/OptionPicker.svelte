@@ -35,7 +35,8 @@
 </script>
 
 {#if activeModal}
-    <button class="modalContainer" on:click|self={forceCancel} transition:fade={{duration:200}}>
+    <div class="modalContainer" transition:fade={{duration:200}}>
+        <button class="mdHitbox" on:click|self={forceCancel}></button>
         <div class="modal" transition:slide={{duration:200}}>
 
             <div class="optPicker">
@@ -73,5 +74,5 @@
 
             </div>
         </div>
-    </button>
+    </div>
 {/if}

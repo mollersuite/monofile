@@ -78,7 +78,7 @@ fileApiRoutes.post("/manage", parser, (req,res) => {
                 if (!req.body.value) delete files.files[e].tag
                 else {
                     if (req.body.value.toString().length > 30) return
-                    files.files[e].tag = req.body.value.toString().lower()
+                    files.files[e].tag = req.body.value.toString().toLowerCase()
                 }
                 modified++;
             break;
