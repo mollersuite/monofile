@@ -160,6 +160,46 @@ export function fileOptions(optPicker,file) {
                         }
 
                     })
+                
+                break;
+
+                case "tag":
+
+                    optPicker.picker("Enter a tag (max 30char)",[
+                        {
+                            name: "Tag name",
+                            icon: "/static/assets/icons/tag.svg",
+                            id: "tag",
+                            inputSettings: {}
+                        },
+                        {
+                            name: "OK",
+                            icon: "/static/assets/icons/update.svg",
+                            id: true
+                        }
+                    ]).then((exp) => {
+                        
+                        if (exp && exp.selected) {
+
+                            fetch(`/files/manage`, {method: "POST", body: JSON.stringify({
+                                target: [ file.id ],
+                                action: "setTag",
+
+                                value: exp.selected || null
+                            })}).then((response) => {
+                        
+                                if (response.status != 200) {
+                                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                                }
+                
+                                fetchFilePointers();
+                            })
+
+                        }
+
+                    })
+
+                break
 
             }
             

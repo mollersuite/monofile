@@ -9,5 +9,9 @@
     "accounts": {
         "registrationEnabled": true,
         "requiredForUpload": false
+    },
+
+    "webdrop": {
+        "accountRequired": false
     }
 }

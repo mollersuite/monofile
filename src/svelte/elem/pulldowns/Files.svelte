@@ -37,6 +37,11 @@
                                 <p class="detail">
                                     <img src="/static/assets/icons/{file.visibility || "public"}.svg" alt={file.visibility||"public"} />&nbsp;
                                     <span class="number">{file.id}</span>&nbsp;&nbsp;—&nbsp;&nbsp;<span class="number">{file.mime.split(";")[0]}</span>
+                                    {#if file.tag}
+                                        <br />
+                                        <img src="/static/assets/icons/tag.svg" alt="tag"/>&nbsp;
+                                        <span class="number">{file.tag}</span>
+                                    {/if}
                                 </p>
                             </div>
                             <button class="more" on:click={fileOptions(picker, file)}>

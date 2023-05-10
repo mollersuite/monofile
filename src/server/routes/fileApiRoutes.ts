@@ -73,6 +73,15 @@ fileApiRoutes.post("/manage", parser, (req,res) => {
                 files.files[e].visibility = req.body.value;
                 modified++;
             break;
+
+            case "setTag":
+                if (!req.body.value) delete files.files[e].tag
+                else {
+                    if (req.body.value.toString().length > 30) return
+                    files.files[e].tag = req.body.value.toString().lower()
+                }
+                modified++;
+            break;
         }
     })
 
