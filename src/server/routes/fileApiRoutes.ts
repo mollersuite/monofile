@@ -55,7 +55,7 @@ fileApiRoutes.post("/manage", parser, (req,res) => {
     let acc = Accounts.getFromToken(req.cookies.auth) as Accounts.Account
     
     if (!acc) return
-    if (!req.body.target || req.body.target.length < 1) return
+    if (!req.body.target || !(typeof req.body.target == "object") || req.body.target.length < 1) return
 
     let modified = 0
     

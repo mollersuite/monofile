@@ -22,6 +22,26 @@ export let options = {
             id: "private"
         }
     ],
+    FV2: [
+        {
+            name: "Public",
+            icon: "/static/assets/icons/public.svg",
+            description: "Everyone can view this file",
+            id: "public"
+        },
+        {
+            name: "Anonymous",
+            icon: "/static/assets/icons/anonymous.svg",
+            description: "Your username will be hidden",
+            id: "anonymous"
+        },
+        {
+            name: "Private",
+            icon: "/static/assets/icons/private.svg",
+            description: "Nobody but you can view this file",
+            id: "private"
+        }
+    ],
     AYS: [
         {
             name: "Yes",
@@ -104,7 +124,7 @@ export function fileOptions(optPicker,file) {
                 case "delete":
 
                     fetch(`/files/manage`,{method:"POST", body:JSON.stringify({
-                        target: [ file ],
+                        target: [ file.id ],
                         action: "delete",
                     })}).then((response) => {
                         
@@ -115,14 +135,16 @@ export function fileOptions(optPicker,file) {
                         fetchFilePointers()
                     })
 
+                break;
+
                 case "changeFileVisibility":
 
-                    optPicker.picker("Set file visibility", options.FV).then((exp) => {
+                    optPicker.picker("Set file visibility", options.FV2).then((exp) => {
                         
                         if (exp && exp.selected) {
 
                             fetch(`/files/manage`, {method: "POST", body: JSON.stringify({
-                                target: [ file ],
+                                target: [ file.id ],
                                 action: "changeFileVisibility",
 
                                 value: exp.selected
