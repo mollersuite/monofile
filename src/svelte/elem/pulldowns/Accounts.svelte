@@ -187,13 +187,18 @@
                     </button>
 
                     <button>
-                        <img src="/static/assets/icons/link.svg" alt="delete file">
+                        <img src="/static/assets/icons/link.svg" alt="change file owner">
                         <p>Change file owner</p>
                     </button>
 
                     <button>
                         <img src="/static/assets/icons/admin/delete_file.svg" alt="delete file">
                         <p>Delete file</p>
+                    </button>
+
+                    <button>
+                        <img src="/static/assets/icons/update.svg" alt="update">
+                        <p>Update files from before monofile 1.3<span><br />This may take a while</span></p>
                     </button>
 
                 {/if}

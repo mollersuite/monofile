@@ -1,8 +1,8 @@
 import { fetchAccountData, account } from "../stores.mjs"
 import { get } from "svelte/store";
 
-export function dfv(optPicker) {
-    optPicker.picker("Default file visibility",[
+export let options = {
+    FV: [
         {
             name: "Public",
             icon: "/static/assets/icons/public.svg",
@@ -21,7 +21,18 @@ export function dfv(optPicker) {
             description: "Nobody but you can view your uploads",
             id: "private"
         }
-    ]).then((exp) => {
+    ],
+    AYS: [
+        {
+            name: "Yes",
+            icon: "/static/assets/icons/update.svg",
+            id: true
+        }
+    ]
+}
+
+export function dfv(optPicker) {
+    optPicker.picker("Default file visibility",options.FV).then((exp) => {
         if (exp && exp.selected) {
             fetch(`/auth/dfv`,{method:"POST", body:JSON.stringify({
                 defaultFileVisibility: exp.selected
@@ -47,11 +58,11 @@ export function update_all_files(optPicker) {
         }
     ]).then((exp) => {
         if (exp && exp.selected) {
-            fetch(`/files/action`,{method:"POST", body:JSON.stringify({
+            fetch(`/files/manage`,{method:"POST", body:JSON.stringify({
                 target:get(account).files,
-                action: {
-                    visibility: get(account).defaultFileVisibility
-                }
+                action: "changeFileVisibility",
+                
+                value: get(account).defaultFileVisibility
             })}).then((response) => {
                 
                 if (response.status != 200) {
@@ -85,8 +96,52 @@ export function fileOptions(optPicker,file) {
             id: "delete"
         }
     ]).then((exp) => {
+
         if (exp && exp.selected) {
             
+            switch( exp.selected ) {
+                
+                case "delete":
+
+                    fetch(`/files/manage`,{method:"POST", body:JSON.stringify({
+                        target: [ file ],
+                        action: "delete",
+                    })}).then((response) => {
+                        
+                        if (response.status != 200) {
+                            optPicker.picker(`${response.status} ${response.statusText}`,[])
+                        }
+        
+                        fetchFilePointers()
+                    })
+
+                case "changeFileVisibility":
+
+                    optPicker.picker("Set file visibility", options.FV).then((exp) => {
+                        
+                        if (exp && exp.selected) {
+
+                            fetch(`/files/manage`, {method: "POST", body: JSON.stringify({
+                                target: [ file ],
+                                action: "changeFileVisibility",
+
+                                value: exp.selected
+                            })}).then((response) => {
+                        
+                                if (response.status != 200) {
+                                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                                }
+                
+                                fetchFilePointers()
+                            })
+
+                        }
+
+                    })
+
+            }
+            
         }
+
     })
 }
