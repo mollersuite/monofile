@@ -45,7 +45,7 @@ fileApiRoutes.get("/list", (req,res) => {
 
 })
 
-fileApiRoutes.post("/manage", (req,res) => {
+fileApiRoutes.post("/manage", parser, (req,res) => {
 
     if (!auth.validate(req.cookies.auth)) {
         ServeError(res, 401, "not logged in")
