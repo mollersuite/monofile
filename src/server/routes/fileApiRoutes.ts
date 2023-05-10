@@ -70,7 +70,7 @@ fileApiRoutes.post("/manage", parser, (req,res) => {
 
             case "changeFileVisibility":
                 if (!["public","anonymous","private"].includes(req.body.value)) return;
-                files.files[e].visibility = req.body.visibility;
+                files.files[e].visibility = req.body.value;
                 modified++;
             break;
         }
