@@ -16,7 +16,7 @@ export let fetchAccountData = function() {
 }
 
 export let fetchFilePointers = function() {
-    fetch("/files/list").then(async (response) => {
+    fetch("/files/list", { cache: "no-cache" }).then(async (response) => {
         if (response.status == 200) {
             files.set(await response.json())
         } else {

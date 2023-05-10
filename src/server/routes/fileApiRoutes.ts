@@ -78,6 +78,7 @@ fileApiRoutes.post("/manage", parser, (req,res) => {
 
     writeFile(process.cwd()+"/.data/files.json",JSON.stringify(files.files), (err) => {
         if (err) console.log(err)
+        res.contentType("text/plain")
         res.send(`modified ${modified} files`)
     })
 

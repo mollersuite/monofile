@@ -1,4 +1,4 @@
-import { fetchAccountData, account } from "../stores.mjs"
+import { fetchAccountData, fetchFilePointers, account } from "../stores.mjs"
 import { get } from "svelte/store";
 
 export let options = {
@@ -132,7 +132,7 @@ export function fileOptions(optPicker,file) {
                             optPicker.picker(`${response.status} ${response.statusText}`,[])
                         }
         
-                        fetchFilePointers()
+                        fetchFilePointers();
                     })
 
                 break;
@@ -154,7 +154,7 @@ export function fileOptions(optPicker,file) {
                                     optPicker.picker(`${response.status} ${response.statusText}`,[])
                                 }
                 
-                                fetchFilePointers()
+                                fetchFilePointers();
                             })
 
                         }
