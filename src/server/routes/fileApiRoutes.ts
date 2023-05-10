@@ -71,15 +71,14 @@ fileApiRoutes.post("/manage", parser, (req,res) => {
             case "changeFileVisibility":
                 if (!["public","anonymous","private"].includes(req.body.value)) return;
                 files.files[e].visibility = req.body.visibility;
-
-                writeFile(process.cwd()+"/.data/files.json",JSON.stringify(files.files), (err) => {
-                    if (err) console.log(err)
-                })
                 modified++;
             break;
         }
     })
 
-    res.send(`modified ${modified} files`)
+    writeFile(process.cwd()+"/.data/files.json",JSON.stringify(files.files), (err) => {
+        if (err) console.log(err)
+        res.send(`modified ${modified} files`)
+    })
 
 })
