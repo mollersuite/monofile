@@ -57,12 +57,15 @@ fileApiRoutes.post("/manage", (req,res) => {
     if (!acc) return
     if (!req.body.target || req.body.target.length < 1) return
 
+    let modified = 0
+    
     req.body.target.forEach((e:string) => {
         if (!acc.files.includes(e)) return
 
         switch( req.body.action ) {
             case "delete":
                 files.unlink(e)
+                modified++;
             break;
 
             case "changeFileVisibility":
@@ -72,8 +75,11 @@ fileApiRoutes.post("/manage", (req,res) => {
                 writeFile(process.cwd()+"/.data/files.json",JSON.stringify(files.files), (err) => {
                     if (err) console.log(err)
                 })
+                modified++;
             break;
         }
     })
+
+    res.send(`modified ${modified} files`)
 
 })
