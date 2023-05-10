@@ -181,11 +181,19 @@ export function fileOptions(optPicker,file) {
                         
                         if (exp && exp.selected) {
 
+                            if (file.tag) {
+                                fetch(`/files/manage`, {method: "POST", body: JSON.stringify({
+                                    target: [ file.id ],
+                                    action: "setTag"
+                                })}).then(fetchFilePointers)
+                                return
+                            }
+
                             fetch(`/files/manage`, {method: "POST", body: JSON.stringify({
                                 target: [ file.id ],
                                 action: "setTag",
 
-                                value: exp.selected || null
+                                value: exp.tag || null
                             })}).then((response) => {
                         
                                 if (response.status != 200) {
