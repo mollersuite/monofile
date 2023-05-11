@@ -92,15 +92,19 @@ authRoutes.post("/create", parser, (req,res) => {
         return
     }
 
-    let newAcc = Accounts.create(req.body.username,req.body.password)
+    Accounts.create(req.body.username,req.body.password)
+        .then((newAcc) => {
+            /*
+                assign token
+            */
 
-    /*
-        assign token
-    */
-
-    res.cookie("auth",auth.create(newAcc,(3*24*60*60*1000)))
-    res.status(200)
-    res.end()
+            res.cookie("auth",auth.create(newAcc,(3*24*60*60*1000)))
+            res.status(200)
+            res.end()
+        })
+        .catch(() => {
+            ServeError(res,500,"internal server error")
+        })
 })
 
 authRoutes.post("/logout", (req,res) => {

@@ -191,12 +191,6 @@ export default class Files {
                     reject({status:500,message:"please try again"}); return
                 }
             }
-    
-            // save
-
-            if (settings.owner) {
-                files.index(settings.owner,uploadId)
-            }
 
             // this code deletes the files from discord, btw
             // if need be, replace with job queue system
@@ -227,9 +221,15 @@ export default class Files {
                         : undefined
                     ),
                     // so that json.stringify doesnt include tag:undefined
-                    ...(ogf.tag ? {tag:ogf.tag} : {})
+                    ...((ogf||{}).tag ? {tag:ogf.tag} : {})
                 }
             ))
+
+            // save
+
+            if (settings.owner) {
+                await files.index(settings.owner,uploadId)
+            }
         })
     }
     

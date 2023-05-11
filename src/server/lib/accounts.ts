@@ -20,23 +20,23 @@ export interface Account {
     defaultFileVisibility : FileVisibility
 }
 
-export function create(username:string,pwd:string,admin:boolean=false) {
-    let accId = crypto.randomBytes(12).toString("hex")
+export function create(username:string,pwd:string,admin:boolean=false):Promise<string> {
+    return new Promise((resolve,reject) => {
+        let accId = crypto.randomBytes(12).toString("hex")
 
-    Accounts.push(
-        {
-            id:     accId,
-            username: username,
-            password: password.hash(pwd),
-            files: [],
-            admin: admin,
-            defaultFileVisibility: "public"
-        }
-    )
+        Accounts.push(
+            {
+                id:     accId,
+                username: username,
+                password: password.hash(pwd),
+                files: [],
+                admin: admin,
+                defaultFileVisibility: "public"
+            }
+        )
 
-    save()
-
-    return accId
+        save().then(() => resolve(accId))
+    })
 }
 
 export function getFromUsername(username:string) {
@@ -55,7 +55,7 @@ export function getFromToken(token:string) {
 
 export function deleteAccount(id:string) {
     Accounts.splice(Accounts.findIndex(e => e.id == id),1)
-    save()
+    return save()
 }
 
 export namespace password {
@@ -74,7 +74,7 @@ export namespace password {
         if (!acc) return
 
         acc.password = hash(password)
-        save()
+        return save()
     }
 
     export function check(id:string,password:string) {
@@ -95,7 +95,7 @@ export namespace files {
         if (acc.files.find(e => e == fileId)) return
 
         acc.files.push(fileId)
-        save()
+        return save()
     }
 
     export function deindex(accountId:string,fileId:string) {
@@ -104,13 +104,13 @@ export namespace files {
         let fi = acc.files.findIndex(e => e == fileId)
         if (fi) {
             acc.files.splice(fi,1)
-            save()
+            return save()
         }
     }
 }
 
 export function save() {
-    writeFile(`${process.cwd()}/.data/accounts.json`,JSON.stringify(Accounts))
+    return writeFile(`${process.cwd()}/.data/accounts.json`,JSON.stringify(Accounts))
         .catch((err) => console.error(err))
 }
 
