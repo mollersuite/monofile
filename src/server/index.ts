@@ -31,6 +31,7 @@ app.use("/static/js",express.static("out/client"))
 app.use(cookieParser())
 
 app.use("/auth",authRoutes)
+app.use("/admin",adminRoutes)
 app.use("/files",fileApiRoutes)
 // funcs
 

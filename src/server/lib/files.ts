@@ -201,13 +201,14 @@ export default class Files {
             // this code deletes the files from discord, btw
             // if need be, replace with job queue system
 
-            if (!this.uploadChannel) {reject(); return}
-            for (let x of ogf.messageids) {
-                this.uploadChannel.messages.fetch(x).then((m) => {
-                    m.delete()
-                }).catch((e) => {
-                    console.error(e)
-                })
+            if (ogf&&this.uploadChannel) {
+                for (let x of ogf.messageids) {
+                    this.uploadChannel.messages.fetch(x).then((m) => {
+                        m.delete()
+                    }).catch((e) => {
+                        console.error(e)
+                    })
+                }
             }
 
             resolve(await this.writeFile(
