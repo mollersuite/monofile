@@ -62,6 +62,15 @@ fileApiRoutes.post("/manage", parser, (req,res) => {
     req.body.target.forEach((e:string) => {
         if (!acc.files.includes(e)) return
 
+        let fp = files.getFilePointer(e)
+
+        if (fp.reserved) {
+            if (req.body.target.length == 1) {
+                ServeError(res, 400, `cannot modify a file that is being uploaded, please contact an administrator if your file is stuck in this state.`)
+            }
+            return
+        }
+
         switch( req.body.action ) {
             case "delete":
                 files.unlink(e)

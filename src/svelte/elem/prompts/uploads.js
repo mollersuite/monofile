@@ -165,6 +165,14 @@ export function fileOptions(optPicker,file) {
 
                 case "tag":
 
+                    if (file.tag) {
+                        fetch(`/files/manage`, {method: "POST", body: JSON.stringify({
+                            target: [ file.id ],
+                            action: "setTag"
+                        })}).then(fetchFilePointers)
+                        return
+                    }
+
                     optPicker.picker("Enter a tag (max 30char)",[
                         {
                             name: "Tag name",
@@ -175,19 +183,12 @@ export function fileOptions(optPicker,file) {
                         {
                             name: "OK",
                             icon: "/static/assets/icons/update.svg",
+                            description: "",
                             id: true
                         }
                     ]).then((exp) => {
                         
                         if (exp && exp.selected) {
-
-                            if (file.tag) {
-                                fetch(`/files/manage`, {method: "POST", body: JSON.stringify({
-                                    target: [ file.id ],
-                                    action: "setTag"
-                                })}).then(fetchFilePointers)
-                                return
-                            }
 
                             fetch(`/files/manage`, {method: "POST", body: JSON.stringify({
                                 target: [ file.id ],

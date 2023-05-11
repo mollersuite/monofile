@@ -37,6 +37,11 @@
                                 <p class="detail">
                                     <img src="/static/assets/icons/{file.visibility || "public"}.svg" alt={file.visibility||"public"} />&nbsp;
                                     <span class="number">{file.id}</span>&nbsp;&nbsp;—&nbsp;&nbsp;<span class="number">{file.mime.split(";")[0]}</span>
+                                    {#if file.reserved}
+                                        <br />
+                                        <img src="/static/assets/icons/update.svg" alt="uploading"/>&nbsp;
+                                        This file is currently being uploaded. Please wait.
+                                    {/if}
                                     {#if file.tag}
                                         <br />
                                         <img src="/static/assets/icons/tag.svg" alt="tag"/>&nbsp;

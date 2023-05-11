@@ -49,7 +49,8 @@ export interface FilePointer {
     owner?:string,
     sizeInBytes?:number,
     tag?:string,
-    visibility?:FileVisibility
+    visibility?:FileVisibility,
+    reserved?: boolean
 }
 
 export interface StatusCodeError {
@@ -140,7 +141,8 @@ export default class Files {
                     sizeInBytes:0,
 
                     owner:settings.owner,
-                    visibility: settings.owner ? "private" : "public"
+                    visibility: settings.owner ? "private" : "public",
+                    reserved: true
                 }
     
             // get buffer
@@ -196,6 +198,18 @@ export default class Files {
                 files.index(settings.owner,uploadId)
             }
 
+            // this code deletes the files from discord, btw
+            // if need be, replace with job queue system
+
+            if (!this.uploadChannel) {reject(); return}
+            for (let x of ogf.messageids) {
+                this.uploadChannel.messages.fetch(x).then((m) => {
+                    m.delete()
+                }).catch((e) => {
+                    console.error(e)
+                })
+            }
+
             resolve(await this.writeFile(
                 uploadId,
                 {
@@ -205,7 +219,14 @@ export default class Files {
                     sizeInBytes:fBuffer.byteLength,
 
                     owner:settings.owner,
-                    visibility: settings.owner ? Accounts.getFromId(settings.owner)?.defaultFileVisibility : undefined
+                    visibility: ogf ? ogf.visibility
+                    : (
+                        settings.owner 
+                        ? Accounts.getFromId(settings.owner)?.defaultFileVisibility 
+                        : undefined
+                    ),
+                    // so that json.stringify doesnt include tag:undefined
+                    ...(ogf.tag ? {tag:ogf.tag} : {})
                 }
             ))
         })
@@ -286,10 +307,22 @@ export default class Files {
             if (tmp.owner) {
                 files.deindex(tmp.owner,uploadId)
             }
+            // this code deletes the files from discord, btw
+            // if need be, replace with job queue system
+
+            if (!this.uploadChannel) {reject(); return}
+            for (let x of tmp.messageids) {
+                this.uploadChannel.messages.fetch(x).then((m) => {
+                    m.delete()
+                }).catch((e) => {
+                    console.error(e)
+                })
+            }
+
             delete this.files[uploadId];
             writeFile(process.cwd()+"/.data/files.json",JSON.stringify(this.files),(err) => {
                 if (err) {
-                    this.files[uploadId] = tmp
+                    this.files[uploadId] = tmp // !! this may not work, since tmp is a link to this.files[uploadId]?
                     reject()
                 } else {
                     resolve()

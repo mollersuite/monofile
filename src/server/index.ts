@@ -14,6 +14,7 @@ import * as Accounts from "./lib/accounts"
 
 import { authRoutes, auth_setFilesObj } from "./routes/authRoutes";
 import { fileApiRoutes, setFilesObj } from "./routes/fileApiRoutes";
+import { adminRoutes, admin_setFilesObj } from "./routes/adminRoutes";
 
 require("dotenv").config()
 
@@ -50,6 +51,7 @@ let files = new Files(client,config)
 
 setFilesObj(files)
 auth_setFilesObj(files)
+admin_setFilesObj(files)
 
 // routes (could probably make these use routers)
 
