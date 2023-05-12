@@ -170,7 +170,7 @@
                 </div>
 
                 <button on:click={() => accOpts.customcss(optPicker)}>
-                    <img src="/static/assets/icons/paint.svg" alt="logout_all">
+                    <img src="/static/assets/icons/paint.svg" alt="customcss">
                     <p>Set custom CSS<span><br />{@html $account.customCSS ? `Using file ID <span class="number">${$account.customCSS}</span>` : "No custom CSS set"}</span></p>
                 </button>
 
