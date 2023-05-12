@@ -6,6 +6,8 @@ import * as auth from "../lib/auth";
 import ServeError from "../lib/errors";
 import Files, { FileVisibility, id_check_regex } from "../lib/files";
 
+import { writeFile } from "fs";
+
 let parser = bodyParser.json({
     type: ["text/plain","application/json"]
 })
@@ -160,7 +162,7 @@ authRoutes.post("/customcss", parser, (req,res) => {
     }
 })
 
-authRoutes.post("/delete_account", parser, (req,res) => {
+authRoutes.post("/delete_account", parser, async (req,res) => {
     let acc = Accounts.getFromToken(req.cookies.auth)
     if (!acc) {
         ServeError(res, 401, "not logged in")
@@ -171,16 +173,20 @@ authRoutes.post("/delete_account", parser, (req,res) => {
     auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
         auth.invalidate(v.token)
     })
+
+    let cpl = () => Accounts.deleteAccount(accId).then(_ => res.send("account deleted"))
     
     if (req.body.deleteFiles) {
-        acc.files.forEach((v) => {
-            files.unlink(v)
+        let f = acc.files.map(e=>e) // make shallow copy so that iterating over it doesnt Die
+        for (let v of f) {
+            files.unlink(v,true).catch(err => console.error(err))
+        }
+
+        writeFile(process.cwd()+"/.data/files.json",JSON.stringify(files.files), (err) => {
+            if (err) console.log(err)
+            cpl()
         })
-    }
-
-    Accounts.deleteAccount(accId)
-
-    res.send("account deleted")
+    } else cpl()
 })
 
 authRoutes.post("/change_username", parser, (req,res) => {

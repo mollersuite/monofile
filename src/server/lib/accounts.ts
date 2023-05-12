@@ -99,13 +99,13 @@ export namespace files {
         return save()
     }
 
-    export function deindex(accountId:string,fileId:string) {
+    export function deindex(accountId:string,fileId:string, noWrite:boolean=false) {
         let acc = Accounts.find(e => e.id == accountId)
         if (!acc) return
         let fi = acc.files.findIndex(e => e == fileId)
         if (fi) {
             acc.files.splice(fi,1)
-            return save()
+            if (!noWrite) return save()
         }
     }
 }

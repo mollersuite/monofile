@@ -202,11 +202,7 @@ export default class Files {
 
             if (ogf&&this.uploadChannel) {
                 for (let x of ogf.messageids) {
-                    this.uploadChannel.messages.fetch(x).then((m) => {
-                        m.delete()
-                    }).catch((e) => {
-                        console.error(e)
-                    })
+                    this.uploadChannel.messages.delete(x).catch(err => console.error(err))
                 }
             }
 
@@ -307,25 +303,24 @@ export default class Files {
         })
     }
 
-    unlink(uploadId:string):Promise<void> {
-        return new Promise((resolve,reject) => {
+    unlink(uploadId:string, noWrite: boolean = false):Promise<void> {
+        return new Promise(async (resolve,reject) => {
             let tmp = this.files[uploadId];
+            if (!tmp) {resolve(); return}
             if (tmp.owner) {
-                files.deindex(tmp.owner,uploadId)
+                let id = files.deindex(tmp.owner,uploadId,noWrite);
+                if (id) await id
             }
             // this code deletes the files from discord, btw
             // if need be, replace with job queue system
 
             if (!this.uploadChannel) {reject(); return}
             for (let x of tmp.messageids) {
-                this.uploadChannel.messages.fetch(x).then((m) => {
-                    m.delete()
-                }).catch((e) => {
-                    console.error(e)
-                })
+                this.uploadChannel.messages.delete(x).catch(err => console.error(err))
             }
 
             delete this.files[uploadId];
+            if (noWrite) {resolve(); return}
             writeFile(process.cwd()+"/.data/files.json",JSON.stringify(this.files),(err) => {
                 if (err) {
                     this.files[uploadId] = tmp // !! this may not work, since tmp is a link to this.files[uploadId]?

@@ -70,7 +70,7 @@ fileApiRoutes.post("/manage", parser, (req,res) => {
 
         switch( req.body.action ) {
             case "delete":
-                files.unlink(e)
+                files.unlink(e, true)
                 modified++;
             break;
 
@@ -91,10 +91,13 @@ fileApiRoutes.post("/manage", parser, (req,res) => {
         }
     })
 
-    writeFile(process.cwd()+"/.data/files.json",JSON.stringify(files.files), (err) => {
-        if (err) console.log(err)
-        res.contentType("text/plain")
-        res.send(`modified ${modified} files`)
-    })
+    Accounts.save().then(() => {
+        writeFile(process.cwd()+"/.data/files.json",JSON.stringify(files.files), (err) => {
+            if (err) console.log(err)
+            res.contentType("text/plain")
+            res.send(`modified ${modified} files`)
+        })
+    }).catch((err) => console.error(err))
+    
 
 })
