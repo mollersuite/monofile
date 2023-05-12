@@ -150,6 +150,15 @@
                     <img src="/static/assets/icons/update.svg" alt="update">
                     <p>Make all of my files {$account.defaultFileVisibility || "public"}<span><br />Matches your default file visibility</p>
                 </button>
+
+                <div class="category">
+                    <p>Customization</p>
+                </div>
+
+                <button on:click={() => accOpts.customcss(optPicker)}>
+                    <img src="/static/assets/icons/paint.svg" alt="customcss">
+                    <p>Set custom CSS<span><br />{@html $account.customCSS ? `Using file ID <span class="number">${$account.customCSS}</span>` : "No custom CSS set"}</span></p>
+                </button>
                 
                 <div class="category">
                     <p>Sessions</p>
@@ -163,15 +172,6 @@
                 <button on:click={() => fetch(`/auth/logout`,{method:"POST"}).then(() => fetchAccountData())}>
                     <img src="/static/assets/icons/logout.svg" alt="logout">
                     <p>Log out<span><br />Session expires {new Date($account.sessionExpires).toLocaleDateString()}</span></p>
-                </button>
-
-                <div class="category">
-                    <p>Customization</p>
-                </div>
-
-                <button on:click={() => accOpts.customcss(optPicker)}>
-                    <img src="/static/assets/icons/paint.svg" alt="customcss">
-                    <p>Set custom CSS<span><br />{@html $account.customCSS ? `Using file ID <span class="number">${$account.customCSS}</span>` : "No custom CSS set"}</span></p>
                 </button>
 
                 {#if $account.admin}

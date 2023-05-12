@@ -141,10 +141,16 @@ authRoutes.post("/customcss", parser, (req,res) => {
         return
     }
     
-    if (typeof req.body.fileId != "string") return
+    if (typeof req.body.fileId != "string") req.body.fileId = undefined;
     
-    if (req.body.fileId.match(id_check_regex) == req.body.fileId && req.body.fileId.length <= config.maxUploadIdLength) {
-        acc.customCSS = req.body.fileId
+    if (
+
+        !req.body.fileId
+        || (req.body.fileId.match(id_check_regex) == req.body.fileId 
+        && req.body.fileId.length <= config.maxUploadIdLength)
+        
+    ) {
+        acc.customCSS = req.body.fileId || undefined
         if (!req.body.fileId) delete acc.customCSS
         Accounts.save()
         res.send(`custom css saved`)
