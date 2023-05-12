@@ -117,3 +117,33 @@ export function pwdChng(optPicker) {
         }
     })
 }
+
+export function customcss(optPicker) {
+    optPicker.picker("Set custom CSS",[
+        {
+            name: "Enter a file ID",
+            icon: "/static/assets/icons/file.svg",
+            id: "fileid",
+            inputSettings: {}
+        },
+        {
+            name: "OK",
+            icon: "/static/assets/icons/update.svg",
+            description: "Refresh to apply changes",
+            id: true
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected) {
+            fetch(`/auth/customcss`,{method:"POST", body:JSON.stringify({
+                fileId:exp.fileid
+            })}).then((response) => {
+                
+                if (response.status != 200) {
+                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                }
+
+                fetchAccountData()
+            })
+        }
+    })
+}

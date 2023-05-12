@@ -40,7 +40,7 @@
                                     {#if file.reserved}
                                         <br />
                                         <img src="/static/assets/icons/update.svg" alt="uploading"/>&nbsp;
-                                        This file is currently being uploaded. Please wait.
+                                        Uploading...
                                     {/if}
                                     {#if file.tag}
                                         <br />

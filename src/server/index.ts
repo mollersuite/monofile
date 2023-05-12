@@ -199,6 +199,8 @@ let fgRQH = async (req:express.Request,res:express.Response) => {
             ServeError(res,err.status,err.message)
         })
 
+    } else {
+        ServeError(res, 404, "file not found")
     }
 
     

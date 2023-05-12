@@ -4,7 +4,7 @@ import * as Accounts from "../lib/accounts";
 import * as auth from "../lib/auth";
 
 import ServeError from "../lib/errors";
-import Files, { FileVisibility } from "../lib/files";
+import Files, { FileVisibility, id_check_regex } from "../lib/files";
 
 let parser = bodyParser.json({
     type: ["text/plain","application/json"]
@@ -124,13 +124,33 @@ authRoutes.post("/dfv", parser, (req,res) => {
         return
     }
 
-    if (['public','private','anonymous'].find(e => e == req.body.defaultFileVisibility)) {
+    if (['public','private','anonymous'].includes(req.body.defaultFileVisibility)) {
         acc.defaultFileVisibility = req.body.defaultFileVisibility
         Accounts.save()
         res.send(`dfv has been set to ${acc.defaultFileVisibility}`)
     } else {
         res.status(400)
         res.send("invalid dfv")
+    }
+})
+
+authRoutes.post("/customcss", parser, (req,res) => {
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    if (!acc) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+    
+    if (typeof req.body.fileId != "string") return
+
+    if (id_check_regex.test(req.body.fileId) && req.body.fileId.length <= config.maxUploadIdLength) {
+        acc.customCSS = req.body.fileId
+        if (!req.body.fileId) delete acc.customCSS
+        Accounts.save()
+        res.send(`custom css saved`)
+    } else {
+        res.status(400)
+        res.send("invalid fileid")
     }
 })
 
@@ -243,4 +263,22 @@ authRoutes.get("/me", (req,res) => {
             sessionExpires: auth.AuthTokens.find(e => e.token == req.cookies.auth)?.expire
         })
     }
+})
+
+authRoutes.get("/customCSS", (req,res) => {
+    if (!auth.validate(req.cookies.auth)) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+    
+    // lazy rn so
+
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    if (acc) {
+        if (acc.customCSS) {
+            res.redirect(`/file/${acc.customCSS}`)
+        } else {
+            res.send("")
+        }
+    } else res.send("")
 })

@@ -140,7 +140,7 @@
                 <div class="category">
                     <p>Uploads</p>
                 </div>
-
+                
                 <button on:click={() => uplOpts.dfv(optPicker)}>
                     <img src={`/static/assets/icons/${$account.defaultFileVisibility || "public"}.svg`} alt={$account.defaultFileVisibility || "public"}>
                     <p>Default file visibility<span><br />Uploads will be <strong>{$account.defaultFileVisibility || "public"}</strong> by default</span></p>
@@ -164,7 +164,16 @@
                     <img src="/static/assets/icons/logout.svg" alt="logout">
                     <p>Log out<span><br />Session expires {new Date($account.sessionExpires).toLocaleDateString()}</span></p>
                 </button>
-                
+
+                <div class="category">
+                    <p>Customization</p>
+                </div>
+
+                <button on:click={() => accOpts.customcss(optPicker)}>
+                    <img src="/static/assets/icons/paint.svg" alt="logout_all">
+                    <p>Set custom CSS<span><br />{@html $account.customCSS ? `Using file ID <span class="number">${$account.customCSS}</span>` : "No custom CSS set"}</span></p>
+                </button>
+
                 {#if $account.admin}
 
                     <div class="category">

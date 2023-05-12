@@ -119,6 +119,11 @@ export default class Files {
                 return
             }
 
+            if (this.files[uploadId] && this.files[uploadId].reserved) {
+                reject({status:400,message:"already uploading this file. if your file is stuck in this state, contact an administrator"});
+                return
+            }
+
             if (settings.name.length > 128) {
                 reject({status:400,message:"name too long"}); 
                 return

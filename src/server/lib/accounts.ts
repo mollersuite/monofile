@@ -18,6 +18,7 @@ export interface Account {
     files                 : string[]
     admin                 : boolean
     defaultFileVisibility : FileVisibility
+    customCSS?            : string
 }
 
 export function create(username:string,pwd:string,admin:boolean=false):Promise<string> {
