@@ -42,7 +42,7 @@ fileApiRoutes.get("/list", (req,res) => {
             owner: null,
             id:e
         }
-    }))
+    }).filter(e=>e))
 
 })
 
