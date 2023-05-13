@@ -31,15 +31,16 @@ fileApiRoutes.get("/list", (req,res) => {
     let acc = Accounts.getFromToken(req.cookies.auth)
     
     if (!acc) return
+    let accId = acc.id
 
     res.send(acc.files.map((e) => {
         let fp = files.getFilePointer(e)
+        if (!fp) { Accounts.files.deindex(accId, e); return null }
         return {
             ...fp,
             messageids: null,
             owner: null,
-            id:e,
-            sizeDisplay: fp.sizeInBytes ? bytes(fp.sizeInBytes) : "[File size unknown]"
+            id:e
         }
     }))
 
