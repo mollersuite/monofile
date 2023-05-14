@@ -135,7 +135,7 @@
             <!-- container to allow for animate directive -->
             <div>
                 <div class="file" transition:fileTransition style:border={upload[1].uploadStatus.error ? "1px solid #BB7070" : ""}>
-                    <h2>{upload[1].name} <span style:color="#999999" style:font-weight="400">{upload[1].type}{@html upload[1].type == "upload" ? `&nbsp;(${Math.round(upload[1].file.size/1048576)}MB)` : ""}</span></h2>
+                    <h2>{upload[1].name} <span style:color="#999999" style:font-weight="400">{upload[1].type}{@html upload[1].type == "upload" ? `&nbsp;(${Math.round(upload[1].file.size/1048576)}MiB)` : ""}</span></h2>
                     
                     {#if upload[1].maximized && !uploadInProgress}
                         <div transition:padding_scaleY|local>
@@ -211,7 +211,7 @@
     <p style:color="#999999" style:text-align="center">
         Hosting <span class="number" style:font-weight="600">{$serverStats.files || "•••"}</span> files
         —
-        Maximum filesize is <span class="number" style:font-weight="600">{(($serverStats.maxDiscordFileSize || 0)*($serverStats.maxDiscordFiles || 0))/1048576 || "•••"}MB</span>
+        Maximum filesize is <span class="number" style:font-weight="600">{(($serverStats.maxDiscordFileSize || 0)*($serverStats.maxDiscordFiles || 0))/1048576 || "•••"}MiB</span>
         <br />
     </p>
 

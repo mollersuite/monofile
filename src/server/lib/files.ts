@@ -149,6 +149,12 @@ export default class Files {
                     visibility: settings.owner ? "private" : "public",
                     reserved: true
                 }
+            
+            // save
+
+            if (settings.owner) {
+                await files.index(settings.owner,uploadId)
+            }
     
             // get buffer
             if (fBuffer.byteLength >= (this.config.maxDiscordFileSize*this.config.maxDiscordFiles)) {
@@ -226,11 +232,7 @@ export default class Files {
                 }
             ))
 
-            // save
-
-            if (settings.owner) {
-                await files.index(settings.owner,uploadId)
-            }
+            
         })
     }
     
