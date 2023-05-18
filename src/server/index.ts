@@ -194,6 +194,11 @@ let fgRQH = async (req:express.Request,res:express.Response) => {
                 res.setHeader("Content-Length",f.byteSize)
             }
             res.status(200)
+
+            if (req.header("range") == "bytes=0-") {
+                res.status(206)
+            }
+
             f.dataStream.pipe(res)
         }).catch((err) => {
             ServeError(res,err.status,err.message)
