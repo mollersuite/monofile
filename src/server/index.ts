@@ -190,33 +190,29 @@ let fgRQH = async (req:express.Request,res:express.Response) => {
         // todo: make readfilestream just the stream since we already have filepointer
         files.readFileStream(req.params.fileId).then(async f => {
             res.setHeader("Content-Type",f.contentType)
+            if (f.byteSize) {
+                res.setHeader("Content-Length",f.byteSize)
+            }
 
-            if (req.headers.range) {
-                // todo: proper implementation of range header
-                /*
+            if (f.byteSize && req.range(f.byteSize)) {
+                // range header implementation
+                // todo : make this better (or actually work if i dont manage to finish it)
+                let ranges = req.range(f.byteSize)
+                if (typeof ranges == "number" || !ranges) { res.status(400); res.send(); return }
                 let fsds = f.dataStream;
                 res.status(206);
 
-                let position = 0
+                let bytePosition = 0
+
+                console.log(ranges.type)
 
                 for await(let x of fsds) {
                     
-                }*/
+                    let curRanges = [ bytePosition, bytePosition+x.byteLength()-1 ]
+                    bytePosition+= x.byteLength
 
-                let fsds = f.dataStream;
-
-                let bf = []
-
-                for await(let x of fsds) {
-                    bf.push(x)
                 }
-
-                res.send(Buffer.concat(bf))
             } else {
-                if (f.byteSize) {
-                    res.setHeader("Content-Length",f.byteSize)
-                }
-
                 res.status(200)
                 f.dataStream.pipe(res)
             }
