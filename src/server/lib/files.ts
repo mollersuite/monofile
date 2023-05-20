@@ -50,7 +50,8 @@ export interface FilePointer {
     sizeInBytes?:number,
     tag?:string,
     visibility?:FileVisibility,
-    reserved?: boolean
+    reserved?: boolean,
+    chunkSize?: number
 }
 
 export interface StatusCodeError {
@@ -147,7 +148,9 @@ export default class Files {
 
                     owner:settings.owner,
                     visibility: settings.owner ? "private" : "public",
-                    reserved: true
+                    reserved: true,
+
+                    chunkSize: this.config.maxDiscordFileSize
                 }
             
             // save
@@ -228,7 +231,9 @@ export default class Files {
                         : undefined
                     ),
                     // so that json.stringify doesnt include tag:undefined
-                    ...((ogf||{}).tag ? {tag:ogf.tag} : {})
+                    ...((ogf||{}).tag ? {tag:ogf.tag} : {}),
+
+                    chunkSize: this.config.maxDiscordFileSize
                 }
             ))
 
@@ -260,7 +265,7 @@ export default class Files {
 
     // todo: move read code here
 
-    readFileStream(uploadId: string):Promise<{dataStream:Readable,contentType:string,byteSize?:number}> {
+    readFileStream(uploadId: string, range?: {start:number, end:number}):Promise<Readable> {
         return new Promise(async (resolve,reject) => {
             if (!this.uploadChannel) {
                 reject({status:503,message:"server is not ready - please try again later"})
@@ -274,18 +279,50 @@ export default class Files {
                     read(){}
                 })
 
-                resolve({
-                    contentType: file.mime,
-                    dataStream: dataStream,
-                    byteSize: file.sizeInBytes
-                })
+                resolve(dataStream)
+
+                let 
+                    scan_msg_begin   = 0,
+                    scan_msg_end     = file.messageids.length,
+                    scan_files_begin = 0,
+                    scan_files_end   = -1
+
+                let useRanges = range && file.chunkSize && file.sizeInBytes;
+
+                // todo: figure out how to get typesccript to accept useRanges
+                // i'm too tired to look it up or write whatever it wnats me to do
+                if (range && file.chunkSize && file.sizeInBytes) {
+
+                    // Calculate where to start file scans...
+
+                    scan_files_begin = Math.floor(range.start / file.chunkSize)
+                    scan_files_end = Math.ceil(range.end / file.chunkSize) - 1
+
+                    scan_msg_begin = Math.floor(scan_files_begin / 10)
+                    scan_msg_end = Math.ceil(scan_files_end / 10)
+                    
+                }
         
-                for (let i = 0; i < file.messageids.length; i++) {
-                    let msg = await this.uploadChannel.messages.fetch(file.messageids[i]).catch(() => {return null})
+                for (let xi = scan_msg_begin; xi < scan_msg_end; xi++) {
+
+                    let msg = await this.uploadChannel.messages.fetch(file.messageids[xi]).catch(() => {return null})
                     if (msg?.attachments) {
+
                         let attach = Array.from(msg.attachments.values())
-                        for (let i = 0; i < attach.length; i++) {
-                            let d = await axios.get(attach[i].url,{responseType:"arraybuffer"}).catch((e:Error) => {console.error(e)})
+                        for (let i = (useRanges && xi == scan_msg_begin ? scan_files_begin : 0); i < (useRanges && xi == scan_msg_end ? scan_files_end : attach.length); i++) {
+
+                            let d = await axios.get(
+                                attach[i].url,
+                                {
+                                    responseType:"arraybuffer",
+                                    headers: {
+                                        ...(useRanges ? {
+                                            "Range": `bytes=${i+(xi*10) == scan_files_begin && range && file.chunkSize ? range.start-(scan_files_begin*file.chunkSize) : "0"}-${i+(xi*10) == scan_files_end && range && file.chunkSize ? range.end-(scan_files_end*file.chunkSize) : ""}`
+                                        } : {})
+                                    }
+                                }
+                            ).catch((e:Error) => {console.error(e)})
+
                             if (d) {
                                 dataStream.push(d.data)
                             } else {
@@ -293,8 +330,11 @@ export default class Files {
                                 dataStream.destroy(new Error("file read error"))
                                 return
                             }
+
                         }
+
                     }
+
                 }
 
                 dataStream.push(null)

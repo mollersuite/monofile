@@ -15,6 +15,7 @@ import * as Accounts from "./lib/accounts"
 import { authRoutes, auth_setFilesObj } from "./routes/authRoutes";
 import { fileApiRoutes, setFilesObj } from "./routes/fileApiRoutes";
 import { adminRoutes, admin_setFilesObj } from "./routes/adminRoutes";
+import { Range } from "range-parser";
 
 require("dotenv").config()
 
@@ -187,36 +188,46 @@ let fgRQH = async (req:express.Request,res:express.Response) => {
             return
         }
 
-        // todo: make readfilestream just the stream since we already have filepointer
-        files.readFileStream(req.params.fileId).then(async f => {
-            res.setHeader("Content-Type",f.contentType)
-            if (f.byteSize) {
-                res.setHeader("Content-Length",f.byteSize)
-            }
+        let range: Range | undefined
 
-            if (f.byteSize && req.range(f.byteSize)) {
-                // range header implementation
-                // todo : make this better (or actually work if i dont manage to finish it)
-                let ranges = req.range(f.byteSize)
-                if (typeof ranges == "number" || !ranges) { res.status(400); res.send(); return }
-                let fsds = f.dataStream;
-                res.status(206);
+        res.setHeader("Content-Type",file.mime)
+        if (file.sizeInBytes) {
+            res.setHeader("Content-Length",file.sizeInBytes)
+            
+            if (file.chunkSize) {
+                let rng = req.range(file.sizeInBytes)
+                if (rng) {
 
-                let bytePosition = 0
+                    // error handling
+                    if (typeof rng == "number") {
+                        res.status(rng == -1 ? 416 : 400).send()
+                        return
+                    }
+                    if (rng.type != "bytes") {
+                        res.status(400).send();
+                        return
+                    }
 
-                console.log(ranges.type)
-
-                for await(let x of fsds) {
+                    // set ranges var
+                    let rngs = Array.from(rng)
+                    if (rngs.length != 1) { res.status(400).send(); return }
+                    range = rngs[0]
                     
-                    let curRanges = [ bytePosition, bytePosition+x.byteLength()-1 ]
-                    bytePosition+= x.byteLength
-
                 }
-            } else {
-                res.status(200)
-                f.dataStream.pipe(res)
             }
+        }
 
+        // supports ranges
+        
+
+        files.readFileStream(req.params.fileId, range).then(async stream => {
+
+            if (range) {
+                res.status(206)
+                res.header("Content-Length", (range.end-range.start + 1).toString())
+                res.header("Content-Range", `bytes ${range.start}-${range.end}/${file.sizeInBytes}`)
+            }
+            stream.pipe(res)
             
         }).catch((err) => {
             ServeError(res,err.status,err.message)
@@ -229,6 +240,23 @@ let fgRQH = async (req:express.Request,res:express.Response) => {
     
 }
 
+let fgwh = (req: express.Request, res:express.Response) => {
+    let file = files.getFilePointer(req.params.fileId)
+
+    if (!file) {
+        res.status(404)
+        res.send()
+    } else {
+        res.setHeader("Content-Type",file.mime)
+        if (file.sizeInBytes) {
+            res.setHeader("Content-Length",file.sizeInBytes)
+        }
+        if (file.chunkSize) {
+            res.setHeader("Accept-Ranges", "bytes")
+        }
+    }
+}
+
 app.get("/server",(req,res) => {
     res.send(JSON.stringify({
         ...config,
@@ -239,6 +267,9 @@ app.get("/server",(req,res) => {
 
 app.get("/file/:fileId",fgRQH)
 app.get("/:fileId",fgRQH)
+
+app.head("/file/:fileId",fgwh)
+app.head("/:fileId",fgwh)
 
 /*
     routes should be in this order:
