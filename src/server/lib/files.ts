@@ -283,7 +283,7 @@ export default class Files {
 
                 let 
                     scan_msg_begin   = 0,
-                    scan_msg_end     = file.messageids.length,
+                    scan_msg_end     = file.messageids.length-1,
                     scan_files_begin = 0,
                     scan_files_end   = -1
 
@@ -303,13 +303,13 @@ export default class Files {
                     
                 }
         
-                for (let xi = scan_msg_begin; xi < scan_msg_end; xi++) {
+                for (let xi = scan_msg_begin; xi < scan_msg_end+1; xi++) {
 
                     let msg = await this.uploadChannel.messages.fetch(file.messageids[xi]).catch(() => {return null})
                     if (msg?.attachments) {
 
                         let attach = Array.from(msg.attachments.values())
-                        for (let i = (useRanges && xi == scan_msg_begin ? ( scan_files_begin - (xi*10) ) : 0); i < (useRanges && xi == scan_msg_end-1 ? ( scan_files_end - (xi*10) + 1 ) : attach.length); i++) {
+                        for (let i = (useRanges && xi == scan_msg_begin ? ( scan_files_begin - (xi*10) ) : 0); i < (useRanges && xi == scan_msg_end ? ( scan_files_end - (xi*10) + 1 ) : attach.length); i++) {
 
                             let d = await axios.get(
                                 attach[i].url,
