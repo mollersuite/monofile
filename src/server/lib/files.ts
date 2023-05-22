@@ -309,7 +309,7 @@ export default class Files {
                     if (msg?.attachments) {
 
                         let attach = Array.from(msg.attachments.values())
-                        for (let i = (useRanges && xi == scan_msg_begin ? ( scan_files_begin - (xi*10) ) : 0); i < (useRanges && xi == scan_msg_end ? ( scan_files_end - (x1*10) + 1 ) : attach.length); i++) {
+                        for (let i = (useRanges && xi == scan_msg_begin ? ( scan_files_begin - (xi*10) ) : 0); i < (useRanges && xi == scan_msg_end ? ( scan_files_end - (xi*10) + 1 ) : attach.length); i++) {
 
                             let d = await axios.get(
                                 attach[i].url,
