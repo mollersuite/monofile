@@ -181,6 +181,7 @@ let fgRQH = async (req:express.Request,res:express.Response) => {
     
     let file = files.getFilePointer(req.params.fileId)
     res.setHeader("Access-Control-Allow-Origin", "*")
+    if (req.query.attachment == "1") res.setHeader("Content-Disposition", "attachment")
     
     if (file) {
         
@@ -244,6 +245,7 @@ let fgRQH = async (req:express.Request,res:express.Response) => {
 let fgwh = (req: express.Request, res:express.Response) => {
     let file = files.getFilePointer(req.params.fileId)
     res.setHeader("Access-Control-Allow-Origin", "*")
+    if (req.query.attachment == "1") res.setHeader("Content-Disposition", "attachment")
     if (!file) {
         res.status(404)
         res.send()
