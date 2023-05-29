@@ -180,6 +180,7 @@ app.get("/download/:fileId",(req,res) => {
 let fgRQH = async (req:express.Request,res:express.Response) => {
     
     let file = files.getFilePointer(req.params.fileId)
+    res.setHeader("Access-Control-Allow-Origin", "*")
     
     if (file) {
         
@@ -242,7 +243,7 @@ let fgRQH = async (req:express.Request,res:express.Response) => {
 
 let fgwh = (req: express.Request, res:express.Response) => {
     let file = files.getFilePointer(req.params.fileId)
-
+    res.setHeader("Access-Control-Allow-Origin", "*")
     if (!file) {
         res.status(404)
         res.send()
