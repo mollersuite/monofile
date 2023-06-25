@@ -350,9 +350,11 @@ export default class Files {
                         getNextChunk().then(async (nextChunk) => {
                             if (nextChunk == "__ERR") {this.destroy(new Error("file read error")); return}
                             let response = this.push(nextChunk)
-                            
+
                             while (response) {
-                                response = this.push(await getNextChunk())
+                                let nextChunk = await getNextChunk()
+                                response = this.push(nextChunk)
+                                if (!nextChunk) return
                             }
                         })
                     }
