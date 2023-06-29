@@ -346,9 +346,13 @@ export default class Files {
                 }
                 
                 let ord:number[] = []
+                // hopefully this regulates it?
+                let lastChunkSent = true
 
                 let dataStream = new Readable({
                     read(){
+                        if (!lastChunkSent) return
+                        lastChunkSent = false
                         console.log(`${uploadId}: Getting chunk ${position+1}/${attachments.length}`)
                         let gC = position+1
                         getNextChunk().then(async (nextChunk) => {
@@ -357,11 +361,17 @@ export default class Files {
                             if (nextChunk == "__ERR") {this.destroy(new Error("file read error")); return}
                             let response = this.push(nextChunk)
 
+                            if (!nextChunk) return // EOF
+
                             while (response) {
+                                console.log(`${uploadId}: Getting chunk ${position+1}/${attachments.length}`)
                                 let nextChunk = await getNextChunk()
+                                let gC = position+1
+                                ord.push(gC)
                                 response = this.push(nextChunk)
                                 if (!nextChunk) return
                             }
+                            lastChunkSent = true
                         })
                     }
                 })
