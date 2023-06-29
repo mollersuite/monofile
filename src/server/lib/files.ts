@@ -347,9 +347,9 @@ export default class Files {
 
                 let dataStream = new Readable({
                     read(){
-                        console.log(`Getting chunk ${position+1}/${attachments.length}`)
+                        console.log(`${uploadId}: Getting chunk ${position+1}/${attachments.length}`)
                         getNextChunk().then(async (nextChunk) => {
-                            console.log(`Got chunk ${position+1}/${attachments.length}. It is ${nextChunk ? "not " : ""} null.`)
+                            console.log(`${uploadId}: Got chunk ${position}/${attachments.length}. It is ${nextChunk ? "not " : ""}null.`)
                             if (nextChunk == "__ERR") {this.destroy(new Error("file read error")); return}
                             let response = this.push(nextChunk)
 
