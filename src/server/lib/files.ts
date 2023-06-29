@@ -344,12 +344,16 @@ export default class Files {
                         return "__ERR"
                     }
                 }
+                
+                let ord:number[] = []
 
                 let dataStream = new Readable({
                     read(){
                         console.log(`${uploadId}: Getting chunk ${position+1}/${attachments.length}`)
+                        let gC = position+1
                         getNextChunk().then(async (nextChunk) => {
-                            console.log(`${uploadId}: Got chunk ${position}/${attachments.length}. It is ${nextChunk ? "not " : ""}null.`)
+                            ord.push(gC)
+                            console.log(`${uploadId}: Got chunk ${gC}/${attachments.length}, next up ${position}. It is ${nextChunk ? "not " : ""}null. Current order : ${ord.map(e => e.toString()).join(" ")}`)
                             if (nextChunk == "__ERR") {this.destroy(new Error("file read error")); return}
                             let response = this.push(nextChunk)
 
