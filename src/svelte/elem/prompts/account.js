@@ -1,4 +1,4 @@
-import { fetchAccountData, account } from "../stores.mjs"
+import { fetchAccountData, account, refreshNeeded } from "../stores.mjs"
 import { get } from "svelte/store";
 
 export function deleteAccount(optPicker) {
@@ -143,6 +143,7 @@ export function customcss(optPicker) {
                 }
 
                 fetchAccountData()
+                refreshNeeded.set(true);
             })
         }
     })
