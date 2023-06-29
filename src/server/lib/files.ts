@@ -365,9 +365,10 @@ export default class Files {
 
                             while (response) {
                                 console.log(`${uploadId}: Getting chunk ${position+1}/${attachments.length}`)
-                                let nextChunk = await getNextChunk()
                                 let gC = position+1
+                                let nextChunk = await getNextChunk()
                                 ord.push(gC)
+                                console.log(`${uploadId}: Got chunk ${gC}/${attachments.length}, next up ${position}. It is ${nextChunk ? "not " : ""}null. Current order : ${ord.map(e => e.toString()).join(" ")}`)
                                 response = this.push(nextChunk)
                                 if (!nextChunk) return
                             }
