@@ -196,7 +196,7 @@
                         <p>Elevate account to admin</p>
                     </button>
 
-                    <button>
+                    <button on:click={() => admOpts.chgOwner(optPicker)}>
                         <img src="/static/assets/icons/link.svg" alt="change file owner">
                         <p>Change file owner</p>
                     </button>

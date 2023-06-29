@@ -38,3 +38,41 @@ export function pwdReset(optPicker) {
         }
     })
 }
+
+export function chgOwner(optPicker) {
+    optPicker.picker("Transfer file ownership",[
+        {
+            name: "File ID",
+            icon: "/static/assets/icons/file.svg",
+            id: "file",
+            inputSettings: {
+                password: true
+            }
+        },
+        {
+            name: "New owner",
+            icon: "/static/assets/icons/person.svg",
+            id: "owner",
+            inputSettings: {}
+        },
+        {
+            name: "Transfer file ownership",
+            icon: "/static/assets/icons/update.svg",
+            description: "This will transfer the file to this user",
+            id: true
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected) {
+            fetch(`/admin/transfer`,{method:"POST", body:JSON.stringify({
+                owner: exp.owner,
+                target: exp.file
+            })}).then((response) => {
+                
+                if (response.status != 200) {
+                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                }
+
+            })
+        }
+    })
+}
