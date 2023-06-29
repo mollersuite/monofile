@@ -7,6 +7,7 @@
     import OptionPicker from "../prompts/OptionPicker.svelte";
     import * as accOpts from "../prompts/account";
     import * as uplOpts from "../prompts/uploads";
+    import * as admOpts from "../prompts/admin";
 
     let targetAction
     let inProgress
@@ -185,7 +186,7 @@
                         <p>Delete user account</p>
                     </button>
 
-                    <button>
+                    <button on:click={() => admOpts.pwdReset(optPicker)}>
                         <img src="/static/assets/icons/change_password.svg" alt="change password">
                         <p>Change user password</p>
                     </button>
