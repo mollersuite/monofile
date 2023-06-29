@@ -2,7 +2,7 @@
     import Pulldown from "./Pulldown.svelte"
     import { padding_scaleY } from "../transition/padding_scaleY"
     import { circIn,circOut } from "svelte/easing"
-    import { account, fetchAccountData, serverStats } from "../stores.mjs";
+    import { account, fetchAccountData, serverStats, refreshNeeded } from "../stores.mjs";
     import { fade } from "svelte/transition";
     import OptionPicker from "../prompts/OptionPicker.svelte";
     import * as accOpts from "../prompts/account";
@@ -160,6 +160,13 @@
                     <img src="/static/assets/icons/paint.svg" alt="customcss">
                     <p>Set custom CSS<span><br />{@html $account.customCSS ? `Using file ID <span class="number">${$account.customCSS}</span>` : "No custom CSS set"}</span></p>
                 </button>
+
+                {#if $refreshNeeded}
+                    <button on:click={() => window.location.reload(true)} transition:fade={{duration: 200}}>
+                        <img src="/static/assets/icons/refresh.svg" alt="refresh">
+                        <p>Refresh<span><br />Changes were made which require a refresh</span></p>
+                    </button>
+                {/if}
                 
                 <div class="category">
                     <p>Sessions</p>

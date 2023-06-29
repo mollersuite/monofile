@@ -1,5 +1,6 @@
 import { writable } from "svelte/store"
 
+export let refreshNeeded = writable(false)
 export let pulldownManager = writable(0)
 export let account = writable({})
 export let serverStats = writable({})
