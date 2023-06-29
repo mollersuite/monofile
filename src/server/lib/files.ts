@@ -353,22 +353,14 @@ export default class Files {
                     read(){
                         if (!lastChunkSent) return
                         lastChunkSent = false
-                        console.log(`${uploadId}: Getting chunk ${position+1}/${attachments.length}`)
-                        let gC = position+1
                         getNextChunk().then(async (nextChunk) => {
-                            ord.push(gC)
-                            console.log(`${uploadId}: Got chunk ${gC}/${attachments.length}, next up ${position}. It is ${nextChunk ? "not " : ""}null. Current order : ${ord.map(e => e.toString()).join(" ")}`)
                             if (nextChunk == "__ERR") {this.destroy(new Error("file read error")); return}
                             let response = this.push(nextChunk)
 
                             if (!nextChunk) return // EOF
 
                             while (response) {
-                                console.log(`${uploadId}: Getting chunk ${position+1}/${attachments.length}`)
-                                let gC = position+1
                                 let nextChunk = await getNextChunk()
-                                ord.push(gC)
-                                console.log(`${uploadId}: Got chunk ${gC}/${attachments.length}, next up ${position}. It is ${nextChunk ? "not " : ""}null. Current order : ${ord.map(e => e.toString()).join(" ")}`)
                                 response = this.push(nextChunk)
                                 if (!nextChunk) return
                             }
