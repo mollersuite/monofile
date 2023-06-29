@@ -45,9 +45,7 @@ export function chgOwner(optPicker) {
             name: "File ID",
             icon: "/static/assets/icons/file.svg",
             id: "file",
-            inputSettings: {
-                password: true
-            }
+            inputSettings: {}
         },
         {
             name: "New owner",

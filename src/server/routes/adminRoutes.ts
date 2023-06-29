@@ -46,7 +46,7 @@ adminRoutes.post("/reset", parser, (req,res) => {
     
     if (!acc) return
     if (!acc.admin) return
-    if (typeof req.body.target !== "string" || typeof req.body.password !== "string" || !req.body.password) {
+    if (typeof req.body.target !== "string" || typeof req.body.password !== "string") {
         res.status(404)
         res.send()
         return
@@ -75,7 +75,7 @@ adminRoutes.post("/transfer", parser, (req,res) => {
     
     if (!acc) return
     if (!acc.admin) return
-    if (typeof req.body.target !== "string" || typeof req.body.password !== "string" || !req.body.password) {
+    if (typeof req.body.target !== "string" || typeof req.body.owner !== "string") {
         res.status(404)
         res.send()
         return
