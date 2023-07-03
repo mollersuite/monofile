@@ -60,7 +60,43 @@ adminRoutes.post("/reset", parser, (req,res) => {
     }
 
     Accounts.password.set ( targetAccount.id, req.body.password )
+    auth.AuthTokens.filter(e => e.account == targetAccount?.id).forEach((v) => {
+        auth.invalidate(v.token)
+    })
     res.send()
+
+})
+
+adminRoutes.post("/delete", parser, (req,res) => {
+
+    if (!auth.validate(req.cookies.auth)) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+
+    let acc = Accounts.getFromToken(req.cookies.auth) as Accounts.Account
+    
+    if (!acc) return
+    if (!acc.admin) return
+    if (typeof req.body.target !== "string") {
+        res.status(404)
+        res.send()
+        return
+    }
+
+    let targetFile = files.getFilePointer(req.body.target)
+
+    if (!targetFile) {
+        res.status(404)
+        res.send()
+        return
+    }
+
+    files.unlink(req.body.target).then(() => {
+        res.status(200)
+    }).catch(() => {
+        res.status(500)
+    }).finally(() => res.send())
 
 })
 

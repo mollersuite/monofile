@@ -74,3 +74,33 @@ export function chgOwner(optPicker) {
         }
     })
 }
+
+export function delFile(optPicker) {
+    optPicker.picker("Delete file",[
+        {
+            name: "File ID",
+            icon: "/static/assets/icons/file.svg",
+            id: "file",
+            inputSettings: {}
+        },
+        {
+            name: "Delete",
+            icon: "/static/assets/icons/admin/delete_file.svg",
+            description: "This can't be undone",
+            id: true
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected) {
+            fetch(`/admin/delete`,{method:"POST", body:JSON.stringify({
+                owner: exp.owner,
+                target: exp.file
+            })}).then((response) => {
+                
+                if (response.status != 200) {
+                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                }
+
+            })
+        }
+    })
+}

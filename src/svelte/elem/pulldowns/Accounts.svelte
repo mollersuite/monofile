@@ -208,7 +208,7 @@
                         <p>Change file owner</p>
                     </button>
 
-                    <button>
+                    <button on:click={() => admOpts.delFile(optPicker)}>
                         <img src="/static/assets/icons/admin/delete_file.svg" alt="delete file">
                         <p>Delete file</p>
                     </button>
