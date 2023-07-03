@@ -71,35 +71,44 @@
         })
     }
 
-    let upload_files = () => {
+    let upload_files = async () => {
         uploadInProgress = true
 
-        // go through all files
-        Object.entries(uploads).forEach(([x,v]) => {
-            switch(v.type) {
-                case "upload":
-                    let fd = new FormData()
-                    fd.append("file",v.file)
+        let sequential = localStorage.getItem("sequentialMode") == "true"
 
-                    handle_fetch_promise(x,fetch("/upload",{
-                        headers: {
-                            "monofile-params": JSON.stringify(v.params)
-                        },
-                        method: "POST",
-                        body: fd
-                    }))
-                break
-                case "clone":
-                    handle_fetch_promise(x,fetch("/clone",{
-                        method: "POST",
-                        body: JSON.stringify({
-                            url: v.url,
-                            ...v.params
-                        })
-                    }))
-                break
+        // go through all files
+        for (let [x,v] of Object.entries(uploads)) {
+            // quick patch-in to allow for a switch to have everything upload sequentially
+            // switch will have a proper menu option later, for now i'm lazy so it's just gonna be a Secret
+            let hdl = () => {
+                switch(v.type) {
+                    case "upload":
+                        let fd = new FormData()
+                        fd.append("file",v.file)
+
+                        return handle_fetch_promise(x,fetch("/upload",{
+                            headers: {
+                                "monofile-params": JSON.stringify(v.params)
+                            },
+                            method: "POST",
+                            body: fd
+                        }))
+                    break
+                    case "clone":
+                        return handle_fetch_promise(x,fetch("/clone",{
+                            method: "POST",
+                            body: JSON.stringify({
+                                url: v.url,
+                                ...v.params
+                            })
+                        }))
+                    break
+                }
             }
-        })
+            
+            if (sequential) await hdl();
+            else hdl();
+        }
     }
 
     // animation
