@@ -269,9 +269,11 @@ app.get("/server",(req,res) => {
 })
 
 app.get("/file/:fileId",fgRQH)
+app.get("/cpt/:fileId/*",fgRQH)
 app.get("/:fileId",fgRQH)
 
 app.head("/file/:fileId",fgwh)
+app.head("/cpt/:fileId/*",fgwh)
 app.head("/:fileId",fgwh)
 
 /*
