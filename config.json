@@ -13,5 +13,11 @@
 
     "webdrop": {
         "accountRequired": false
+    },
+
+    "mail": {
+        "host": "smtp.fastmail.com",
+        "port": 465,
+        "secure": true
     }
 }
