@@ -54,6 +54,13 @@
                 flex-grow:1;
             }
 
+            button.flavor {
+
+                padding: 0;
+                background: none; 
+
+            }
+
             input[type=text],input[type=password] {
                 border:none;
                 border-radius:0;

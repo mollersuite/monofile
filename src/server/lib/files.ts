@@ -13,9 +13,9 @@ export let alphanum = Array.from("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRST
 
 export type FileVisibility = "public" | "anonymous" | "private"
 
-export function generateFileId() {
+export function generateFileId(length:number=5) {
     let fid = ""
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < length; i++) {
         fid += alphanum[Math.floor(Math.random()*alphanum.length)]
     }
     return fid

@@ -2,9 +2,10 @@ import bodyParser from "body-parser";
 import { Router } from "express";
 import * as Accounts from "../lib/accounts";
 import * as auth from "../lib/auth";
+import { sendMail } from "../lib/mail";
 
 import ServeError from "../lib/errors";
-import Files, { FileVisibility, id_check_regex } from "../lib/files";
+import Files, { FileVisibility, generateFileId, id_check_regex } from "../lib/files";
 
 import { writeFile } from "fs";
 
@@ -217,6 +218,162 @@ authRoutes.post("/change_username", parser, (req,res) => {
     Accounts.save()
 
     res.send("username changed")
+})
+
+// shit way to do this but...
+
+let verificationCodes = new Map<string, {code: string, email: string, expiry: NodeJS.Timeout, requestedAt:number}>()
+
+authRoutes.post("/request_email_change", parser, (req,res) => {
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    if (!acc) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+    
+    if (typeof req.body.email != "string" || !req.body.email) {
+        ServeError(res,400, "supply an email")
+        return
+    }
+
+    let vcode = verificationCodes.get(acc.id) 
+
+    if (vcode && vcode.requestedAt+(15*60*1000) > Date.now()) {
+        ServeError(res, 429, `Please wait a few moments to request another email change.`)
+        return
+    }
+
+
+    // delete previous if any
+    let e = vcode?.expiry
+    if (e) clearTimeout(e)
+    verificationCodes.delete(acc?.id||"")
+
+    let code = generateFileId(12).toUpperCase()
+
+    // set
+
+    verificationCodes.set(acc.id, {
+        code,
+        email: req.body.email,
+        expiry: setTimeout( () => verificationCodes.delete(acc?.id||""), 15*60*1000),
+        requestedAt: Date.now()
+    })
+
+    // this is a mess but it's fine
+
+    sendMail(req.body.email, `Hey there, ${acc.username} - let's connect your email`, `<b>Hello there!</b> You are recieving this message because you decided to link your email, <span code>${req.body.email}</span>, to your account, <span username>${acc.username}</span>. If you would like to continue, please <a href="https://${req.header("Host")}/auth/confirm_email/${code}"><span code>click here</span></a>, or go to https://${req.header("Host")}/auth/confirm_email/${code}.`).then(() => {
+        res.send("OK")
+    }).catch((err) => {
+        let e = verificationCodes.get(acc?.id||"")?.expiry
+        if (e) clearTimeout(e)
+        verificationCodes.delete(acc?.id||"")
+        ServeError(res, 500, err?.toString())
+    })
+})
+
+authRoutes.get("/confirm_email/:code", (req,res) => {
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    if (!acc) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+
+    let vcode = verificationCodes.get(acc.id)
+
+    if (!vcode) { ServeError(res, 400, "nothing to confirm"); return }
+
+    if (typeof req.params.code == "string" && req.params.code.toUpperCase() == vcode.code) {
+        acc.email = vcode.email
+        Accounts.save();
+
+        let e = verificationCodes.get(acc?.id||"")?.expiry
+        if (e) clearTimeout(e)
+        verificationCodes.delete(acc?.id||"")
+
+        res.send(`<script>window.close()</script>`)
+    } else {
+        ServeError(res, 400, "invalid code")
+    }
+})
+
+let pwReset = new Map<string, {code: string, expiry: NodeJS.Timeout, requestedAt:number}>()
+let prcIdx = new Map<string, string>()
+
+authRoutes.post("/request_emergency_login", parser, (req,res) => {
+    if (auth.validate(req.cookies.auth || "")) return
+    
+    if (typeof req.body.account != "string" || !req.body.account) {
+        ServeError(res,400, "supply a username")
+        return
+    }
+
+    let acc = Accounts.getFromUsername(req.body.account)
+    if (!acc || !acc.email) {
+        ServeError(res, 400, "this account either does not exist or does not have an email attached; please contact the server's admin for a reset if you would still like to access it")
+        return
+    }
+
+    let pResetCode = pwReset.get(acc.id) 
+
+    if (pResetCode && pResetCode.requestedAt+(15*60*1000) > Date.now()) {
+        ServeError(res, 429, `Please wait a few moments to request another emergency login.`)
+        return
+    }
+
+
+    // delete previous if any
+    let e = pResetCode?.expiry
+    if (e) clearTimeout(e)
+    pwReset.delete(acc?.id||"")
+    prcIdx.delete(pResetCode?.code||"")
+
+    let code = generateFileId(12).toUpperCase()
+
+    // set
+
+    pwReset.set(acc.id, {
+        code,
+        expiry: setTimeout( () => { pwReset.delete(acc?.id||""); prcIdx.delete(pResetCode?.code||"") }, 15*60*1000),
+        requestedAt: Date.now()
+    })
+
+    prcIdx.set(code, acc.id)
+
+    // this is a mess but it's fine
+
+    sendMail(acc.email, `Emergency login requested for ${acc.username}`, `<b>Hello there!</b> You are recieving this message because you forgot your password to your monofile account, <span username>${acc.username}</span>. To log in, please <a href="https://${req.header("Host")}/auth/emergency_login/${code}"><span code>click here</span></a>, or go to https://${req.header("Host")}/auth/emergency_login/${code}. If it doesn't appear that you are logged in after visiting this link, please try refreshing. Once you have successfully logged in, you may reset your password.`).then(() => {
+        res.send("OK")
+    }).catch((err) => {
+        let e = pwReset.get(acc?.id||"")?.expiry
+        if (e) clearTimeout(e)
+        pwReset.delete(acc?.id||"")
+        prcIdx.delete(code||"")
+        ServeError(res, 500, err?.toString())
+    })
+})
+
+authRoutes.get("/emergency_login/:code", (req,res) => {
+    if (auth.validate(req.cookies.auth || "")) {
+        ServeError(res, 403, "already logged in")
+        return
+    }
+
+    let vcode = prcIdx.get(req.params.code)
+
+    if (!vcode) { ServeError(res, 400, "invalid emergency login code"); return }
+
+    if (typeof req.params.code == "string" && vcode) {
+        res.cookie("auth",auth.create(vcode,(3*24*60*60*1000)))
+        res.redirect("/")
+
+        let e = pwReset.get(vcode)?.expiry
+        if (e) clearTimeout(e)
+        pwReset.delete(vcode)
+        prcIdx.delete(req.params.code)
+    } else {
+        ServeError(res, 400, "invalid code")
+    }
 })
 
 authRoutes.post("/change_password", parser, (req,res) => {

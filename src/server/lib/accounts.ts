@@ -11,6 +11,7 @@ export let Accounts: Account[] = []
 export interface Account {
     id                    : string
     username              : string
+    email?                : string
     password              : {
         hash              : string
         salt              : string

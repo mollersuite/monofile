@@ -16,8 +16,13 @@
     },
 
     "mail": {
-        "host": "smtp.fastmail.com",
-        "port": 465,
-        "secure": true
+        "transport": {
+            "host": "smtp.fastmail.com",
+            "port": 465,
+            "secure": true
+        },
+        "send": {
+            "from": "mono@fyle.uk"
+        }
     }
 }

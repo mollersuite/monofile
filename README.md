@@ -15,6 +15,11 @@ Then, add your bot token...
 ```
 echo "TOKEN=INSERT-TOKEN.HERE" > .env
 ```
+and, in addition, SMTP authentication...
+```
+echo "\nMAIL_USER=user@example.com" > .env
+echo "\nMAIL_PASS=password here" > .env
+```
 
 Invite your bot to a server, and create a new `config.json` in the project root:
 ```js

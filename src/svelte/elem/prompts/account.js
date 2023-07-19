@@ -86,6 +86,64 @@ export function userChange(optPicker) {
     })
 }
 
+export function forgotPassword(optPicker) {
+    optPicker.picker("Forgot your password?",[
+        {
+            name: "Username",
+            icon: "/static/assets/icons/person.svg",
+            id: "user",
+            inputSettings: {}
+        },
+        {
+            name: "OK",
+            icon: "/static/assets/icons/update.svg",
+            description: "",
+            id: true
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected) {
+            fetch(`/auth/request_emergency_login`,{method:"POST", body:JSON.stringify({
+                account:exp.user
+            })}).then((response) => {
+                if (response.status != 200) {
+                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                } else {
+                    optPicker.picker(`Please follow the instructions sent to your inbox.`,[])
+                }
+            })
+        }
+    })
+}
+
+export function emailChange(optPicker) {
+    optPicker.picker("Change email",[
+        {
+            name: "New email",
+            icon: "/static/assets/icons/mail.svg",
+            id: "email",
+            inputSettings: {}
+        },
+        {
+            name: "Request email change",
+            icon: "/static/assets/icons/update.svg",
+            description: "",
+            id: true
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected) {
+            fetch(`/auth/request_email_change`,{method:"POST", body:JSON.stringify({
+                email:exp.email
+            })}).then((response) => {
+                if (response.status != 200) {
+                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                } else {
+                    optPicker.picker(`Please continue to your inbox at ${exp.email.split("@")[1]} and click on the attached link.`,[])
+                }
+            })
+        }
+    })
+}
+
 export function pwdChng(optPicker) {
     optPicker.picker("Change password",[
         {

@@ -95,6 +95,11 @@
                         <input placeholder="username" type="text" bind:value={username}>
                         <input placeholder="password" type="password" bind:value={password}>
                         <button on:click={execute}>{ inProgress ? "• • •" : (targetAction=="login" ? "Log in" : "Create account") }</button>
+
+                        {#if targetAction == "login"}
+                            <button class="flavor" on:click={() => accOpts.forgotPassword(optPicker)}>I forgot my password</button>
+                        {/if}
+
                     </div>
 
                 {:else}
@@ -126,6 +131,11 @@
                     <p>Change username</p>
                 </button>
 
+                <button on:click={() => accOpts.emailChange(optPicker)}>
+                    <img src="/static/assets/icons/mail.svg" alt="change email">
+                    <p>Change email{#if $account.email}<span class="monospaceText"><br />{$account.email}</span>{/if}</p>
+                </button>
+
                 <button on:click={() => accOpts.pwdChng(optPicker)}>
                     <img src="/static/assets/icons/change_password.svg" alt="change password">
                     <p>Change password<span><br />You will be logged out of all sessions</span></p>
@@ -149,7 +159,7 @@
 
                 <button on:click={() => uplOpts.update_all_files(optPicker)}>
                     <img src="/static/assets/icons/update.svg" alt="update">
-                    <p>Make all of my files {$account.defaultFileVisibility || "public"}<span><br />Matches your default file visibility</p>
+                    <p>Make all of my files {$account.defaultFileVisibility || "public"}<span><br />Matches your default file visibility</span></p>
                 </button>
 
                 <div class="category">
