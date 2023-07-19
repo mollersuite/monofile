@@ -262,7 +262,7 @@ authRoutes.post("/request_email_change", parser, (req,res) => {
 
     // this is a mess but it's fine
 
-    sendMail(req.body.email, `Hey there, ${acc.username} - let's connect your email`, `<b>Hello there!</b> You are recieving this message because you decided to link your email, <span code>${req.body.email}</span>, to your account, <span username>${acc.username}</span>. If you would like to continue, please <a href="https://${req.header("Host")}/auth/confirm_email/${code}"><span code>click here</span></a>, or go to https://${req.header("Host")}/auth/confirm_email/${code}.`).then(() => {
+    sendMail(req.body.email, `Hey there, ${acc.username} - let's connect your email`, `<b>Hello there!</b> You are recieving this message because you decided to link your email, <span code>${req.body.email.split("@")[0]}<span style="opacity:0.5">@${req.body.email.split("@")[1]}</span></span>, to your account, <span username>${acc.username}</span>. If you would like to continue, please <a href="https://${req.header("Host")}/auth/confirm_email/${code}"><span code>click here</span></a>, or go to https://${req.header("Host")}/auth/confirm_email/${code}.`).then(() => {
         res.send("OK")
     }).catch((err) => {
         let e = verificationCodes.get(acc?.id||"")?.expiry

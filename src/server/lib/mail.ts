@@ -1,5 +1,8 @@
 import { createTransport } from "nodemailer";
 
+// required i guess
+require("dotenv").config()
+
 let
 mailConfig = 
     require( process.cwd() + "/config.json" ).mail,
@@ -26,7 +29,7 @@ export function sendMail(to: string, subject: string, content: string) {
                 content
                     .replace(/\<span username\>/g, `<span code><span style="color:#DDAA66;padding-right:3px;">@</span>`)
                     .replace(/\<span code\>/g,`<span style="font-family:monospace;padding:3px 5px 3px 5px;border-radius:8px;background-color:#1C1C1C;color:#DDDDDD;">`)
-            }<br><br><span style="opacity:0.5">If you do not believe that you are the intended recipient of this email, please disregard it.</span>`
+            }<br><br><span style="opacity:0.5">If you do not believe that you are the intended recipient of this email, please disregard this message.</span>`
         }, (err, info) => {
             if (err) reject(err)
             else resolve(info)
