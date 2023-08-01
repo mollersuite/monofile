@@ -158,16 +158,19 @@ app.get("/download/:fileId",(req,res) => {
                             ? `<meta name="og:video" content="https://${req.headers.host}/file/${req.params.fileId}" />
                             <meta name="og:video:url" content="https://${req.headers.host}/file/${req.params.fileId}" />
                             <meta name="og:video:secure_url" content="https://${req.headers.host}/file/${req.params.fileId}">
-                            <meta name="og:video:type" content="video.other">`
+                            <meta name="og:video:type" content="video.other">
+                            <!-- honestly probably good enough for now -->
+                            <meta property="og:video:width" content="1280">
+                            <meta property="og:video:height" content="720">`
                             : ""
                         )
                     )
                     + (
-                        fileOwner?.embed?.largeImage
+                        fileOwner?.embed?.largeImage && file.visibility!="anonymous"
                         ? `<meta name="twitter:card" content="summary_large_image">`
                         : ""
                     )
-                    + `\n<meta name="theme-color" content="${fileOwner?.embed?.color && (req.headers["user-agent"]||"").includes("Discordbot") ? `#${fileOwner.embed.color}` : "rgb(30, 33, 36)"}">`
+                    + `\n<meta name="theme-color" content="${fileOwner?.embed?.color && file.visibility!="anonymous" && (req.headers["user-agent"]||"").includes("Discordbot") ? `#${fileOwner.embed.color}` : "rgb(30, 33, 36)"}">`
                 )
                 .replace(/\<\!\-\-preview\-\-\>/g,
                     file.mime.startsWith("image/") 
