@@ -155,12 +155,12 @@ app.get("/download/:fileId",(req,res) => {
                         ? `<meta name="og:image" content="https://${req.headers.host}/file/${req.params.fileId}" />` 
                         : (
                             file.mime.startsWith("video/")
-                            ? `<meta name="og:video:url" content="https://${req.headers.host}/cpt/${req.params.fileId}/video.${file.mime.split("/")[1] == "quicktime" ? "mov" : file.mime.split("/")[1]}" />
-                            <meta name="og:video:type" content="video.other">
+                            ? `<meta property="og:video:url" content="https://${req.headers.host}/cpt/${req.params.fileId}/video.${file.mime.split("/")[1] == "quicktime" ? "mov" : file.mime.split("/")[1]}" />
+                            <meta property="og:video:type" content="video.other">
                             <!-- honestly probably good enough for now -->
                             <meta property="og:video:width" content="1280">
                             <meta property="og:video:height" content="720">
-                            <meta property="og:image" content="">`
+                            <meta property="og:image" content="https://example.com/none.png">`
                             : ""
                         )
                     )
