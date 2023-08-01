@@ -114,7 +114,8 @@ export function elevateUser(optPicker) {
         },
         {
             name: "Elevate to admin",
-            icon: "/static/assets/icons/admin/update.svg",
+            icon: "/static/assets/icons/update.svg",
+            description: "",
             id: true
         }
     ]).then((exp) => {
