@@ -166,7 +166,11 @@ app.get("/download/:fileId",(req,res) => {
                     : (
                         file.mime.startsWith("video/")
                         ? `<div style="min-height:10px"></div><video src="/file/${req.params.fileId}" controls></video>`
-                        : ""
+                        : (
+                            file.mime.startsWith("audio/")
+                            ? `<div style="min-height:10px"></div><audio src="/file/${req.params.fileId}" controls></audio>`
+                            : ""
+                        )
                     )
                 )
                 .replace(/\$Uploader/g,!file.owner||file.visibility=="anonymous" ? "Anonymous" : `@${Accounts.getFromId(file.owner)?.username || "Deleted User"}`)

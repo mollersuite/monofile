@@ -8,6 +8,7 @@
     import OptionPicker from "../prompts/OptionPicker.svelte";
 
     let picker;
+    let query = "";
 
     fetchFilePointers();
 </script>
@@ -25,10 +26,11 @@
         </div>
     {:else}
         <div class="loggedIn">
-            <input type="text" placeholder={`Search ${$files.length} file(s)`} class="searchBar">
+            <input type="text" placeholder={`Search ${$files.length} file(s)`} class="searchBar" bind:value={query}>
 
             <div class="fileList">
-                {#each $files as file (file.id)}
+                <!-- Probably wildly inefficient but who cares, I just wanna get this over with -->
+                {#each $files.filter(f => f.name.toLowerCase().includes(query.toLowerCase()) || f.id.toLowerCase().includes(query.toLowerCase()) || f.tag.includes(query.toLowerCase())) as file (file.id)}
                     <div class="flFile" transition:fade={{duration:200}} animate:flip={{duration:200}}>
                         <button class="hitbox" on:click={window.open(`/download/${file.id}`)}></button> <!-- this is bad, but I'm lazy -->
                         <div class="flexCont">
