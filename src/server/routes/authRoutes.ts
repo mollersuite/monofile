@@ -163,6 +163,49 @@ authRoutes.post("/customcss", parser, (req,res) => {
     }
 })
 
+authRoutes.post("/embedcolor", parser, (req,res) => {
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    if (!acc) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+    
+    if (typeof req.body.color != "string") req.body.color = undefined;
+    
+    if (
+
+        !req.body.color
+        || (req.body.color.toLowerCase().match(/[a-f0-9]/) == req.body.color)
+        && req.body.color.length == 6
+        
+    ) {
+        if (!acc.embed) acc.embed = {}
+        acc.embed.color = req.body.color || undefined
+        if (!req.body.color) delete acc.embed.color
+        Accounts.save()
+        res.send(`custom embed color saved`)
+    } else {
+        res.status(400)
+        res.send("invalid hex code")
+    }
+})
+
+authRoutes.post("/embedsize", parser, (req,res) => {
+    let acc = Accounts.getFromToken(req.cookies.auth)
+    if (!acc) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+    
+    if (typeof req.body.largeImage != "boolean") req.body.color = false;
+
+    if (!acc.embed) acc.embed = {}
+    acc.embed.largeImage = req.body.largeImage
+    if (!req.body.largeImage) delete acc.embed.largeImage
+    Accounts.save()
+    res.send(`custom embed image size saved`)
+})
+
 authRoutes.post("/delete_account", parser, async (req,res) => {
     let acc = Accounts.getFromToken(req.cookies.auth)
     if (!acc) {

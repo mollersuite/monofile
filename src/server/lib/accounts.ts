@@ -20,6 +20,11 @@ export interface Account {
     admin                 : boolean
     defaultFileVisibility : FileVisibility
     customCSS?            : string
+
+    embed?                : {
+        color?            : string
+        largeImage?       : boolean
+    }
 }
 
 export function create(username:string,pwd:string,admin:boolean=false):Promise<string> {

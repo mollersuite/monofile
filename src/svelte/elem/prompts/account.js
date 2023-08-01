@@ -206,3 +206,65 @@ export function customcss(optPicker) {
         }
     })
 }
+
+
+export function embedColor(optPicker) {
+    optPicker.picker("Set embed color",[
+        {
+            name: "FFFFFF",
+            icon: "/static/assets/icons/pound.svg",
+            id: "color",
+            inputSettings: {}
+        },
+        {
+            name: "OK",
+            icon: "/static/assets/icons/update.svg",
+            description: "",
+            id: true
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected) {
+            fetch(`/auth/embedcolor`,{method:"POST", body:JSON.stringify({
+                color:exp.color
+            })}).then((response) => {
+                
+                if (response.status != 200) {
+                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                }
+
+                fetchAccountData()
+            })
+        }
+    })
+}
+
+
+export function embedSize(optPicker) {
+    optPicker.picker("Set embed image size",[
+        {
+            name: "Large",
+            icon: "/static/assets/icons/image.svg",
+            description: "",
+            id: true
+        },
+        {
+            name: "Small",
+            icon: "/static/assets/icons/small_image.svg",
+            description: "",
+            id: false
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected !== null) {
+            fetch(`/auth/embedsize`,{method:"POST", body:JSON.stringify({
+                largeImage:exp.selected
+            })}).then((response) => {
+                
+                if (response.status != 200) {
+                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                }
+
+                fetchAccountData()
+            })
+        }
+    })
+}

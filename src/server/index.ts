@@ -136,6 +136,7 @@ app.get("/download/:fileId",(req,res) => {
         }
 
         fs.readFile(process.cwd()+"/pages/download.html",(err,buf) => {
+            let fileOwner = file.owner ? Accounts.getFromId(file.owner) : undefined;
             if (err) {res.sendStatus(500);console.log(err);return}
             res.send(
                 buf.toString()
@@ -149,16 +150,24 @@ app.get("/download/:fileId",(req,res) => {
                         .replace(/\>/g,"&gt;")
                 )
                 .replace(/\<\!\-\-metaTags\-\-\>/g,
-                    file.mime.startsWith("image/") 
-                    ? `<meta name="og:image" content="https://${req.headers.host}/file/${req.params.fileId}" />` 
-                    : (
-                        file.mime.startsWith("video/")
-                        ? `<meta name="og:video" content="https://${req.headers.host}/file/${req.params.fileId}" />
-                        <meta name="og:video:url" content="https://${req.headers.host}/file/${req.params.fileId}" />
-                        <meta name="og:video:secure_url" content="https://${req.headers.host}/file/${req.params.fileId}">
-                        <meta name="og:video:type" content="video.other">`
+                    (
+                        file.mime.startsWith("image/") 
+                        ? `<meta name="og:image" content="https://${req.headers.host}/file/${req.params.fileId}" />` 
+                        : (
+                            file.mime.startsWith("video/")
+                            ? `<meta name="og:video" content="https://${req.headers.host}/file/${req.params.fileId}" />
+                            <meta name="og:video:url" content="https://${req.headers.host}/file/${req.params.fileId}" />
+                            <meta name="og:video:secure_url" content="https://${req.headers.host}/file/${req.params.fileId}">
+                            <meta name="og:video:type" content="video.other">`
+                            : ""
+                        )
+                    )
+                    + (
+                        fileOwner?.embed?.largeImage
+                        ? `<meta name="twitter:image" content="/assets/reallycoolfish.jpg">`
                         : ""
                     )
+                    + `\n<meta name="theme-color" content="${fileOwner?.embed?.color && (req.headers["user-agent"]||"").includes("Discordbot") ? `#${fileOwner.embed.color}` : "rgb(30, 33, 36)"}">`
                 )
                 .replace(/\<\!\-\-preview\-\-\>/g,
                     file.mime.startsWith("image/") 
@@ -173,7 +182,7 @@ app.get("/download/:fileId",(req,res) => {
                         )
                     )
                 )
-                .replace(/\$Uploader/g,!file.owner||file.visibility=="anonymous" ? "Anonymous" : `@${Accounts.getFromId(file.owner)?.username || "Deleted User"}`)
+                .replace(/\$Uploader/g,!file.owner||file.visibility=="anonymous" ? "Anonymous" : `@${fileOwner?.username || "Deleted User"}`)
             )
         })
     } else {

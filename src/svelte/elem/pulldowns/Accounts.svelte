@@ -171,6 +171,16 @@
                     <p>Set custom CSS<span><br />{@html $account.customCSS ? `Using file ID <span class="number">${$account.customCSS}</span>` : "No custom CSS set"}</span></p>
                 </button>
 
+                <button on:click={() => accOpts.embedColor(optPicker)}>
+                    <img src="/static/assets/icons/pound.svg" alt="embedColor">
+                    <p>Set custom embed color<span><br />{@html $account?.embed?.color ? `Using custom color <span class="number">${$account?.embed?.color}</span>` : ""}</span></p>
+                </button>
+
+                <button on:click={() => accOpts.embedSize(optPicker)}>
+                    <img src="/static/assets/icons/image.svg" alt="embedSize">
+                    <p>Set embed image size <span><br />Images currently appear {$account?.embed?.largeImage ? `large` : "small"} in embeds</span></p>
+                </button>
+
                 {#if $refreshNeeded}
                     <button on:click={() => window.location.reload(true)} transition:fade={{duration: 200}}>
                         <img src="/static/assets/icons/refresh.svg" alt="refresh">
