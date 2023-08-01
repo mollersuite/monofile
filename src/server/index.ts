@@ -159,7 +159,8 @@ app.get("/download/:fileId",(req,res) => {
                             <meta name="og:video:type" content="video.other">
                             <!-- honestly probably good enough for now -->
                             <meta property="og:video:width" content="1280">
-                            <meta property="og:video:height" content="720">`
+                            <meta property="og:video:height" content="720">
+                            <meta property="og:image" content="">`
                             : ""
                         )
                     )
