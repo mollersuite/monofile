@@ -92,7 +92,6 @@ export function delFile(optPicker) {
     ]).then((exp) => {
         if (exp && exp.selected) {
             fetch(`/admin/delete`,{method:"POST", body:JSON.stringify({
-                owner: exp.owner,
                 target: exp.file
             })}).then((response) => {
                 
@@ -100,6 +99,94 @@ export function delFile(optPicker) {
                     optPicker.picker(`${response.status} ${response.statusText}`,[])
                 }
 
+            })
+        }
+    })
+}
+
+export function elevateUser(optPicker) {
+    optPicker.picker("Elevate user",[
+        {
+            name: "Username",
+            icon: "/static/assets/icons/person.svg",
+            id: "user",
+            inputSettings: {}
+        },
+        {
+            name: "Elevate to admin",
+            icon: "/static/assets/icons/admin/update.svg",
+            id: true
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected) {
+            fetch(`/admin/elevate`,{method:"POST", body:JSON.stringify({
+                target: exp.user
+            })}).then((response) => {
+                
+                if (response.status != 200) {
+                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                }
+
+            })
+        }
+    })
+}
+
+// im really lazy so i just stole this from account.js
+
+export function deleteAccount(optPicker) {
+    optPicker.picker("What should we do with the target account's files?",[
+        {
+            name: "Delete files",
+            icon: "/static/assets/icons/admin/delete_file.svg",
+            description: "Files will be permanently deleted",
+            id: true
+        },
+        {
+            name: "Do nothing",
+            icon: "/static/assets/icons/file.svg",
+            description: "Files will not be affected",
+            id: false
+        }
+    ]).then((exp) => {
+        if (exp) {
+            let deleteFiles = exp.selected
+
+            optPicker.picker(`Enter the target account's username to continue.`,[
+                {
+                    name: "Enter account username",
+                    icon: "/static/assets/icons/person.svg",
+                    inputSettings: {},
+                    id:"username"
+                },
+                {
+                    name: "Optional reason",
+                    icon: "/static/assets/icons/more.svg",
+                    inputSettings: {},
+                    id:"reason"
+                },
+                {
+                    name: `Delete account ${deleteFiles ? "& its files" : ""}`,
+                    icon: "/static/assets/icons/delete_account.svg",
+                    description: `This cannot be undone.`,
+                    id: true
+                }
+            ]).then((fin) => {
+                if (fin && fin.selected) {
+                    fetch(`/admin/delete_account`,{method:"POST", body:JSON.stringify({
+                        target: fin.username,
+                        reason: fin.reason,
+                        deleteFiles
+                    })}).then((response) => {
+                        
+                        if (response.status != 200) {
+                            optPicker.picker(`${response.status} ${response.statusText}`,[])
+                        }
+        
+                        fetchAccountData()
+                    })
+                    
+                }
             })
         }
     })

@@ -4,6 +4,7 @@ import * as Accounts from "../lib/accounts";
 import * as auth from "../lib/auth";
 import bytes from "bytes"
 import {writeFile} from "fs";
+import { sendMail } from "../lib/mail";
 
 import ServeError from "../lib/errors";
 import Files from "../lib/files";
@@ -67,6 +68,36 @@ adminRoutes.post("/reset", parser, (req,res) => {
 
 })
 
+adminRoutes.post("/elevate", parser, (req,res) => {
+
+    if (!auth.validate(req.cookies.auth)) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+
+    let acc = Accounts.getFromToken(req.cookies.auth) as Accounts.Account
+    
+    if (!acc) return
+    if (!acc.admin) return
+    if (typeof req.body.target !== "string") {
+        res.status(404)
+        res.send()
+        return
+    }
+
+    let targetAccount = Accounts.getFromUsername(req.body.target)
+    if (!targetAccount) {
+        res.status(404)
+        res.send()
+        return
+    }
+
+    targetAccount.admin = true;
+    Accounts.save()
+    res.send()
+
+})
+
 adminRoutes.post("/delete", parser, (req,res) => {
 
     if (!auth.validate(req.cookies.auth)) {
@@ -98,6 +129,55 @@ adminRoutes.post("/delete", parser, (req,res) => {
         res.status(500)
     }).finally(() => res.send())
 
+})
+
+adminRoutes.post("/delete_account", parser, async (req,res) => {
+    if (!auth.validate(req.cookies.auth)) {
+        ServeError(res, 401, "not logged in")
+        return
+    }
+
+    let acc = Accounts.getFromToken(req.cookies.auth) as Accounts.Account
+    
+    if (!acc) return
+    if (!acc.admin) return
+    if (typeof req.body.target !== "string") {
+        res.status(404)
+        res.send()
+        return
+    }
+
+    let targetAccount = Accounts.getFromUsername(req.body.target)
+    if (!targetAccount) {
+        res.status(404)
+        res.send()
+        return
+    }
+
+    let accId = targetAccount.id
+
+    auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
+        auth.invalidate(v.token)
+    })
+
+    let cpl = () => Accounts.deleteAccount(accId).then(_ => {
+        if (targetAccount?.email) {
+            sendMail(targetAccount.email, "Notice of account deletion", `Your account, <span username>${targetAccount.username}</span>, has been deleted by <span username>${acc.username}</span> for the following reason: <br><br><span style="font-weight:600">${req.body.reason || "(no reason specified)"}</span><br><br> Your files ${req.body.deleteFiles ? "have been deleted" : "have not been modified"}. Thank you for using monofile.`)
+        }
+        res.send("account deleted")
+    })
+    
+    if (req.body.deleteFiles) {
+        let f = targetAccount.files.map(e=>e) // make shallow copy so that iterating over it doesnt Die
+        for (let v of f) {
+            files.unlink(v,true).catch(err => console.error(err))
+        }
+
+        writeFile(process.cwd()+"/.data/files.json",JSON.stringify(files.files), (err) => {
+            if (err) console.log(err)
+            cpl()
+        })
+    } else cpl()
 })
 
 adminRoutes.post("/transfer", parser, (req,res) => {

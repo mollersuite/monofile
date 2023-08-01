@@ -198,7 +198,7 @@
                         <p>Admin</p>
                     </div>
 
-                    <button>
+                    <button on:click={() => admOpts.deleteAccount(optPicker)}>
                         <img src="/static/assets/icons/delete_account.svg" alt="delete account">
                         <p>Delete user account</p>
                     </button>
@@ -208,7 +208,7 @@
                         <p>Change user password</p>
                     </button>
 
-                    <button>
+                    <button on:click={() => admOpts.elevateUser(optPicker)}>
                         <img src="/static/assets/icons/admin/elevate_user.svg" alt="elevate account">
                         <p>Elevate account to admin</p>
                     </button>
@@ -221,11 +221,6 @@
                     <button on:click={() => admOpts.delFile(optPicker)}>
                         <img src="/static/assets/icons/admin/delete_file.svg" alt="delete file">
                         <p>Delete file</p>
-                    </button>
-
-                    <button>
-                        <img src="/static/assets/icons/update.svg" alt="update">
-                        <p>Update files from before monofile 1.3<span><br />This may take a while</span></p>
                     </button>
 
                 {/if}
