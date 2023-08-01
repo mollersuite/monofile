@@ -164,7 +164,7 @@ app.get("/download/:fileId",(req,res) => {
                     )
                     + (
                         fileOwner?.embed?.largeImage
-                        ? `<meta name="twitter:image" content="/assets/reallycoolfish.jpg">`
+                        ? `<meta name="twitter:card" content="summary_large_image">`
                         : ""
                     )
                     + `\n<meta name="theme-color" content="${fileOwner?.embed?.color && (req.headers["user-agent"]||"").includes("Discordbot") ? `#${fileOwner.embed.color}` : "rgb(30, 33, 36)"}">`

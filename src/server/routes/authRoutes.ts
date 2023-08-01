@@ -175,7 +175,7 @@ authRoutes.post("/embedcolor", parser, (req,res) => {
     if (
 
         !req.body.color
-        || (req.body.color.toLowerCase().match(/[a-f0-9]/) == req.body.color)
+        || (req.body.color.toLowerCase().match(/[a-f0-9]+/) == req.body.color)
         && req.body.color.length == 6
         
     ) {
