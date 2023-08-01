@@ -30,7 +30,7 @@
 
             <div class="fileList">
                 <!-- Probably wildly inefficient but who cares, I just wanna get this over with -->
-                {#each $files.filter(f => f.name.toLowerCase().includes(query.toLowerCase()) || f.id.toLowerCase().includes(query.toLowerCase()) || f.tag.includes(query.toLowerCase())) as file (file.id)}
+                {#each $files.filter(f => f&&(f.filename.toLowerCase().includes(query.toLowerCase()) || f.id.toLowerCase().includes(query.toLowerCase()) || f.tag.includes(query.toLowerCase()))) as file (file.id)}
                     <div class="flFile" transition:fade={{duration:200}} animate:flip={{duration:200}}>
                         <button class="hitbox" on:click={window.open(`/download/${file.id}`)}></button> <!-- this is bad, but I'm lazy -->
                         <div class="flexCont">
