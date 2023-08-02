@@ -155,13 +155,18 @@ app.get("/download/:fileId",(req,res) => {
                         ? `<meta name="og:image" content="https://${req.headers.host}/file/${req.params.fileId}" />` 
                         : (
                             file.mime.startsWith("video/")
-                            ? `<meta property="og:video:url" content="https://${req.headers.host}/cpt/${req.params.fileId}/video.${file.mime.split("/")[1] == "quicktime" ? "mov" : file.mime.split("/")[1]}" />
-                            <meta property="og:video:secure_url" content="https://${req.headers.host}/cpt/${req.params.fileId}/video.${file.mime.split("/")[1] == "quicktime" ? "mov" : file.mime.split("/")[1]}" />
-                            <meta property="og:type" content="video.other">
-                            <!-- honestly probably good enough for now
-                            <meta property="og:video:width" content="1280">
-                            <meta property="og:video:height" content="720"> -->
-                            <meta property="twitter:image" content="0">`
+                            ? (
+                                `<meta property="og:video:url" content="https://${req.headers.host}/cpt/${req.params.fileId}/video.${file.mime.split("/")[1] == "quicktime" ? "mov" : file.mime.split("/")[1]}" />
+                                <meta property="og:video:secure_url" content="https://${req.headers.host}/cpt/${req.params.fileId}/video.${file.mime.split("/")[1] == "quicktime" ? "mov" : file.mime.split("/")[1]}" />
+                                <meta property="og:type" content="video.other">
+                                <!-- honestly probably good enough for now -->
+                                <meta property="twitter:image" content="0">`
+                                // quick lazy fix as a fallback
+                                // mayeb i'll improve this later, but probably not.
+                                + ((file.sizeInBytes||0) >= 26214400 ? `
+                                <meta property="og:video:width" content="1280">
+                                <meta property="og:video:height" content="720">` : "")
+                            )
                             : ""
                         )
                     )
