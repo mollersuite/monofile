@@ -198,7 +198,15 @@ app.get("/download/:fileId",(req,res) => {
     }
 })
 
-let fgRQH = async (req:express.Request,res:express.Response) => {
+app.get("/server",(req,res) => {
+    res.send(JSON.stringify({
+        ...config,
+        version:pkg.version,
+        files:Object.keys(files.files).length
+    }))
+})
+
+app.get(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"],async (req:express.Request,res:express.Response) => {
     
     let file = files.getFilePointer(req.params.fileId)
     res.setHeader("Access-Control-Allow-Origin", "*")
@@ -259,11 +267,10 @@ let fgRQH = async (req:express.Request,res:express.Response) => {
     } else {
         ServeError(res, 404, "file not found")
     }
-
     
-}
+})
 
-let fgwh = (req: express.Request, res:express.Response) => {
+app.head(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"], (req: express.Request, res:express.Response) => {
     let file = files.getFilePointer(req.params.fileId)
     res.setHeader("Access-Control-Allow-Origin", "*")
     if (req.query.attachment == "1") res.setHeader("Content-Disposition", "attachment")
@@ -279,23 +286,7 @@ let fgwh = (req: express.Request, res:express.Response) => {
             res.setHeader("Accept-Ranges", "bytes")
         }
     }
-}
-
-app.get("/server",(req,res) => {
-    res.send(JSON.stringify({
-        ...config,
-        version:pkg.version,
-        files:Object.keys(files.files).length
-    }))
 })
-
-app.get("/file/:fileId",fgRQH)
-app.get("/cpt/:fileId/*",fgRQH)
-app.get("/:fileId",fgRQH)
-
-app.head("/file/:fileId",fgwh)
-app.head("/cpt/:fileId/*",fgwh)
-app.head("/:fileId",fgwh)
 
 /*
     routes should be in this order:
