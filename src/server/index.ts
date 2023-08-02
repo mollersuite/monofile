@@ -158,9 +158,9 @@ app.get("/download/:fileId",(req,res) => {
                             ? `<meta property="og:video:url" content="https://${req.headers.host}/cpt/${req.params.fileId}/video.${file.mime.split("/")[1] == "quicktime" ? "mov" : file.mime.split("/")[1]}" />
                             <meta property="og:video:secure_url" content="https://${req.headers.host}/cpt/${req.params.fileId}/video.${file.mime.split("/")[1] == "quicktime" ? "mov" : file.mime.split("/")[1]}" />
                             <meta property="og:type" content="video.other">
-                            <!-- honestly probably good enough for now -->
+                            <!-- honestly probably good enough for now
                             <meta property="og:video:width" content="1280">
-                            <meta property="og:video:height" content="720">
+                            <meta property="og:video:height" content="720"> -->
                             <meta property="twitter:image" content="0">`
                             : ""
                         )
