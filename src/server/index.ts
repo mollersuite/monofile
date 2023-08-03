@@ -1,9 +1,9 @@
 import bodyParser from "body-parser"
 import multer, {memoryStorage} from "multer"
 import cookieParser from "cookie-parser";
-import Discord, { IntentsBitField, Client } from "discord.js"
+import { IntentsBitField, Client } from "discord.js"
 import express from "express"
-import fs, { link } from "fs"
+import fs from "fs"
 import axios, { AxiosResponse } from "axios"
 import bytes from "bytes";
 
@@ -12,10 +12,10 @@ import Files from "./lib/files"
 import * as auth from "./lib/auth"
 import * as Accounts from "./lib/accounts"
 
-import { authRoutes, auth_setFilesObj } from "./routes/authRoutes";
-import { fileApiRoutes, setFilesObj } from "./routes/fileApiRoutes";
-import { adminRoutes, admin_setFilesObj } from "./routes/adminRoutes";
-import { Range } from "range-parser";
+import * as authRoutes from "./routes/authRoutes";
+import * as fileApiRoutes from "./routes/fileApiRoutes";
+import * as adminRoutes from "./routes/adminRoutes";
+import * as primaryApi from "./routes/primaryApi";
 
 require("dotenv").config()
 
@@ -31,9 +31,11 @@ app.use("/static/js",express.static("out/client"))
 //app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
 app.use(cookieParser())
 
-app.use("/auth",authRoutes)
-app.use("/admin",adminRoutes)
-app.use("/files",fileApiRoutes)
+app
+    .use("/auth",authRoutes.authRoutes)
+    .use("/admin",adminRoutes.adminRoutes)
+    .use("/files", fileApiRoutes.fileApiRoutes)
+    .use(primaryApi.primaryApi)
 // funcs
 
 // init data
@@ -51,9 +53,10 @@ let client = new Client({intents:[
 
 let files = new Files(client,config)
 
-setFilesObj(files)
-auth_setFilesObj(files)
-admin_setFilesObj(files)
+authRoutes.setFilesObj(files)
+adminRoutes.setFilesObj(files)
+fileApiRoutes.setFilesObj(files)
+primaryApi.setFilesObj(files)
 
 // routes (could probably make these use routers)
 
@@ -124,7 +127,7 @@ app.post("/clone", bodyParser.json({type: ["text/plain","application/json"]}) ,(
     }
 })
 
-// serve files & download page
+// serve download page
 
 app.get("/download/:fileId",(req,res) => {
     if (files.getFilePointer(req.params.fileId)) {
@@ -204,90 +207,6 @@ app.get("/server",(req,res) => {
         version:pkg.version,
         files:Object.keys(files.files).length
     }))
-})
-
-app.get(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"], async (req:express.Request,res:express.Response) => {
-    
-    let file = files.getFilePointer(req.params.fileId)
-    res.setHeader("Access-Control-Allow-Origin", "*")
-    res.setHeader("Content-Security-Policy","sandbox allow-scripts")
-    if (req.query.attachment == "1") res.setHeader("Content-Disposition", "attachment")
-    
-    if (file) {
-        
-        if (file.visibility == "private" && Accounts.getFromToken(req.cookies.auth)?.id != file.owner) {
-            ServeError(res,403,"you do not own this file")
-            return
-        }
-
-        let range: Range | undefined
-
-        res.setHeader("Content-Type",file.mime)
-        if (file.sizeInBytes) {
-            res.setHeader("Content-Length",file.sizeInBytes)
-            
-            if (file.chunkSize) {
-                let rng = req.range(file.sizeInBytes)
-                if (rng) {
-
-                    // error handling
-                    if (typeof rng == "number") {
-                        res.status(rng == -1 ? 416 : 400).send()
-                        return
-                    }
-                    if (rng.type != "bytes") {
-                        res.status(400).send();
-                        return
-                    }
-
-                    // set ranges var
-                    let rngs = Array.from(rng)
-                    if (rngs.length != 1) { res.status(400).send(); return }
-                    range = rngs[0]
-                    
-                }
-            }
-        }
-
-        // supports ranges
-        
-
-        files.readFileStream(req.params.fileId, range).then(async stream => {
-
-            if (range) {
-                res.status(206)
-                res.header("Content-Length", (range.end-range.start + 1).toString())
-                res.header("Content-Range", `bytes ${range.start}-${range.end}/${file.sizeInBytes}`)
-            }
-            stream.pipe(res)
-            
-        }).catch((err) => {
-            ServeError(res,err.status,err.message)
-        })
-
-    } else {
-        ServeError(res, 404, "file not found")
-    }
-    
-})
-
-app.head(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"], (req: express.Request, res:express.Response) => {
-    let file = files.getFilePointer(req.params.fileId)
-    res.setHeader("Access-Control-Allow-Origin", "*")
-    res.setHeader("Content-Security-Policy","sandbox allow-scripts")
-    if (req.query.attachment == "1") res.setHeader("Content-Disposition", "attachment")
-    if (!file) {
-        res.status(404)
-        res.send()
-    } else {
-        res.setHeader("Content-Type",file.mime)
-        if (file.sizeInBytes) {
-            res.setHeader("Content-Length",file.sizeInBytes)
-        }
-        if (file.chunkSize) {
-            res.setHeader("Accept-Ranges", "bytes")
-        }
-    }
 })
 
 /*

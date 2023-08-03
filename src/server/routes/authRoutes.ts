@@ -21,7 +21,7 @@ let config = require(`${process.cwd()}/config.json`)
 
 let files:Files
 
-export function auth_setFilesObj(newFiles:Files) {
+export function setFilesObj(newFiles:Files) {
     files = newFiles
 }
 

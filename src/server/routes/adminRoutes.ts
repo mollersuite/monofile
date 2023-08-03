@@ -21,26 +21,12 @@ adminRoutes
     .use(requiresAdmin)
 let files:Files
 
-export function admin_setFilesObj(newFiles:Files) {
+export function setFilesObj(newFiles:Files) {
     files = newFiles
 }
 
 let config = require(`${process.cwd()}/config.json`)
-/*
-adminRoutes.post("/manage", parser, (req,res) => {
 
-    if (!auth.validate(req.cookies.auth)) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
-
-    let acc = Accounts.getFromToken(req.cookies.auth) as Accounts.Account
-    
-    if (!acc) return
-    if (!acc.admin) return
-
-})
-*/
 adminRoutes.post("/reset", parser, (req,res) => {
 
     let acc = res.locals.acc as Accounts.Account
