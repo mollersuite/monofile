@@ -5,6 +5,7 @@ import * as auth from "../lib/auth";
 import bytes from "bytes"
 import {writeFile} from "fs";
 import { sendMail } from "../lib/mail";
+import { getAccount, requiresAccount, requiresAdmin } from "../lib/middleware"
 
 import ServeError from "../lib/errors";
 import Files from "../lib/files";
@@ -14,6 +15,10 @@ let parser = bodyParser.json({
 })
 
 export let adminRoutes = Router();
+adminRoutes
+    .use(getAccount)
+    .use(requiresAccount)
+    .use(requiresAdmin)
 let files:Files
 
 export function admin_setFilesObj(newFiles:Files) {
@@ -21,7 +26,7 @@ export function admin_setFilesObj(newFiles:Files) {
 }
 
 let config = require(`${process.cwd()}/config.json`)
-
+/*
 adminRoutes.post("/manage", parser, (req,res) => {
 
     if (!auth.validate(req.cookies.auth)) {
@@ -35,18 +40,11 @@ adminRoutes.post("/manage", parser, (req,res) => {
     if (!acc.admin) return
 
 })
-
+*/
 adminRoutes.post("/reset", parser, (req,res) => {
 
-    if (!auth.validate(req.cookies.auth)) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
-
-    let acc = Accounts.getFromToken(req.cookies.auth) as Accounts.Account
+    let acc = res.locals.acc as Accounts.Account
     
-    if (!acc) return
-    if (!acc.admin) return
     if (typeof req.body.target !== "string" || typeof req.body.password !== "string") {
         res.status(404)
         res.send()
@@ -70,15 +68,8 @@ adminRoutes.post("/reset", parser, (req,res) => {
 
 adminRoutes.post("/elevate", parser, (req,res) => {
 
-    if (!auth.validate(req.cookies.auth)) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
+    let acc = res.locals.acc as Accounts.Account
 
-    let acc = Accounts.getFromToken(req.cookies.auth) as Accounts.Account
-    
-    if (!acc) return
-    if (!acc.admin) return
     if (typeof req.body.target !== "string") {
         res.status(404)
         res.send()
@@ -100,15 +91,8 @@ adminRoutes.post("/elevate", parser, (req,res) => {
 
 adminRoutes.post("/delete", parser, (req,res) => {
 
-    if (!auth.validate(req.cookies.auth)) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
-
-    let acc = Accounts.getFromToken(req.cookies.auth) as Accounts.Account
+    let acc = res.locals.acc as Accounts.Account
     
-    if (!acc) return
-    if (!acc.admin) return
     if (typeof req.body.target !== "string") {
         res.status(404)
         res.send()
@@ -132,15 +116,9 @@ adminRoutes.post("/delete", parser, (req,res) => {
 })
 
 adminRoutes.post("/delete_account", parser, async (req,res) => {
-    if (!auth.validate(req.cookies.auth)) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
 
-    let acc = Accounts.getFromToken(req.cookies.auth) as Accounts.Account
+    let acc = res.locals.acc as Accounts.Account
     
-    if (!acc) return
-    if (!acc.admin) return
     if (typeof req.body.target !== "string") {
         res.status(404)
         res.send()
@@ -182,15 +160,8 @@ adminRoutes.post("/delete_account", parser, async (req,res) => {
 
 adminRoutes.post("/transfer", parser, (req,res) => {
 
-    if (!auth.validate(req.cookies.auth)) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
-
-    let acc = Accounts.getFromToken(req.cookies.auth) as Accounts.Account
+    let acc = res.locals.acc as Accounts.Account
     
-    if (!acc) return
-    if (!acc.admin) return
     if (typeof req.body.target !== "string" || typeof req.body.owner !== "string") {
         res.status(404)
         res.send()

@@ -3,6 +3,7 @@ import { Router } from "express";
 import * as Accounts from "../lib/accounts";
 import * as auth from "../lib/auth";
 import { sendMail } from "../lib/mail";
+import { getAccount, requiresAccount } from "../lib/middleware"
 
 import ServeError from "../lib/errors";
 import Files, { FileVisibility, generateFileId, id_check_regex } from "../lib/files";
@@ -14,6 +15,7 @@ let parser = bodyParser.json({
 })
 
 export let authRoutes = Router();
+authRoutes.use(getAccount)
 
 let config = require(`${process.cwd()}/config.json`)
 
@@ -120,12 +122,8 @@ authRoutes.post("/logout", (req,res) => {
     res.send("logged out")
 })
 
-authRoutes.post("/dfv", parser, (req,res) => {
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (!acc) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
+authRoutes.post("/dfv", requiresAccount, parser, (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
 
     if (['public','private','anonymous'].includes(req.body.defaultFileVisibility)) {
         acc.defaultFileVisibility = req.body.defaultFileVisibility
@@ -137,12 +135,8 @@ authRoutes.post("/dfv", parser, (req,res) => {
     }
 })
 
-authRoutes.post("/customcss", parser, (req,res) => {
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (!acc) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
+authRoutes.post("/customcss", requiresAccount, parser, (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
     
     if (typeof req.body.fileId != "string") req.body.fileId = undefined;
     
@@ -163,12 +157,8 @@ authRoutes.post("/customcss", parser, (req,res) => {
     }
 })
 
-authRoutes.post("/embedcolor", parser, (req,res) => {
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (!acc) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
+authRoutes.post("/embedcolor", requiresAccount, parser, (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
     
     if (typeof req.body.color != "string") req.body.color = undefined;
     
@@ -190,12 +180,8 @@ authRoutes.post("/embedcolor", parser, (req,res) => {
     }
 })
 
-authRoutes.post("/embedsize", parser, (req,res) => {
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (!acc) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
+authRoutes.post("/embedsize", requiresAccount, parser, (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
     
     if (typeof req.body.largeImage != "boolean") req.body.color = false;
 
@@ -206,12 +192,9 @@ authRoutes.post("/embedsize", parser, (req,res) => {
     res.send(`custom embed image size saved`)
 })
 
-authRoutes.post("/delete_account", parser, async (req,res) => {
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (!acc) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
+authRoutes.post("/delete_account", requiresAccount, parser, async (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
+    
     let accId = acc.id
 
     auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
@@ -233,12 +216,8 @@ authRoutes.post("/delete_account", parser, async (req,res) => {
     } else cpl()
 })
 
-authRoutes.post("/change_username", parser, (req,res) => {
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (!acc) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
+authRoutes.post("/change_username", requiresAccount, parser, (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
 
     if (typeof req.body.username != "string" || req.body.username.length < 3 || req.body.username.length > 20) {
         ServeError(res,400,"username must be between 3 and 20 characters in length")
@@ -267,12 +246,9 @@ authRoutes.post("/change_username", parser, (req,res) => {
 
 let verificationCodes = new Map<string, {code: string, email: string, expiry: NodeJS.Timeout, requestedAt:number}>()
 
-authRoutes.post("/request_email_change", parser, (req,res) => {
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (!acc) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
+authRoutes.post("/request_email_change", requiresAccount, (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
+    
     
     if (typeof req.body.email != "string" || !req.body.email) {
         ServeError(res,400, "supply an email")
@@ -315,12 +291,9 @@ authRoutes.post("/request_email_change", parser, (req,res) => {
     })
 })
 
-authRoutes.get("/confirm_email/:code", (req,res) => {
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (!acc) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
+authRoutes.get("/confirm_email/:code", requiresAccount, (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
+    
 
     let vcode = verificationCodes.get(acc.id)
 
@@ -419,13 +392,9 @@ authRoutes.get("/emergency_login/:code", (req,res) => {
     }
 })
 
-authRoutes.post("/change_password", parser, (req,res) => {
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (!acc) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
-
+authRoutes.post("/change_password", requiresAccount, parser, (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
+    
     if (typeof req.body.password != "string" || req.body.password.length < 8) {
         ServeError(res,400,"password must be 8 characters or longer")
         return
@@ -442,12 +411,8 @@ authRoutes.post("/change_password", parser, (req,res) => {
     res.send("password changed - logged out all sessions")
 })
 
-authRoutes.post("/logout_sessions", (req,res) => {
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (!acc) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
+authRoutes.post("/logout_sessions", requiresAccount, (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
 
     let accId = acc.id
 
@@ -458,23 +423,15 @@ authRoutes.post("/logout_sessions", (req,res) => {
     res.send("logged out all sessions")
 })
 
-authRoutes.get("/me", (req,res) => {
-    if (!auth.validate(req.cookies.auth)) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
-    
-    // lazy rn so
+authRoutes.get("/me", requiresAccount, (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
 
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (acc) {
-        let accId = acc.id
-        res.send({
-            ...acc,
-            sessionCount: auth.AuthTokens.filter(e => e.account == accId && e.expire > Date.now()).length,
-            sessionExpires: auth.AuthTokens.find(e => e.token == req.cookies.auth)?.expire
-        })
-    }
+    let accId = acc.id
+    res.send({
+        ...acc,
+        sessionCount: auth.AuthTokens.filter(e => e.account == accId && e.expire > Date.now()).length,
+        sessionExpires: auth.AuthTokens.find(e => e.token == req.cookies.auth)?.expire
+    })
 })
 
 authRoutes.get("/customCSS", (req,res) => {

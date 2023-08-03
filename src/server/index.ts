@@ -206,10 +206,11 @@ app.get("/server",(req,res) => {
     }))
 })
 
-app.get(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"],async (req:express.Request,res:express.Response) => {
+app.get(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"], async (req:express.Request,res:express.Response) => {
     
     let file = files.getFilePointer(req.params.fileId)
     res.setHeader("Access-Control-Allow-Origin", "*")
+    res.setHeader("Content-Security-Policy","sandbox allow-scripts")
     if (req.query.attachment == "1") res.setHeader("Content-Disposition", "attachment")
     
     if (file) {
@@ -273,6 +274,7 @@ app.get(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"],async (req:express.Reque
 app.head(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"], (req: express.Request, res:express.Response) => {
     let file = files.getFilePointer(req.params.fileId)
     res.setHeader("Access-Control-Allow-Origin", "*")
+    res.setHeader("Content-Security-Policy","sandbox allow-scripts")
     if (req.query.attachment == "1") res.setHeader("Content-Disposition", "attachment")
     if (!file) {
         res.status(404)
