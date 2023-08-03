@@ -29,7 +29,16 @@ app.use("/static/style",express.static("out/style"))
 app.use("/static/js",express.static("out/client"))
 
 //app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
+
 app.use(cookieParser())
+
+app.get("/server",(req,res) => {
+    res.send(JSON.stringify({
+        ...config,
+        version:pkg.version,
+        files:Object.keys(files.files).length
+    }))
+})
 
 app
     .use("/auth",authRoutes.authRoutes)
@@ -201,13 +210,6 @@ app.get("/download/:fileId",(req,res) => {
     }
 })
 
-app.get("/server",(req,res) => {
-    res.send(JSON.stringify({
-        ...config,
-        version:pkg.version,
-        files:Object.keys(files.files).length
-    }))
-})
 
 /*
     routes should be in this order:
