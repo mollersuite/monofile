@@ -246,7 +246,7 @@ authRoutes.post("/change_username", requiresAccount, parser, (req,res) => {
 
 let verificationCodes = new Map<string, {code: string, email: string, expiry: NodeJS.Timeout, requestedAt:number}>()
 
-authRoutes.post("/request_email_change", requiresAccount, (req,res) => {
+authRoutes.post("/request_email_change", requiresAccount, parser, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
     
     
@@ -287,7 +287,6 @@ authRoutes.post("/request_email_change", requiresAccount, (req,res) => {
         let e = verificationCodes.get(acc?.id||"")?.expiry
         if (e) clearTimeout(e)
         verificationCodes.delete(acc?.id||"")
-        console.error(err?.toString())
         ServeError(res, 500, err?.toString())
     })
 })
