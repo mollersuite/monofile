@@ -44,7 +44,7 @@ export function deleteAccount(optPicker) {
                     })}).then((response) => {
                         
                         if (response.status != 200) {
-                            optPicker.picker(`${response.status} ${response.statusText}`,[])
+                            optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                         }
         
                         fetchAccountData()
@@ -77,7 +77,7 @@ export function userChange(optPicker) {
             })}).then((response) => {
                 
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 }
 
                 fetchAccountData()
@@ -106,7 +106,7 @@ export function forgotPassword(optPicker) {
                 account:exp.user
             })}).then((response) => {
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 } else {
                     optPicker.picker(`Please follow the instructions sent to your inbox.`,[])
                 }
@@ -135,7 +135,7 @@ export function emailChange(optPicker) {
                 email:exp.email
             })}).then((response) => {
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 } else {
                     optPicker.picker(`Please continue to your inbox at ${exp.email.split("@")[1]} and click on the attached link.`,[])
                 }
@@ -167,7 +167,7 @@ export function pwdChng(optPicker) {
             })}).then((response) => {
                 
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 }
 
                 fetchAccountData()
@@ -197,7 +197,7 @@ export function customcss(optPicker) {
             })}).then((response) => {
                 
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 }
 
                 fetchAccountData()
@@ -229,7 +229,7 @@ export function embedColor(optPicker) {
             })}).then((response) => {
                 
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 }
 
                 fetchAccountData()
@@ -260,7 +260,7 @@ export function embedSize(optPicker) {
             })}).then((response) => {
                 
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 }
 
                 fetchAccountData()

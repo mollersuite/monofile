@@ -22,6 +22,7 @@ export default async function ServeError(
     // serve error
     res.statusMessage = reason
     res.status(code)
+    res.header("x-backup-status-message", reason) // glitch default nginx configuration
     res.send(
         errorPage
             .replace(/\$code/g,code.toString())

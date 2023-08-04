@@ -39,7 +39,7 @@
                 authError = await res.json().catch(() => {
                     return {
                         status: res.status,
-                        message: res.statusText
+                        message: res.headers.get("x-backup-status-message") || res.statusText || ""
                     }
                 })
             } else {

@@ -59,7 +59,7 @@ export function dfv(optPicker) {
             })}).then((response) => {
                 
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 }
 
                 fetchAccountData()
@@ -86,7 +86,7 @@ export function update_all_files(optPicker) {
             })}).then((response) => {
                 
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 }
 
                 fetchAccountData()
@@ -129,7 +129,7 @@ export function fileOptions(optPicker,file) {
                     })}).then((response) => {
                         
                         if (response.status != 200) {
-                            optPicker.picker(`${response.status} ${response.statusText}`,[])
+                            optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                         }
         
                         fetchFilePointers();
@@ -151,7 +151,7 @@ export function fileOptions(optPicker,file) {
                             })}).then((response) => {
                         
                                 if (response.status != 200) {
-                                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                                 }
                 
                                 fetchFilePointers();
@@ -198,7 +198,7 @@ export function fileOptions(optPicker,file) {
                             })}).then((response) => {
                         
                                 if (response.status != 200) {
-                                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                                 }
                 
                                 fetchFilePointers();

@@ -31,7 +31,7 @@ export function pwdReset(optPicker) {
             })}).then((response) => {
                 
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 }
 
             })
@@ -67,7 +67,7 @@ export function chgOwner(optPicker) {
             })}).then((response) => {
                 
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 }
 
             })
@@ -96,7 +96,7 @@ export function delFile(optPicker) {
             })}).then((response) => {
                 
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 }
 
             })
@@ -125,7 +125,7 @@ export function elevateUser(optPicker) {
             })}).then((response) => {
                 
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.statusText}`,[])
+                    optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                 }
 
             })
@@ -181,7 +181,7 @@ export function deleteAccount(optPicker) {
                     })}).then((response) => {
                         
                         if (response.status != 200) {
-                            optPicker.picker(`${response.status} ${response.statusText}`,[])
+                            optPicker.picker(`${response.status} ${res.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                         }
         
                         fetchAccountData()
