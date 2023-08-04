@@ -4,6 +4,7 @@ import * as Accounts from "../lib/accounts";
 import * as auth from "../lib/auth";
 import { sendMail } from "../lib/mail";
 import { getAccount, requiresAccount } from "../lib/middleware"
+import { accountRatelimit } from "../lib/ratelimit"
 
 import ServeError from "../lib/errors";
 import Files, { FileVisibility, generateFileId, id_check_regex } from "../lib/files";
@@ -239,14 +240,18 @@ authRoutes.post("/change_username", requiresAccount, parser, (req,res) => {
     acc.username = req.body.username
     Accounts.save()
 
+    sendMail(req.body.email, `Your login details have been updated`, `<b>Hello there!</b> Your username has been updated to <span username>${req.body.username}</span>. Please update your devices accordingly. Thank you for using monofile.`).then(() => {
+        res.send("OK")
+    }).catch((err) => {})
+
     res.send("username changed")
 })
 
 // shit way to do this but...
 
-let verificationCodes = new Map<string, {code: string, email: string, expiry: NodeJS.Timeout, requestedAt:number}>()
+let verificationCodes = new Map<string, {code: string, email: string, expiry: NodeJS.Timeout}>()
 
-authRoutes.post("/request_email_change", requiresAccount, parser, (req,res) => {
+authRoutes.post("/request_email_change", requiresAccount, accountRatelimit({ requests: 4, per: 60*60*1000 }), parser, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
     
     
@@ -256,12 +261,6 @@ authRoutes.post("/request_email_change", requiresAccount, parser, (req,res) => {
     }
 
     let vcode = verificationCodes.get(acc.id) 
-
-    if (vcode && vcode.requestedAt+(15*60*1000) > Date.now()) {
-        ServeError(res, 429, `Please wait a few moments to request another email change.`)
-        return
-    }
-
 
     // delete previous if any
     let e = vcode?.expiry
@@ -275,8 +274,7 @@ authRoutes.post("/request_email_change", requiresAccount, parser, (req,res) => {
     verificationCodes.set(acc.id, {
         code,
         email: req.body.email,
-        expiry: setTimeout( () => verificationCodes.delete(acc?.id||""), 15*60*1000),
-        requestedAt: Date.now()
+        expiry: setTimeout( () => verificationCodes.delete(acc?.id||""), 15*60*1000)
     })
 
     // this is a mess but it's fine
@@ -287,6 +285,7 @@ authRoutes.post("/request_email_change", requiresAccount, parser, (req,res) => {
         let e = verificationCodes.get(acc?.id||"")?.expiry
         if (e) clearTimeout(e)
         verificationCodes.delete(acc?.id||"")
+        res.locals.undoCount();
         ServeError(res, 500, err?.toString())
     })
 })
@@ -407,6 +406,10 @@ authRoutes.post("/change_password", requiresAccount, parser, (req,res) => {
     auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
         auth.invalidate(v.token)
     })
+
+    sendMail(req.body.email, `Your login details have been updated`, `<b>Hello there!</b> This email is to notify you of a password change that you have initiated. You have been logged out of your devices. Thank you for using monofile.`).then(() => {
+        res.send("OK")
+    }).catch((err) => {})
 
     res.send("password changed - logged out all sessions")
 })

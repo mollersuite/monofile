@@ -48,6 +48,13 @@ adminRoutes.post("/reset", parser, (req,res) => {
     auth.AuthTokens.filter(e => e.account == targetAccount?.id).forEach((v) => {
         auth.invalidate(v.token)
     })
+
+    
+    sendMail(req.body.email, `Your login details have been updated`, `<b>Hello there!</b> This email is to notify you of a password change that an administrator, <span username>${acc.username}</span>, has initiated. You have been logged out of your devices. Thank you for using monofile.`).then(() => {
+        res.send("OK")
+    }).catch((err) => {})
+
+
     res.send()
 
 })
