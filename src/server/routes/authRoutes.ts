@@ -240,9 +240,11 @@ authRoutes.post("/change_username", requiresAccount, parser, (req,res) => {
     acc.username = req.body.username
     Accounts.save()
 
-    sendMail(req.body.email, `Your login details have been updated`, `<b>Hello there!</b> Your username has been updated to <span username>${req.body.username}</span>. Please update your devices accordingly. Thank you for using monofile.`).then(() => {
-        res.send("OK")
-    }).catch((err) => {})
+    if (acc.email) {
+        sendMail(acc.email, `Your login details have been updated`, `<b>Hello there!</b> Your username has been updated to <span username>${req.body.username}</span>. Please update your devices accordingly. Thank you for using monofile.`).then(() => {
+            res.send("OK")
+        }).catch((err) => {})
+    }
 
     res.send("username changed")
 })
@@ -407,9 +409,11 @@ authRoutes.post("/change_password", requiresAccount, parser, (req,res) => {
         auth.invalidate(v.token)
     })
 
-    sendMail(req.body.email, `Your login details have been updated`, `<b>Hello there!</b> This email is to notify you of a password change that you have initiated. You have been logged out of your devices. Thank you for using monofile.`).then(() => {
-        res.send("OK")
-    }).catch((err) => {})
+    if (acc.email) {
+        sendMail(acc.email, `Your login details have been updated`, `<b>Hello there!</b> This email is to notify you of a password change that you have initiated. You have been logged out of your devices. Thank you for using monofile.`).then(() => {
+            res.send("OK")
+        }).catch((err) => {})
+    }
 
     res.send("password changed - logged out all sessions")
 })
