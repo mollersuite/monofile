@@ -306,7 +306,7 @@ authRoutes.get("/confirm_email/:code", requiresAccount, (req,res) => {
         if (e) clearTimeout(e)
         verificationCodes.delete(acc?.id||"")
 
-        res.send(`<script>window.close()</script>`)
+        res.redirect("/")
     } else {
         ServeError(res, 400, "invalid code")
     }
