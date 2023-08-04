@@ -287,6 +287,7 @@ authRoutes.post("/request_email_change", requiresAccount, (req,res) => {
         let e = verificationCodes.get(acc?.id||"")?.expiry
         if (e) clearTimeout(e)
         verificationCodes.delete(acc?.id||"")
+        console.error(err?.toString())
         ServeError(res, 500, err?.toString())
     })
 })
