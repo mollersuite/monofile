@@ -299,6 +299,10 @@ export default class Files {
 
                 let attachments: Discord.Attachment[] = [];
 
+                /* File updates */ 
+                let file_updates: Pick<FilePointer, "chunkSize" | "sizeInBytes"> = {}
+                let atSIB: number[] = [] // kepes track of the size of each file...
+
                 for (let xi = scan_msg_begin; xi < scan_msg_end+1; xi++) {
 
                     let msg = await this.uploadChannel.messages.fetch(file.messageids[xi]).catch(() => {return null})
@@ -308,11 +312,30 @@ export default class Files {
                         for (let i = (useRanges && xi == scan_msg_begin ? ( scan_files_begin - (xi*10) ) : 0); i < (useRanges && xi == scan_msg_end ? ( scan_files_end - (xi*10) + 1 ) : attach.length); i++) {
 
                             attachments.push(attach[i])
+                            atSIB.push(attach[i].size)
 
                         }
 
                     }
 
+                }
+
+                if (!file.sizeInBytes) file_updates.sizeInBytes = atSIB.reduce((a,b) => a+b);
+                if (!file.chunkSize) file_updates.chunkSize = atSIB[0]
+                if (Object.keys(file_updates).length) { // if file_updates not empty
+                    // i gotta do these weird workarounds, ts is weird sometimes
+                    // originally i was gonna do key is keyof FilePointer but for some reason 
+                    // it ended up making typeof file[key] never??? so 
+                    // its 10pm and chinese people suck at being quiet so i just wanna get this over with
+                    // chinese is the worst language in terms of volume lmao
+                    let valid_fp_keys = ["sizeInBytes", "chunkSize"]
+                    let isValidFilePointerKey = (key: string): key is "sizeInBytes" | "chunkSize" => valid_fp_keys.includes(key)
+
+                    for (let [key,value] of Object.entries(file_updates)) {
+                        if (isValidFilePointerKey(key)) file[key] = value
+                    }
+
+                    writeFile(process.cwd()+"/.data/files.json",JSON.stringify(this.files),(err) => {})
                 }
 
                 let position = 0;
