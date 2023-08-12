@@ -10,7 +10,7 @@ export default [
             sourcemap:true
         },
         plugins: [
-            resolve(),
+            resolve({ browser: true }),
             svelte({})
         ]
     }
