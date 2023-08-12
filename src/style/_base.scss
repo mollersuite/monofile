@@ -1,6 +1,9 @@
-@import "../../node_modules/@fontsource/fira-code";
-@import "../../node_modules/@fontsource/inconsolata";
-@import "../../node_modules/@fontsource/source-sans-pro";
+/* 
+    could probably replace this with fonts served directly
+    from the server but it's fine for now 
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&family=Inconsolata&family=Source+Sans+Pro:wght@300;400;600;700;900&display=swap');
 
 $FallbackFonts: 
     -apple-system, 
