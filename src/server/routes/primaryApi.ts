@@ -2,9 +2,9 @@ import bodyParser from "body-parser";
 import express, { Router } from "express";
 import * as Accounts from "../lib/accounts";
 import * as auth from "../lib/auth";
-import bytes from "bytes"
-import {writeFile} from "fs";
+import axios, { AxiosResponse } from "axios"
 import { type Range } from "range-parser";
+import multer, {memoryStorage} from "multer"
 
 import ServeError from "../lib/errors";
 import Files from "../lib/files";
@@ -19,6 +19,8 @@ let files:Files
 export function setFilesObj(newFiles:Files) {
     files = newFiles
 }
+
+const multerSetup = multer({storage:memoryStorage()})
 
 let config = require(`${process.cwd()}/config.json`)
 
@@ -104,5 +106,66 @@ primaryApi.head(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"], (req: express.R
         if (file.chunkSize) {
             res.setHeader("Accept-Ranges", "bytes")
         }
+    }
+})
+
+// upload handlers
+
+primaryApi.post("/upload",multerSetup.single('file'),async (req,res) => {
+    if (req.file) {
+        try {
+            let prm = req.header("monofile-params")
+            let params:{[key:string]:any} = {}
+            if (prm) {
+                params = JSON.parse(prm)
+            }
+
+            files.uploadFile({
+                owner: auth.validate(req.cookies.auth),
+
+                uploadId:params.uploadId,
+                name:req.file.originalname,
+                mime:req.file.mimetype
+            },req.file.buffer)
+                .then((uID) => res.send(uID))
+                .catch((stat) => {
+                    res.status(stat.status);
+                    res.send(`[err] ${stat.message}`)
+                })
+        } catch {
+            res.status(400)
+            res.send("[err] bad request")
+        }
+    } else {
+        res.status(400)
+        res.send("[err] bad request")
+    }
+})
+
+primaryApi.post("/clone", bodyParser.json({type: ["text/plain","application/json"]}) ,(req,res) => {
+    try {
+        axios.get(req.body.url,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
+
+            files.uploadFile({
+                owner: auth.validate(req.cookies.auth),
+
+                name:req.body.url.split("/")[req.body.url.split("/").length-1] || "generic",
+                mime:data.headers["content-type"],
+                uploadId:req.body.uploadId
+            },Buffer.from(data.data))
+                .then((uID) => res.send(uID))
+                .catch((stat) => {
+                    res.status(stat.status);
+                    res.send(`[err] ${stat.message}`)
+                })
+
+        }).catch((err) => {
+            console.log(err)
+            res.status(400)
+            res.send(`[err] failed to fetch data`)
+        })
+    } catch {
+        res.status(500)
+        res.send("[err] an error occured")
     }
 })

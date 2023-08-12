@@ -1,10 +1,7 @@
-import bodyParser from "body-parser"
-import multer, {memoryStorage} from "multer"
 import cookieParser from "cookie-parser";
 import { IntentsBitField, Client } from "discord.js"
 import express from "express"
 import fs from "fs"
-import axios, { AxiosResponse } from "axios"
 import bytes from "bytes";
 
 import ServeError from "./lib/errors"
@@ -19,7 +16,6 @@ import * as primaryApi from "./routes/primaryApi";
 
 require("dotenv").config()
 
-const multerSetup = multer({storage:memoryStorage()})
 let pkg = require(`${process.cwd()}/package.json`)
 let app = express()
 let config = require(`${process.cwd()}/config.json`)
@@ -75,67 +71,6 @@ app.get("/", function(req,res) {
     res.sendFile(process.cwd()+"/pages/index.html")
 })
 
-// upload handlers
-
-app.post("/upload",multerSetup.single('file'),async (req,res) => {
-    if (req.file) {
-        try {
-            let prm = req.header("monofile-params")
-            let params:{[key:string]:any} = {}
-            if (prm) {
-                params = JSON.parse(prm)
-            }
-
-            files.uploadFile({
-                owner: auth.validate(req.cookies.auth),
-
-                uploadId:params.uploadId,
-                name:req.file.originalname,
-                mime:req.file.mimetype
-            },req.file.buffer)
-                .then((uID) => res.send(uID))
-                .catch((stat) => {
-                    res.status(stat.status);
-                    res.send(`[err] ${stat.message}`)
-                })
-        } catch {
-            res.status(400)
-            res.send("[err] bad request")
-        }
-    } else {
-        res.status(400)
-        res.send("[err] bad request")
-    }
-})
-
-app.post("/clone", bodyParser.json({type: ["text/plain","application/json"]}) ,(req,res) => {
-    try {
-        axios.get(req.body.url,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
-
-            files.uploadFile({
-                owner: auth.validate(req.cookies.auth),
-
-                name:req.body.url.split("/")[req.body.url.split("/").length-1] || "generic",
-                mime:data.headers["content-type"],
-                uploadId:req.body.uploadId
-            },Buffer.from(data.data))
-                .then((uID) => res.send(uID))
-                .catch((stat) => {
-                    res.status(stat.status);
-                    res.send(`[err] ${stat.message}`)
-                })
-
-        }).catch((err) => {
-            console.log(err)
-            res.status(400)
-            res.send(`[err] failed to fetch data`)
-        })
-    } catch {
-        res.status(500)
-        res.send("[err] an error occured")
-    }
-})
-
 // serve download page
 
 app.get("/download/:fileId",(req,res) => {
@@ -174,7 +109,7 @@ app.get("/download/:fileId",(req,res) => {
                                 <!-- honestly probably good enough for now -->
                                 <meta property="twitter:image" content="0">`
                                 // quick lazy fix as a fallback
-                                // mayeb i'll improve this later, but probably not.
+                                // maybe i'll improve this later, but probably not.
                                 + ((file.sizeInBytes||0) >= 26214400 ? `
                                 <meta property="og:video:width" content="1280">
                                 <meta property="og:video:height" content="720">` : "")
