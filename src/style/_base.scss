@@ -1,0 +1,85 @@
+/* 
+    could probably replace this with fonts served directly
+    from the server but it's fine for now 
+*/
+
+@import url("/static/assets/fonts/inconsolata.css");
+@import url("/static/assets/fonts/source_sans.css");
+@import url("/static/assets/fonts/fira_code.css");
+
+$FallbackFonts: 
+    -apple-system, 
+    system-ui, 
+    BlinkMacSystemFont, 
+    "Segoe UI", 
+    Roboto,
+    sans-serif;
+
+%normal {
+    font-family: "Source Sans Pro", $FallbackFonts
+}
+
+/* 
+    everything that's not a span
+    and/or has the normal class
+    (it's just in case)
+*/
+
+*:not(span), .normal { @extend %normal; }
+
+/*
+    for code blocks / terminal
+*/
+
+.monospace {
+    font-family: "Fira Code", monospace
+}
+
+/*
+    colors
+*/
+
+$Background: #252525;
+/* hsl(210,12.9,24.3) */
+$darkish: rgb(54, 62, 70);
+
+/*
+    then other stuff
+*/
+
+body {
+    background-color: rgb(30, 33, 36); // this is here so that
+                                         // pulling down to refresh
+                                         // on mobile looks good
+}
+
+#appContent {
+    background-color: $Background
+}
+
+/*
+    scrollbars
+*/
+
+* {
+    /* nice scrollbars aren't needed on mobile so */
+    @media screen and (min-width:500px) {
+        
+        &::-webkit-scrollbar {
+            width:5px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background-color:#191919;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background-color:#333;
+
+            &:hover {
+                background-color:#373737;
+            }
+        }
+    
+    }
+}

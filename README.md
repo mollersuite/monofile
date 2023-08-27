@@ -1,32 +1,75 @@
 # monofile
-File sharing via Discord
- 
+The open-source, Discord-based file sharing service.
+[Live instance](https://fyle.uk)
+
 <br>
 
-## .env
+## Setup
 
+First, install monofile's prerequisites...
 ```
-TOKEN=KILL-YOURSELF.NOW
+npm i
 ```
 
-## versions & planned updates
+Then, add your bot token...
+```
+echo "TOKEN=INSERT-TOKEN.HERE" > .env
+```
+and, in addition, SMTP authentication...
+```
+echo "\nMAIL_USER=user@example.com" > .env
+echo "\nMAIL_PASS=password here" > .env
+```
 
-- [X] 1.0.0 initial release
-- [X] 1.1.0 add file cloning endpoint
-- [X] 1.1.1 add file cloning webpage
-- [X] 1.1.2 fix file cloning with binary data
-- [X] 1.1.3 display current version on pages
-- [X] 1.1.4 serve /assets as static files & make /server endpoint
-- [X] 1.2.0 add file parameters section + custom ids
-- [X] 1.2.1 add file counter to main page
-- [X] 1.2.2 clean up this shitty code
-- [X] 1.2.3 bugfixes
-- [ ] 1.2.4 add id locks, allowing you to set a key for a file that allows you to overwrite the file in the future
-- [ ] 1.2.5 prevent cloning of local/private ip addresses
-- [ ] 1.3.0 add simple moderation tools
-- [ ] 2.0.0 rewrite using theUnfunny's code as a base/rewrite using monofile-core
+Invite your bot to a server, and create a new `config.json` in the project root:
+```js
+// config.json
+{
+    "maxDiscordFiles": 20,
+    "maxDiscordFileSize": 26214400,
+    "targetGuild": "1024080490677936248",
+    "targetChannel": "1024080525993971913",
+    "requestTimeout":120000,
+    "maxUploadIdLength":30,
 
-also todo: monofile-core (written in eris)
+    "accounts": {
+        "registrationEnabled": true,
+        "requiredForUpload": false
+    },
 
-## Disclaimer!
-This project does some stuff that can be considered questionable. Discord may not like you uploading files this way, and it's a grey area in Discord's TOS. We take no responsibility if Discord locks your account for API abuse. 
+    "webdrop": {
+        "accountRequired": false
+    },
+
+    "mail": { // nodemailer transport options
+        "host": "smtp.fastmail.com", // or your mail provider of choice
+        "port": 465,
+        "secure": true,
+        "auth": {
+            "user": "REPLACE-WITH-YOUR-ALIAS@YOURDOMAIN.COM",
+            "pass": "REPLACE-WITH-YOUR-GENERATED-PASSWORD"
+        }
+    }
+}
+```
+
+Then, compile:
+```
+tsc && sass src/style:out/style && rollup -c
+```
+and start.
+```
+npm start
+```
+
+monofile should now be running on either `env.MONOFILE_PORT` or port `3000`.
+
+## Disclaimer
+
+Although we believe monofile is not against Discord's developer terms of service, monofile's contributors are not liable if Discord takes action against you for running an instance.
+
+## License
+
+Code written by monofile's contributors is currently licensed under [Unlicense](https://github.com/nbitzz/monofile/blob/main/LICENSE).
+
+Icons under `/assets/icons` were created by Microsoft, and as such are licensed under [different terms](https://github.com/nbitzz/monofile/blob/1.3.0/assets/icons/README.md) (MIT).

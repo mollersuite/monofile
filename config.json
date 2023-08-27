@@ -1,7 +1,28 @@
 {
     "maxDiscordFiles": 20,
-    "maxDiscordFileSize": 8388608,
+    "maxDiscordFileSize": 26214400,
     "targetGuild": "1024080490677936248",
     "targetChannel": "1024080525993971913",
-    "requestTimeout":120000
+    "requestTimeout":120000,
+    "maxUploadIdLength":30,
+
+    "accounts": {
+        "registrationEnabled": true,
+        "requiredForUpload": false
+    },
+
+    "webdrop": {
+        "accountRequired": false
+    },
+
+    "mail": {
+        "transport": {
+            "host": "smtp.fastmail.com",
+            "port": 465,
+            "secure": true
+        },
+        "send": {
+            "from": "mono@fyle.uk"
+        }
+    }
 }

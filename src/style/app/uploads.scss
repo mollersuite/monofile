@@ -1,0 +1,72 @@
+@use "uploader/add_new_files";
+@use "uploader/file";
+
+#uploadWindow {
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    padding:10px 15px 10px 15px;
+    display:flex;
+    flex-direction: column;
+    
+    width:350px;
+    @media screen and (min-width:500px) {
+        max-height: calc( 100% - 80px );
+    }
+
+    background-color:#222222;
+    color:#ddd;
+
+    h1, p, a {
+        margin: 0px;
+        font-size: 14px;
+    }
+
+    a {
+        color:#999;
+    }
+
+    h1 {
+        font-weight:600;
+        font-size: 25px;
+    }
+
+    .uploadContainer {
+        overflow:auto;
+    }
+
+    button {
+        cursor:pointer;
+        background-color:#393939;
+        color:#DDDDDD;
+        border:none;
+        outline:none;
+        padding:5px;
+        transition-duration: 250ms;
+        /*overflow:clip;*/
+
+        @media screen and (max-width: 500px) {
+            font-size:16px;
+            padding:10px;
+        }
+
+        &:hover {
+            transition-duration: 250ms;
+            background-color:#434343;
+            color: #ffffff;
+        }
+    }
+
+    @media screen and (max-width: 500px) {
+        width: calc( 100% - 20px );
+        height: calc( 100% - 20px );
+        border-radius:0px;
+        background-color:#00000000;
+        
+        transform:none;
+        left:10px;
+        top:10px;
+        padding:0px;
+    }
+}

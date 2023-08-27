@@ -1,72 +1,41 @@
 <!DOCTYPE html>
+
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <meta name="og:site_name" content="monofile $Version">
-    <meta name="application-name" content="$ErrorCode">
-    <meta name="description" content="$ErrorMessage">
-    
-    <title>monofile</title>
 
-    <style>
+    <head>
 
-        * {
-            font-family: sans-serif;
-        }
-        h1,h2 {
-            text-align:center;
-        }
-        #content {
-            position:fixed;
-            left:50%;
-            top:50%;
-            transform:translate(-50%,-50%);
-            background-color:white;
-            width:450px;
-            /*height:100%;*/
-        }
-        body {
-            background-color: darkgray;
-        }
-        .note {
-            padding:5px;
-            position:relative;
-            width:calc( 100% - 60px );
-            left:25px;
-            border:1px solid #AAAAAAFF;
-            border-radius: 8px;
-            background-color: #AAAAAA66;
-        }
+        <link
+            rel="stylesheet"
+            href="/static/style/error.css"
+        >
 
-        @media only screen and (max-width: 450px) {
-            #content {
-                position:fixed;
-                left:0%;
-                top:0%;
-                transform:translate(0%,0%);
-                background-color:white;
-                width:100%;
-                height:100%;
-            }
-        }
+        <link
+            rel="icon"
+            type="image/svg"
+            href="/static/assets/icons/error.svg"
+        >
+        
+        <link
+            rel="stylesheet"
+            href="/auth/customCSS"
+        >
 
-    </style>
-</head>
-<body>
-    <div id="content">
-        <h1>
-            monofile<span style="font-style:italic;font-weight:bold;font-size:16px;color:#999999"> $Version</span>
-        </h1>
-        <h2><em>Discord-based file sharing</em></h2>
-        <div class="note" style="border-color:#FFAAAAFF;background-color:#FFAAAA66">
-            <h1>$ErrorCode</h1>
-            <p style="width:calc( 100% - 50px );left:25px;position:relative;">$ErrorMessage</p>
-        </div>
-        <div style="width:100%;height:25px"></div>
-    </div>
-</body>
+        <meta 
+            name="viewport" 
+            content="width=device-width, initial-scale=1.0, user-scalable=0"
+        >
+
+        <title>$code</title>
+
+        <meta name="theme-color" content="rgb(30, 33, 36)">
+
+    </head>
+
+    <body>
+        <p class="error">
+            <span class="code">$code</span>
+            &nbsp;$text
+        </p>
+    </body>
 
 </html>

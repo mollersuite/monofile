@@ -1,0 +1,160 @@
+.pulldown_display[name=files] {
+    .notLoggedIn {
+        position:absolute;
+        top:50%;
+        left:0px;
+        transform:translateY(-50%);
+        width:100%;
+        text-align:center;
+
+        .flavor {
+            font-size:16px;
+            color:#999999;
+            margin: 0 0 10px 0;
+        }
+
+        button {
+            --col: #999999;
+
+            background-color: #232323;
+            color:var(--col);
+            font-size:14px;
+            border:1px solid var(--col);
+            padding:2px 20px 2px 20px;
+            cursor:pointer;
+            transition-duration:250ms;
+
+            &:hover {
+                background-color:#333333;
+                transition-duration:250ms;
+                --col:#BBBBBB;
+            }
+        }
+    }
+
+    .loggedIn {
+        display: flex;
+        flex-direction: column;
+        max-height:100%;
+        overflow:hidden;
+
+        .searchBar {
+            transition-duration:150ms;
+            background-color:#171717;
+            width:100%;
+            padding:8px;
+            color:#dddddd;
+            border:none;
+            border-bottom: 1px solid #aaaaaa;
+            outline: none;
+            border-radius:0px;
+            font-size:14px;
+
+            &:focus {
+                transition-duration:150ms;
+                border-bottom: 1px solid #dddddd;
+            }
+
+            @media screen and (max-width: 500px) {
+                padding:12px;
+                font-size:16px;
+            }
+        }
+
+        .fileList {
+            overflow-y:auto;
+            overflow-x:hidden;
+            padding:5px 0;
+
+            .flFile {
+                padding: 3px 8px;
+                position:relative;
+
+                @media screen and (max-width: 500px) {
+                    padding:7px 12px;
+                }
+
+                .detail {
+                    color:#777777;
+                    font-size:14px;
+                    position:relative;
+
+                    @media screen and (max-width: 500px) {
+                        font-size:16px;
+                    }
+
+                    img {
+                        width: 14px;
+                        height: 14px;
+
+                        /* this is shit but it's the best way i can think of to do this */
+                        /* other than flexbox but i don't feel like doing that rn */
+
+                        position:relative;
+                        top:2px;
+                    }
+                }
+
+                h2 {
+                    font-size:18px;
+                    text-overflow:ellipsis;
+                    overflow:hidden;
+                    font-weight:600;
+
+                    @media screen and (max-width: 500px) {
+                        font-size:20px;
+                    }
+                }
+
+                p, h2 {
+                    margin:0 0 0 0;
+                    white-space: nowrap;
+                }
+
+                button {
+                    background-color:#00000000;
+                    border:none;
+                    outline:none;
+                    cursor:pointer;
+
+                    &.hitbox {
+                        position:absolute;
+                        left:0px;
+                        top:0px;
+                        height:100%;
+                        width:100%;
+                        z-index:10;
+                    }
+
+                    &.more {
+                        min-height:100%;
+                        width:auto;
+                        aspect-ratio: 1 / 1;
+                        z-index:11;
+                        position:relative;
+
+                        img {
+                            margin:auto;
+                        }
+                    }
+                }
+
+                .flexCont {
+                    display: flex;
+
+                    .fileInfo {
+                        width:100%;
+                        min-width:0;
+                    }
+                }
+
+                @media screen and (min-width:500px) {
+                    &:hover {
+                        background-color: #252525;
+                    }
+                }
+                
+            }
+        }
+    }
+}

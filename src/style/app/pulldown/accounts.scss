@@ -1,0 +1,187 @@
+.pulldown_display[name=accounts] {
+    .notLoggedIn {
+        .container_div {
+            position:absolute;
+            top:50%;
+            transform:translateY(-50%);
+            width:100%;
+            text-align:center;
+
+            h1 {
+                font-weight:600;
+                font-size:24px;
+
+                @media screen and (max-width:500px) {
+                    font-size:30px;
+                }
+            }
+
+            .flavor {
+                font-size:14px;
+
+                /* good enoough */
+
+                @media screen and (max-width:500px) {
+                    font-size:16px;
+                }
+
+                color:#999999;
+                margin: 0 0 10px 0;
+            }
+
+            button {
+                cursor:pointer;
+                background-color:#393939;
+                color:#DDDDDD;
+                border:none;
+                outline:none;
+                padding:5px;
+                transition-duration: 250ms;
+                /*overflow:clip;*/
+
+                @media screen and (max-width: 500px) {
+                    font-size:16px;
+                    padding:10px;
+                }
+
+                &:hover {
+                    transition-duration: 250ms;
+                    background-color:#434343;
+                    color: #ffffff;
+                }
+                
+                flex-basis:50%;
+                flex-grow:1;
+            }
+
+            button.flavor {
+
+                padding: 0;
+                background: none; 
+
+            }
+
+            input[type=text],input[type=password] {
+                border:none;
+                border-radius:0;
+                width:100%;
+                padding:5px;
+                background-color:#333333;
+                color:#dddddd;
+                outline:none;
+
+                @media screen and (max-width: 500px) {
+                    font-size:16px;
+                    padding:10px;
+                }
+            }
+
+            .pwError {
+                div {
+                    border:none;
+                    border-radius:0;
+                    width:100%;
+                    padding:5px;
+                    background-color:#663333;
+                    color:#dddddd;
+                    outline:none;
+                    font-size:14px;
+                    text-align:left;
+                    
+                    @media screen and (max-width: 500px) {
+                        font-size:16px;
+                        padding:10px;
+                    }
+                }
+            }
+
+            .lgBtnContainer {
+                display:flex;
+                position:relative;
+                left:20px;
+                width:calc( 100% - 40px );
+                gap:10px;
+                overflow:clip;
+            }
+
+            .fields {
+                display:flex;
+                flex-direction:column;
+                position:relative;
+                left:20px;
+                width:calc( 100% - 40px );
+                gap:5px;
+                overflow:clip;
+            }
+            
+            /*
+            a {
+                text-decoration: none;
+                color:#999999;
+                font-size:14px;
+
+                @media screen and (max-width:500px) {
+                    font-size:16px;
+                }
+
+                &::after {
+                    content:" ➜";
+                    font-size:0px;
+                    opacity: 0;
+                    transition-duration:250ms;
+                }
+
+                &:hover {
+                    &::after {
+                        font-size:13px;
+                        opacity: 1;
+                        transition-duration:250ms;
+                    }
+                }
+            }
+            */
+        }
+
+    }
+
+    .loggedIn {
+        position:absolute;
+
+        /*
+            left:10px;
+            top:10px;
+        */
+
+        left:0px;
+        top:0px;
+        width:calc( 100% - 20px );
+        height:calc( 100% - 20px );
+        padding:10px;
+
+        overflow-y:auto;
+
+        h1 {
+            font-weight:600;
+            font-size:20px;
+            color: #AAAAAA;
+
+            @media screen and (max-width:500px) {
+                font-size:24px;
+            }
+
+            .monospace {
+                font-size:18px;
+                @media screen and (max-width:500px) {
+                    font-size:22px;
+                }
+            }
+        }
+
+        .category {
+    
+            p {
+                text-align:left;
+            }
+        }
+    }
+}

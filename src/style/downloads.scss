@@ -1,0 +1,26 @@
+// probably dont need to import the entire
+// uploads css file
+// so i might just make a separate file with mixins
+// and import them
+
+@use "app/uploads";
+@use "base";
+
+#appContent {
+    position:absolute;
+    left:0px;
+    top:0px;
+    width:100%;
+    height:100%;
+    background-image: linear-gradient(#333,base.$Background);
+
+    @media screen and (max-width:500px) {
+        background-image: linear-gradient(#303030,base.$Background);
+    }
+}
+
+#uploadWindow {
+    img, video, audio {
+        width:100%;
+    }
+}

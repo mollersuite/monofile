@@ -1,0 +1,59 @@
+// should probably start using mixins for thingss like this
+
+#uploadWindow {
+    .file {
+        background-color:#191919;
+        border: 1px solid gray;
+        padding: 10px;
+        overflow:clip;
+        position:relative;
+
+        h2 {
+            font-size: 16px;
+            margin: 0px;
+            font-weight:600;
+            width:calc( 100% - 20px );
+        }
+
+        input[type=text] {
+            background-color:#333333;
+            color:#DDDDDD;
+            border:none;
+            outline:none;
+            padding:5px;
+            position:relative;
+            
+            width:100%;
+            transition-duration:250ms;
+
+            @media screen and (max-width: 500px) {
+                font-size:16px;
+                padding:10px;
+            }
+        }
+
+        .buttonContainer {
+            display:flex;
+            column-gap:10px;
+
+            button {
+                flex-basis: 50%;
+                flex-grow: 1;
+                padding:5px;
+            }
+        }
+
+        .uploadingContainer {
+            color: #AAAAAA;
+        }
+
+        .hitbox {
+            opacity:0;
+            position:absolute;
+            left:0px;
+            top:0px;
+            height:100%;
+            width:100%;
+        }
+    }
+}
