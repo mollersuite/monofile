@@ -3,7 +3,9 @@
     from the server but it's fine for now 
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code&family=Inconsolata&family=Source+Sans+Pro:wght@300;400;600;700;900&display=swap');
+@import url("/static/assets/fonts/inconsolata.css");
+@import url("/static/assets/fonts/source_sans.css");
+@import url("/static/assets/fonts/fira_code.css");
 
 $FallbackFonts: 
     -apple-system, 
