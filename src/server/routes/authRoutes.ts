@@ -437,7 +437,8 @@ authRoutes.get("/me", requiresAccount, (req,res) => {
     res.send({
         ...acc,
         sessionCount: auth.AuthTokens.filter(e => e.account == accId && e.expire > Date.now()).length,
-        sessionExpires: auth.AuthTokens.find(e => e.token == req.cookies.auth)?.expire
+        sessionExpires: auth.AuthTokens.find(e => e.token == req.cookies.auth)?.expire,
+        password: undefined
     })
 })
 
