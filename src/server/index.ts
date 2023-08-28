@@ -118,7 +118,7 @@ app.get("/download/:fileId",(req,res) => {
                         )
                     )
                     + (
-                        fileOwner?.embed?.largeImage && file.visibility!="anonymous"
+                        fileOwner?.embed?.largeImage && file.visibility!="anonymous" && file.mime.startsWith("image/")
                         ? `<meta name="twitter:card" content="summary_large_image">`
                         : ""
                     )
