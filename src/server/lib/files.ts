@@ -320,7 +320,7 @@ export default class Files {
 
                 }
 
-                if (!file.sizeInBytes) file_updates.sizeInBytes = atSIB.reduce((a,b) => a+b);
+                if (!file.sizeInBytes) file_updates.sizeInBytes = atSIB.reduce((a,b) => a+b, 0);
                 if (!file.chunkSize) file_updates.chunkSize = atSIB[0]
                 if (Object.keys(file_updates).length) { // if file_updates not empty
                     // i gotta do these weird workarounds, ts is weird sometimes
