@@ -11,7 +11,7 @@
   "author": "nbitzz",
   "license": "Unlicense",
   "engines": {
-    "node": ">=v18"
+    "node": ">=v16.11"
   },
   "dependencies": {
     "@types/body-parser": "^1.19.2",

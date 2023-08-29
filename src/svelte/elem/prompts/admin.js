@@ -75,6 +75,42 @@ export function chgOwner(optPicker) {
     })
 }
 
+export function chgId(optPicker) {
+    optPicker.picker("Change file ID",[
+        {
+            name: "Target file",
+            icon: "/static/assets/icons/file.svg",
+            id: "file",
+            inputSettings: {}
+        },
+        {
+            name: "New ID",
+            icon: "/static/assets/icons/change_file_id.svg",
+            id: "new",
+            inputSettings: {}
+        },
+        {
+            name: "Update",
+            icon: "/static/assets/icons/update.svg",
+            description: "File will not be available at its old ID",
+            id: true
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected) {
+            fetch(`/admin/idchange`,{method:"POST", body:JSON.stringify({
+                target: exp.file,
+                new: exp.new
+            })}).then((response) => {
+                
+                if (response.status != 200) {
+                    optPicker.picker(`${response.status} ${response.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
+                }
+
+            })
+        }
+    })
+}
+
 export function delFile(optPicker) {
     optPicker.picker("Delete file",[
         {
