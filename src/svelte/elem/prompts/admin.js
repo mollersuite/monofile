@@ -85,7 +85,7 @@ export function chgId(optPicker) {
         },
         {
             name: "New ID",
-            icon: "/static/assets/icons/change_file_id.svg",
+            icon: "/static/assets/icons/admin/change_file_id.svg",
             id: "new",
             inputSettings: {}
         },
