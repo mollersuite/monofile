@@ -228,6 +228,11 @@
                         <p>Change file owner</p>
                     </button>
 
+                    <button on:click={() => admOpts.chgId(optPicker)}>
+                        <img src="/static/assets/icons/admin/change_file_id.svg" alt="change file id">
+                        <p>Change file ID<span><br />Potentially buggy, usage not recommended</span></p>
+                    </button>
+
                     <button on:click={() => admOpts.delFile(optPicker)}>
                         <img src="/static/assets/icons/admin/delete_file.svg" alt="delete file">
                         <p>Delete file</p>

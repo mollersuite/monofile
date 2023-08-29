@@ -84,8 +84,6 @@ adminRoutes.post("/elevate", parser, (req,res) => {
 })
 
 adminRoutes.post("/delete", parser, (req,res) => {
-
-    let acc = res.locals.acc as Accounts.Account
     
     if (typeof req.body.target !== "string") {
         res.status(404)
@@ -153,8 +151,6 @@ adminRoutes.post("/delete_account", parser, async (req,res) => {
 })
 
 adminRoutes.post("/transfer", parser, (req,res) => {
-
-    let acc = res.locals.acc as Accounts.Account
     
     if (typeof req.body.target !== "string" || typeof req.body.owner !== "string") {
         res.status(404)
@@ -191,5 +187,48 @@ adminRoutes.post("/transfer", parser, (req,res) => {
         res.status(500)
         res.send()
     }) // wasting a reassignment but whatee
+
+})
+
+adminRoutes.post("/idchange", parser, (req,res) => {
+    
+    if (typeof req.body.target !== "string" || typeof req.body.new !== "string") {
+        res.status(404)
+        res.send()
+        return
+    }
+    
+    let targetFile = files.getFilePointer(req.body.target)
+    if (!targetFile) {
+        res.status(404)
+        res.send()
+        return
+    }
+    
+    if (files.getFilePointer(req.body.new)) {
+        res.status(400)
+        res.send()
+        return
+    }
+
+    if (targetFile.owner) {
+        Accounts.files.deindex(targetFile.owner, req.body.target)
+        Accounts.files.index(targetFile.owner, req.body.new)
+    }
+    delete files.files[req.body.target]
+
+    files.writeFile(req.body.new, targetFile).then(() => {
+        res.send()
+    }).catch(() => {
+        files.files[req.body.target] = req.body.new
+
+        if (targetFile.owner) {
+            Accounts.files.deindex(targetFile.owner, req.body.new)
+            Accounts.files.index(targetFile.owner, req.body.target)
+        }
+
+        res.status(500)
+        res.send()
+    })
 
 })
