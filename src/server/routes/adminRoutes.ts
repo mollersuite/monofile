@@ -193,7 +193,7 @@ adminRoutes.post("/transfer", parser, (req,res) => {
 adminRoutes.post("/idchange", parser, (req,res) => {
     
     if (typeof req.body.target !== "string" || typeof req.body.new !== "string") {
-        res.status(404)
+        res.status(400)
         res.send()
         return
     }
