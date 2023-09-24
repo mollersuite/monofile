@@ -25,7 +25,8 @@ export interface FileUploadSettings {
     name?: string,
     mime: string,
     uploadId?: string,
-    owner?:string
+    owner?:string,
+    sizeInBytes: number
 }
 
 export interface Configuration {
@@ -92,8 +93,13 @@ export default class Files {
 
     }
     
-    uploadFile(settings:FileUploadSettings,fBuffer:Buffer):Promise<string|StatusCodeError> {
+    uploadFileStream(_settings:FileUploadSettings,fStream:Readable):Promise<string|StatusCodeError> {
+        let settings = JSON.parse(JSON.stringify(_settings)) // copy
+
         return new Promise<string>(async (resolve,reject) => {
+
+            // guards
+
             if (!this.uploadChannel) {
                 reject({status:503,message:"server is not ready - please try again later"})
                 return
@@ -141,102 +147,104 @@ export default class Files {
             let ogf = this.files[uploadId]
 
             this.files[uploadId] = {
-                    filename:settings.name,
-                    messageids:[],
-                    mime:settings.mime,
-                    sizeInBytes:0,
+                filename:settings.name,
+                messageids:[],
+                mime:settings.mime,
+                sizeInBytes:0,
 
-                    owner:settings.owner,
-                    visibility: settings.owner ? "private" : "public",
-                    reserved: true,
+                owner:settings.owner,
+                visibility: settings.owner ? "private" : "public",
+                reserved: true,
 
-                    chunkSize: this.config.maxDiscordFileSize
-                }
+                chunkSize: this.config.maxDiscordFileSize
+            }
             
             // save
+    
+            if (settings.sizeInBytes >= (this.config.maxDiscordFileSize*this.config.maxDiscordFiles)) {
+                reject({status:400,message:"file too large"}); 
+                return
+            }
 
             if (settings.owner) {
                 await files.index(settings.owner,uploadId)
             }
-    
-            // get buffer
-            if (fBuffer.byteLength >= (this.config.maxDiscordFileSize*this.config.maxDiscordFiles)) {
-                reject({status:400,message:"file too large"}); 
-                return
-            }
+
+            let msgIds: string[] = []
+            let totalFileSize = 0
+            let chunkData: {size: number, data: Buffer[]} = {size: 0, data: []}
             
-            // generate buffers to upload
-            let toUpload = []
-            for (let i = 0; i < Math.ceil(fBuffer.byteLength/this.config.maxDiscordFileSize); i++) {
-                toUpload.push(
-                    fBuffer.subarray(
-                        i*this.config.maxDiscordFileSize,
-                        Math.min(
-                            fBuffer.byteLength,
-                            (i+1)*this.config.maxDiscordFileSize
+            let uploadChunk = async (fBuffer: Buffer) => {
+                if (!this.uploadChannel) return
+                // generate buffers to upload
+                let toUpload = []
+                for (let i = 0; i < Math.ceil(fBuffer.byteLength/this.config.maxDiscordFileSize); i++) {
+                    toUpload.push(
+                        fBuffer.subarray(
+                            i*this.config.maxDiscordFileSize,
+                            Math.min(
+                                fBuffer.byteLength,
+                                (i+1)*this.config.maxDiscordFileSize
+                            )
                         )
                     )
-                )
-            }
-    
-            // begin uploading
-            let uploadTmplt:Discord.AttachmentBuilder[] = toUpload.map((e) => {
-                return new Discord.AttachmentBuilder(e)
-                            .setName(Math.random().toString().slice(2))
-            })
-            let uploadGroups = []
-            for (let i = 0; i < Math.ceil(uploadTmplt.length/10); i++) {
-                uploadGroups.push(uploadTmplt.slice(i*10,((i+1)*10)))
-            }
-    
-            let msgIds = []
-    
-            for (let i = 0; i < uploadGroups.length; i++) {
+                }
 
+                if (toUpload.length > this.config.maxDiscordFiles) return
+        
+                // begin uploading
+                let uploadTmplt:Discord.AttachmentBuilder[] = toUpload.map((e) => {
+                    return new Discord.AttachmentBuilder(e)
+                                .setName(Math.random().toString().slice(2))
+                })
+                
                 let ms = await this.uploadChannel.send({
-                    files:uploadGroups[i]
+                    files:uploadTmplt
                 }).catch((e) => {console.error(e)})
 
                 if (ms) {
-                    msgIds.push(ms.id)
+                    return ms.id
                 } else {
                     if (!ogf) delete this.files[uploadId]
                     else this.files[uploadId] = ogf
-                    reject({status:500,message:"please try again"}); return
+                    return
                 }
             }
 
-            // this code deletes the files from discord, btw
-            // if need be, replace with job queue system
+            let finish = async () => {
+                // this code deletes the files from discord, btw
+                // if need be, replace with job queue system
 
-            if (ogf&&this.uploadChannel) {
-                for (let x of ogf.messageids) {
-                    this.uploadChannel.messages.delete(x).catch(err => console.error(err))
+                if (ogf&&this.uploadChannel) {
+                    for (let x of ogf.messageids) {
+                        this.uploadChannel.messages.delete(x).catch(err => console.error(err))
+                    }
                 }
+
+                resolve(await this.writeFile(
+                    uploadId,
+                    {
+                        filename: settings.name,
+                        messageids: msgIds,
+                        mime: settings.mime,
+                        sizeInBytes: settings.sizeInBytes,
+
+                        owner: settings.owner,
+                        visibility: ogf ? ogf.visibility
+                        : (
+                            settings.owner 
+                            ? Accounts.getFromId(settings.owner)?.defaultFileVisibility 
+                            : undefined
+                        ),
+                        // so that json.stringify doesnt include tag:undefined
+                        ...((ogf||{}).tag ? {tag:ogf.tag} : {}),
+
+                        chunkSize: this.config.maxDiscordFileSize
+                    }
+                ))
             }
 
-            resolve(await this.writeFile(
-                uploadId,
-                {
-                    filename:settings.name,
-                    messageids:msgIds,
-                    mime:settings.mime,
-                    sizeInBytes:fBuffer.byteLength,
-
-                    owner:settings.owner,
-                    visibility: ogf ? ogf.visibility
-                    : (
-                        settings.owner 
-                        ? Accounts.getFromId(settings.owner)?.defaultFileVisibility 
-                        : undefined
-                    ),
-                    // so that json.stringify doesnt include tag:undefined
-                    ...((ogf||{}).tag ? {tag:ogf.tag} : {}),
-
-                    chunkSize: this.config.maxDiscordFileSize
-                }
-            ))
-
+            
             
         })
     }

@@ -12,6 +12,15 @@
 		},
 		{
 			"type": "shell",
+			"command":"sass src/style:out/style\nrollup -c",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"label": "Build (Frontend Only)"
+		},
+		{
+			"type": "shell",
 			"command":"tsc\nsass src/style:out/style\nrollup -c\nnode ./out/server/index.js\ndel ./out/* -Recurse",
 			"group": {
 				"kind": "build",

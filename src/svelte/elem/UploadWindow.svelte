@@ -165,7 +165,9 @@
                     {:else}
                         <div transition:padding_scaleY|local class="uploadingContainer">
                             {#if !upload[1].uploadStatus.fileId}
-                                <p in:fade={{duration:300, delay:400, easingFunc:circOut}} out:padding_scaleY={{easingFunc:circIn,op:true}}>{upload[1].uploadStatus.error ?? "Uploading..."}</p>
+                                <div class="uploadStatus" in:fade={{duration:300, delay:400, easingFunc:circOut}} out:padding_scaleY={{easingFunc:circIn,op:true}}>
+                                    <p>{upload[1].uploadStatus.error ?? `${upload[1].uploadStatus.percentage}%`}</p>
+                                </div>
                             {/if}
 
                             {#if upload[1].uploadStatus.fileId}
