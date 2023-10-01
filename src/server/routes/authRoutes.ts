@@ -454,19 +454,7 @@ authRoutes.get("/me", requiresAccount, (req,res) => {
 })
 
 authRoutes.get("/customCSS", (req,res) => {
-    if (!auth.validate(req.cookies.auth)) {
-        ServeError(res, 401, "not logged in")
-        return
-    }
-    
-    // lazy rn so
-
-    let acc = Accounts.getFromToken(req.cookies.auth)
-    if (acc) {
-        if (acc.customCSS) {
-            res.redirect(`/file/${acc.customCSS}`)
-        } else {
-            res.send("")
-        }
-    } else res.send("")
+    let acc = res.locals.acc
+    if (acc?.customCSS) res.redirect(`/file/${acc.customCSS}`)
+    else res.send("")
 })
