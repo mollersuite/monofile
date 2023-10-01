@@ -31,7 +31,7 @@ app.use(cookieParser())
 // check for ssl, if not redirect
 if (config.forceSSL) {
     app.use((req,res,next) => {
-        if (!req.secure) res.redirect(`https://${req.get("host")}${req.originalUrl}`)
+        if (req.protocol == "http") res.redirect(`https://${req.get("host")}${req.originalUrl}`)
         else next()
     })
 }
