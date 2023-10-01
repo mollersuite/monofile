@@ -139,6 +139,8 @@ export function emailPotentialRemove(optPicker) {
                         if (response.status != 200) {
                             optPicker.picker(`${response.status} ${response.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                         }
+                        
+                        fetchAccountData()
                     })
             }
         }
