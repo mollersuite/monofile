@@ -134,12 +134,13 @@ export function emailPotentialRemove(optPicker) {
             switch (exp.selected) {
                 case "set": 
                     emailChange(optPicker);
+                break
                 case "disconnect":
                     fetch("/auth/remove_email", {method: "POST"}).then((response) => {
                         if (response.status != 200) {
                             optPicker.picker(`${response.status} ${response.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
                         }
-                        
+
                         fetchAccountData()
                     })
             }
