@@ -24,5 +24,8 @@
         "send": {
             "from": "mono@fyle.uk"
         }
-    }
+    },
+
+    "trustProxy": true,
+    "forceSSL": true
 }
