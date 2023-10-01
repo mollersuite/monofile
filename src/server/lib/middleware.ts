@@ -3,7 +3,11 @@ import express, { type RequestHandler } from "express"
 import ServeError from "../lib/errors";
 
 export let getAccount: RequestHandler = function(req, res, next) {
-    res.locals.acc = Accounts.getFromToken(req.cookies.auth)
+    res.locals.acc = Accounts.getFromToken(req.cookies.auth || (
+        req.header("authorization")?.startsWith("Bearer ")
+        ? req.header("authorization")?.split(" ")[1]
+        : undefined
+    ))
     next()
 }
 
