@@ -131,7 +131,7 @@
                     <p>Change username</p>
                 </button>
 
-                <button on:click={() => accOpts.emailChange(optPicker)}>
+                <button on:click={() => ($account.email ? accOpts.emailPotentialRemove : accOpts.emailChange)(optPicker)}>
                     <img src="/static/assets/icons/mail.svg" alt="change email">
                     <p>Change email{#if $account.email}<span class="monospaceText"><br />{$account.email}</span>{/if}</p>
                 </button>

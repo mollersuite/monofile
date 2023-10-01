@@ -115,6 +115,39 @@ export function forgotPassword(optPicker) {
     })
 }
 
+export function emailPotentialRemove(optPicker) {
+    optPicker.picker("What would you like to do?",[
+        {
+            name: "Set a new email",
+            icon: "/static/assets/icons/change_email.svg",
+            description: "",
+            id: "set"
+        },
+        {
+            name: "Disconnect email",
+            icon: "/static/assets/icons/disconnect_email.svg",
+            description: "",
+            id: "disconnect"
+        }
+    ]).then((exp) => {
+        if (exp && exp.selected) {
+            switch (exp.selected) {
+                case "set": 
+                    emailChange(optPicker);
+                break
+                case "disconnect":
+                    fetch("/auth/remove_email", {method: "POST"}).then((response) => {
+                        if (response.status != 200) {
+                            optPicker.picker(`${response.status} ${response.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
+                        }
+
+                        fetchAccountData()
+                    })
+            }
+        }
+    })
+}
+
 export function emailChange(optPicker) {
     optPicker.picker("Change email",[
         {
