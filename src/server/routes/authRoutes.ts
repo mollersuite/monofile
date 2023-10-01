@@ -314,6 +314,16 @@ authRoutes.get("/confirm_email/:code", requiresAccount, (req,res) => {
     }
 })
 
+authRoutes.post("/remove_email", requiresAccount, (req,res) => {
+    let acc = res.locals.acc as Accounts.Account
+    
+    if (acc.email) {
+        delete acc.email;
+        Accounts.save()
+    } 
+    else ServeError(res, 400, "email not attached")
+})
+
 let pwReset = new Map<string, {code: string, expiry: NodeJS.Timeout, requestedAt:number}>()
 let prcIdx = new Map<string, string>()
 
