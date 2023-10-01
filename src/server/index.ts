@@ -28,6 +28,14 @@ app.use("/static/js",express.static("out/client"))
 
 app.use(cookieParser())
 
+// check for ssl, if not redirect
+if (config.forceSSL) {
+    app.use((req,res,next) => {
+        if (!req.secure) res.redirect(`https://${req.get("host")}${req.originalUrl}`)
+        else next()
+    })
+}
+
 app.get("/server",(req,res) => {
     res.send(JSON.stringify({
         ...config,
