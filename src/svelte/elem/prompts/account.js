@@ -119,12 +119,13 @@ export function emailPotentialRemove(optPicker) {
     optPicker.picker("What would you like to do?",[
         {
             name: "Set a new email",
-            icon: "/static/assets/icons/mail.svg",
-            id: true
+            icon: "/static/assets/icons/change_email.svg",
+            description: "",
+            id: "set"
         },
         {
             name: "Disconnect email",
-            icon: "/static/assets/icons/delete.svg",
+            icon: "/static/assets/icons/disconnect_email.svg",
             description: "",
             id: "disconnect"
         }
