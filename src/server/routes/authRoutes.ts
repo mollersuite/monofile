@@ -320,6 +320,7 @@ authRoutes.post("/remove_email", requiresAccount, (req,res) => {
     if (acc.email) {
         delete acc.email;
         Accounts.save()
+        res.send("email detached")
     } 
     else ServeError(res, 400, "email not attached")
 })
