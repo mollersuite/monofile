@@ -12,7 +12,7 @@ export interface AuthToken {
 export function create(id:string,expire:number=(24*60*60*1000)) {
     let token = {
         account:id,
-        token:crypto.randomBytes(12).toString('hex'),
+        token:crypto.randomBytes(36).toString('hex'),
         expire:Date.now()+expire
     }
     
