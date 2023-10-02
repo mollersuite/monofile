@@ -7,7 +7,7 @@ import { files } from "./accounts";
 
 import * as Accounts from "./accounts";
 
-export let id_check_regex = /[A-Za-z0-9_\-\.\!\=\:]+/
+export let id_check_regex = /[A-Za-z0-9_\-\.\!\=\:\&\$\,\+\;\@\~\*\(\)\']+/
 export let alphanum = Array.from("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
 
 // bad solution but whatever
