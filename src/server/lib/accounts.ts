@@ -109,7 +109,7 @@ export namespace files {
         let acc = Accounts.find(e => e.id == accountId)
         if (!acc) return
         let fi = acc.files.findIndex(e => e == fileId)
-        if (fi) {
+        if (fi >= 0) {
             acc.files.splice(fi,1)
             if (!noWrite) return save()
         }
