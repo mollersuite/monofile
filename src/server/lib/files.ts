@@ -2,6 +2,7 @@ import axios from "axios";
 import Discord, { Client, TextBasedChannel } from "discord.js";
 import { readFile, writeFile } from "fs";
 import { Readable } from "node:stream";
+import crypto from "node:crypto";
 import { files } from "./accounts";
 
 import * as Accounts from "./accounts";
@@ -16,7 +17,7 @@ export type FileVisibility = "public" | "anonymous" | "private"
 export function generateFileId(length:number=5) {
     let fid = ""
     for (let i = 0; i < length; i++) {
-        fid += alphanum[Math.floor(Math.random()*alphanum.length)]
+        fid += alphanum[crypto.randomInt(0,alphanum.length)]
     }
     return fid
 }
