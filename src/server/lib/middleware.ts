@@ -3,11 +3,17 @@ import express, { type RequestHandler } from "express"
 import ServeError from "../lib/errors";
 import * as auth from "./auth";
 
+/**
+ * @description Middleware which adds an account, if any, to res.locals.acc 
+ */
 export const getAccount: RequestHandler = function(req, res, next) {
     res.locals.acc = Accounts.getFromToken(auth.tokenFor(req))
     next()
 }
 
+/**
+ * @description Middleware which blocks requests which do not have res.locals.acc set
+ */
 export const requiresAccount: RequestHandler = function(_req, res, next) {
     if (!res.locals.acc) {
         ServeError(res, 401, "not logged in")
@@ -16,6 +22,9 @@ export const requiresAccount: RequestHandler = function(_req, res, next) {
     next()
 }
 
+/**
+ * @description Middleware which blocks requests that have res.locals.acc.admin set to a falsy value
+ */
 export const requiresAdmin: RequestHandler = function(_req, res, next) {
     if (!res.locals.acc.admin) {
         ServeError(res, 403, "you are not an administrator")
@@ -25,10 +34,10 @@ export const requiresAdmin: RequestHandler = function(_req, res, next) {
 }
 
 /**
-     * @description Blocks requests based on the permissions which a token has. Does not apply to routes being accessed with a token of type `User`
-     * @param tokenPermissions Permissions which your route requires.
-     * @returns Express middleware
-     */
+ * @description Blocks requests based on the permissions which a token has. Does not apply to routes being accessed with a token of type `User`
+ * @param tokenPermissions Permissions which your route requires.
+ * @returns Express middleware
+ */
 
 export const requiresPermissions = function(...tokenPermissions: auth.TokenPermission[]): RequestHandler {
     return function(req, res, next) {
