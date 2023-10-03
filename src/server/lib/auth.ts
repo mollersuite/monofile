@@ -37,7 +37,7 @@ export function create(
         expire:Date.now()+expire,
 
         type,
-        tokenPermissions
+        tokenPermissions: type == "App" ? tokenPermissions || ["user"] : undefined
     }
     
     AuthTokens.push(token)
@@ -50,6 +50,14 @@ export function create(
 
 export function validate(token:string) {
     return AuthTokens.find(e => e.token == token && Date.now() < e.expire)?.account
+}
+
+export function getType(token:string): TokenType | undefined {
+    return AuthTokens.find(e => e.token == token && Date.now() < e.expire)?.type
+}
+
+export function getPermissions(token:string): TokenPermission[] | undefined {
+    return AuthTokens.find(e => e.token == token && Date.now() < e.expire)?.tokenPermissions
 }
 
 export function tokenTimer(token:AuthToken) {
