@@ -3,17 +3,41 @@ import { readFile, writeFile } from "fs/promises"
 export let AuthTokens: AuthToken[] = []
 export let AuthTokenTO:{[key:string]:NodeJS.Timeout} = {}
 
+export const ValidTokenPermissions = [
+    "user",   // permissions to /auth/me, with email docked
+    "email",  // adds email back to /auth/me
+    "upload", // allows an app to upload under an account
+    "manage", // allows an app to manage an account's files
+    "admin"   // only available for accounts with admin
+              // gives an app access to all admin tools
+] as const
+
+export type TokenType = "User" | "App"
+export type TokenPermission = typeof ValidTokenPermissions[number]
+
 export interface AuthToken {
     account: string,
     token: string,
-    expire: number
+    expire: number,
+
+    type?: TokenType, // if !type, assume User
+    tokenPermissions?: TokenPermission[] // default to user if type is App,
+                                        // give full permissions if type is User
 }
 
-export function create(id:string,expire:number=(24*60*60*1000)) {
+export function create(
+    id:string, 
+    expire:number=(24*60*60*1000), 
+    type:TokenType="User", 
+    tokenPermissions?:TokenPermission[]
+) {
     let token = {
         account:id,
         token:crypto.randomBytes(36).toString('hex'),
-        expire:Date.now()+expire
+        expire:Date.now()+expire,
+
+        type,
+        tokenPermissions
     }
     
     AuthTokens.push(token)
