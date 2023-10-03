@@ -19,6 +19,13 @@ transport =
 
 // lazy but
 
+/**
+ * @description Sends an email
+ * @param to Target email address
+ * @param subject Email subject
+ * @param content Email content
+ * @returns Promise which resolves to the output from nodemailer.transport.sendMail
+ */
 export function sendMail(to: string, subject: string, content: string) {
     return new Promise((resolve,reject) => {
         transport.sendMail({
