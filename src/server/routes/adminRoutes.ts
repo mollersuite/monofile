@@ -5,7 +5,7 @@ import * as auth from "../lib/auth";
 import bytes from "bytes"
 import {writeFile} from "fs";
 import { sendMail } from "../lib/mail";
-import { getAccount, requiresAccount, requiresAdmin } from "../lib/middleware"
+import { getAccount, requiresAccount, requiresAdmin, requiresPermissions } from "../lib/middleware"
 
 import ServeError from "../lib/errors";
 import Files from "../lib/files";
@@ -19,6 +19,7 @@ adminRoutes
     .use(getAccount)
     .use(requiresAccount)
     .use(requiresAdmin)
+    .use(requiresPermissions("admin"))
 let files:Files
 
 export function setFilesObj(newFiles:Files) {

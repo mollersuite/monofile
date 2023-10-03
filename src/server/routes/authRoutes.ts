@@ -3,7 +3,7 @@ import { Router } from "express";
 import * as Accounts from "../lib/accounts";
 import * as auth from "../lib/auth";
 import { sendMail } from "../lib/mail";
-import { getAccount, requiresAccount } from "../lib/middleware"
+import { getAccount, noAPIAccess, requiresAccount, requiresPermissions } from "../lib/middleware"
 import { accountRatelimit } from "../lib/ratelimit"
 
 import ServeError from "../lib/errors";
@@ -123,7 +123,7 @@ authRoutes.post("/logout", (req,res) => {
     res.send("logged out")
 })
 
-authRoutes.post("/dfv", requiresAccount, parser, (req,res) => {
+authRoutes.post("/dfv", requiresAccount, requiresPermissions("manage"), parser, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
 
     if (['public','private','anonymous'].includes(req.body.defaultFileVisibility)) {
@@ -136,7 +136,7 @@ authRoutes.post("/dfv", requiresAccount, parser, (req,res) => {
     }
 })
 
-authRoutes.post("/customcss", requiresAccount, parser, (req,res) => {
+authRoutes.post("/customcss", requiresAccount, requiresPermissions("customize"), parser, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
     
     if (typeof req.body.fileId != "string") req.body.fileId = undefined;
@@ -158,7 +158,7 @@ authRoutes.post("/customcss", requiresAccount, parser, (req,res) => {
     }
 })
 
-authRoutes.post("/embedcolor", requiresAccount, parser, (req,res) => {
+authRoutes.post("/embedcolor", requiresAccount, requiresPermissions("customize"), parser, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
     
     if (typeof req.body.color != "string") req.body.color = undefined;
@@ -181,7 +181,7 @@ authRoutes.post("/embedcolor", requiresAccount, parser, (req,res) => {
     }
 })
 
-authRoutes.post("/embedsize", requiresAccount, parser, (req,res) => {
+authRoutes.post("/embedsize", requiresAccount, requiresPermissions("customize"), parser, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
     
     if (typeof req.body.largeImage != "boolean") req.body.color = false;
@@ -193,7 +193,7 @@ authRoutes.post("/embedsize", requiresAccount, parser, (req,res) => {
     res.send(`custom embed image size saved`)
 })
 
-authRoutes.post("/delete_account", requiresAccount, parser, async (req,res) => {
+authRoutes.post("/delete_account", requiresAccount, noAPIAccess, parser, async (req,res) => {
     let acc = res.locals.acc as Accounts.Account
     
     let accId = acc.id
@@ -217,7 +217,7 @@ authRoutes.post("/delete_account", requiresAccount, parser, async (req,res) => {
     } else cpl()
 })
 
-authRoutes.post("/change_username", requiresAccount, parser, (req,res) => {
+authRoutes.post("/change_username", requiresAccount, noAPIAccess, parser, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
 
     if (typeof req.body.username != "string" || req.body.username.length < 3 || req.body.username.length > 20) {
@@ -253,7 +253,7 @@ authRoutes.post("/change_username", requiresAccount, parser, (req,res) => {
 
 let verificationCodes = new Map<string, {code: string, email: string, expiry: NodeJS.Timeout}>()
 
-authRoutes.post("/request_email_change", requiresAccount, accountRatelimit({ requests: 4, per: 60*60*1000 }), parser, (req,res) => {
+authRoutes.post("/request_email_change", requiresAccount, noAPIAccess, accountRatelimit({ requests: 4, per: 60*60*1000 }), parser, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
     
     
@@ -292,7 +292,7 @@ authRoutes.post("/request_email_change", requiresAccount, accountRatelimit({ req
     })
 })
 
-authRoutes.get("/confirm_email/:code", requiresAccount, (req,res) => {
+authRoutes.get("/confirm_email/:code", requiresAccount, noAPIAccess, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
     
 
@@ -314,7 +314,7 @@ authRoutes.get("/confirm_email/:code", requiresAccount, (req,res) => {
     }
 })
 
-authRoutes.post("/remove_email", requiresAccount, (req,res) => {
+authRoutes.post("/remove_email", requiresAccount, noAPIAccess, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
     
     if (acc.email) {
@@ -404,7 +404,7 @@ authRoutes.get("/emergency_login/:code", (req,res) => {
     }
 })
 
-authRoutes.post("/change_password", requiresAccount, parser, (req,res) => {
+authRoutes.post("/change_password", requiresAccount, noAPIAccess, parser, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
     
     if (typeof req.body.password != "string" || req.body.password.length < 8) {
@@ -429,7 +429,7 @@ authRoutes.post("/change_password", requiresAccount, parser, (req,res) => {
     res.send("password changed - logged out all sessions")
 })
 
-authRoutes.post("/logout_sessions", requiresAccount, (req,res) => {
+authRoutes.post("/logout_sessions", requiresAccount, noAPIAccess, (req,res) => {
     let acc = res.locals.acc as Accounts.Account
 
     let accId = acc.id
@@ -441,15 +441,20 @@ authRoutes.post("/logout_sessions", requiresAccount, (req,res) => {
     res.send("logged out all sessions")
 })
 
-authRoutes.get("/me", requiresAccount, (req,res) => {
+authRoutes.get("/me", requiresAccount, requiresPermissions("user"), (req,res) => {
     let acc = res.locals.acc as Accounts.Account
-
+    
+    let sessionToken = auth.tokenFor(req)
     let accId = acc.id
     res.send({
         ...acc,
-        sessionCount: auth.AuthTokens.filter(e => e.account == accId && e.expire > Date.now()).length,
-        sessionExpires: auth.AuthTokens.find(e => e.token == req.cookies.auth)?.expire,
-        password: undefined
+        sessionCount: auth.AuthTokens.filter(e => e.type != "App" && e.account == accId && (e.expire > Date.now() || !e.expire)).length,
+        sessionExpires: auth.AuthTokens.find(e => e.token == sessionToken)?.expire,
+        password: undefined,
+        email: 
+            auth.getType(sessionToken) == "User" || auth.getPermissions(sessionToken)?.includes("email")
+            ? acc.email
+            : undefined
     })
 })
 

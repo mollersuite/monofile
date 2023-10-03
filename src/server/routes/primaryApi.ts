@@ -8,7 +8,7 @@ import multer, {memoryStorage} from "multer"
 
 import ServeError from "../lib/errors";
 import Files from "../lib/files";
-import { getAccount } from "../lib/middleware";
+import { getAccount, requiresPermissions } from "../lib/middleware";
 
 let parser = bodyParser.json({
     type: ["text/plain","application/json"]
@@ -115,7 +115,7 @@ primaryApi.head(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"], (req: express.R
 
 // upload handlers
 
-primaryApi.post("/upload",multerSetup.single('file'),async (req,res) => {
+primaryApi.post("/upload", requiresPermissions("upload"), multerSetup.single('file'), async (req,res) => {
     
     let acc = res.locals.acc as Accounts.Account
 
@@ -149,7 +149,7 @@ primaryApi.post("/upload",multerSetup.single('file'),async (req,res) => {
     }
 })
 
-primaryApi.post("/clone", bodyParser.json({type: ["text/plain","application/json"]}) ,(req,res) => {
+primaryApi.post("/clone", requiresPermissions("upload"), bodyParser.json({type: ["text/plain","application/json"]}) ,(req,res) => {
     
     let acc = res.locals.acc as Accounts.Account
 
