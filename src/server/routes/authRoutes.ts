@@ -448,7 +448,7 @@ authRoutes.get("/me", requiresAccount, requiresPermissions("user"), (req,res) =>
     let accId = acc.id
     res.send({
         ...acc,
-        sessionCount: auth.AuthTokens.filter(e => e.type != "App" && e.account == accId && e.expire > Date.now()).length,
+        sessionCount: auth.AuthTokens.filter(e => e.type != "App" && e.account == accId && (e.expire > Date.now() || !e.expire)).length,
         sessionExpires: auth.AuthTokens.find(e => e.token == sessionToken)?.expire,
         password: undefined,
         email: 

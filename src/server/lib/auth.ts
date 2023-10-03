@@ -37,7 +37,7 @@ export function create(
     let token = {
         account:id,
         token:crypto.randomBytes(36).toString('hex'),
-        expire:Date.now()+expire,
+        expire: expire ? Date.now()+expire : 0,
 
         type,
         tokenPermissions: type == "App" ? tokenPermissions || ["user"] : undefined
@@ -60,7 +60,7 @@ export function tokenFor(req: express.Request) {
 }
 
 function getToken(token:string) {
-    return AuthTokens.find(e => e.token == token && Date.now() < e.expire)
+    return AuthTokens.find(e => e.token == token && (e.expire == 0 || Date.now() < e.expire))
 }
 
 export function validate(token:string) {
@@ -76,6 +76,7 @@ export function getPermissions(token:string): TokenPermission[] | undefined {
 }
 
 export function tokenTimer(token:AuthToken) {
+    if (!token.expire) return // justincase
     if (Date.now() >= token.expire) {
         invalidate(token.token)
         return
