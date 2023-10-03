@@ -1,15 +1,18 @@
 import crypto from "crypto"
+import express from "express"
 import { readFile, writeFile } from "fs/promises"
 export let AuthTokens: AuthToken[] = []
 export let AuthTokenTO:{[key:string]:NodeJS.Timeout} = {}
 
 export const ValidTokenPermissions = [
-    "user",   // permissions to /auth/me, with email docked
-    "email",  // adds email back to /auth/me
-    "upload", // allows an app to upload under an account
-    "manage", // allows an app to manage an account's files
-    "admin"   // only available for accounts with admin
-              // gives an app access to all admin tools
+    "user",      // permissions to /auth/me, with email docked
+    "email",     // adds email back to /auth/me
+    "private",   // allows app to read private files
+    "upload",    // allows an app to upload under an account
+    "manage",    // allows an app to manage an account's files
+    "customize", // allows an app to change customization settings
+    "admin"      // only available for accounts with admin
+                 // gives an app access to all admin tools
 ] as const
 
 export type TokenType = "User" | "App"
@@ -46,6 +49,14 @@ export function create(
     save()
 
     return token.token
+}
+
+export function tokenFor(req: express.Request) {
+    return req.cookies.auth || (
+        req.header("authorization")?.startsWith("Bearer ")
+        ? req.header("authorization")?.split(" ")[1]
+        : undefined
+    )
 }
 
 export function validate(token:string) {

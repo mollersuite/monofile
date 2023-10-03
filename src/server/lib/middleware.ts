@@ -3,16 +3,8 @@ import express, { type RequestHandler } from "express"
 import ServeError from "../lib/errors";
 import * as auth from "./auth";
 
-function tokenFor(req: express.Request) {
-    return req.cookies.auth || (
-        req.header("authorization")?.startsWith("Bearer ")
-        ? req.header("authorization")?.split(" ")[1]
-        : undefined
-    )
-}
-
 export const getAccount: RequestHandler = function(req, res, next) {
-    res.locals.acc = Accounts.getFromToken(tokenFor(req))
+    res.locals.acc = Accounts.getFromToken(auth.tokenFor(req))
     next()
 }
 
@@ -40,7 +32,7 @@ export const requiresAdmin: RequestHandler = function(_req, res, next) {
 
 export const requiresPermissions = function(...tokenPermissions: auth.TokenPermission[]): RequestHandler {
     return function(req, res, next) {
-        let token = tokenFor(req)
+        let token = auth.tokenFor(req)
         let type = auth.getType(token)
         
         if (type == "App") {
@@ -67,6 +59,6 @@ export const requiresPermissions = function(...tokenPermissions: auth.TokenPermi
  */
 
 export const noAPIAccess: RequestHandler = function(req, res, next) {
-    if (auth.getType(tokenFor(req)) == "App") ServeError(res, 403, "apps are not allowed to access this endpoint")
+    if (auth.getType(auth.tokenFor(req)) == "App") ServeError(res, 403, "apps are not allowed to access this endpoint")
     else next()
 }
