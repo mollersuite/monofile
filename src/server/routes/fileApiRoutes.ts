@@ -7,7 +7,7 @@ import {writeFile} from "fs";
 
 import ServeError from "../lib/errors";
 import Files from "../lib/files";
-import { getAccount, requiresAccount } from "../lib/middleware";
+import { getAccount, requiresAccount, requiresPermissions } from "../lib/middleware";
 
 let parser = bodyParser.json({
     type: ["text/plain","application/json"]
@@ -24,7 +24,7 @@ let config = require(`${process.cwd()}/config.json`)
 
 fileApiRoutes.use(getAccount);
 
-fileApiRoutes.get("/list", requiresAccount, (req,res) => {
+fileApiRoutes.get("/list", requiresAccount, requiresPermissions("user"), (req,res) => {
 
     let acc = res.locals.acc as Accounts.Account
     
@@ -44,7 +44,7 @@ fileApiRoutes.get("/list", requiresAccount, (req,res) => {
 
 })
 
-fileApiRoutes.post("/manage", parser, (req,res) => {
+fileApiRoutes.post("/manage", parser, requiresPermissions("manage"), (req,res) => {
 
     let acc = res.locals.acc as Accounts.Account
     
