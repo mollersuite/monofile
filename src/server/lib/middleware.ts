@@ -32,45 +32,41 @@ export const requiresAdmin: RequestHandler = function(_req, res, next) {
     next()
 }
 
-export namespace apiBlockers {
-
-    /**
+/**
      * @description Blocks requests based on the permissions which a token has. Does not apply to routes being accessed with a token of type `User`
      * @param tokenPermissions Permissions which your route requires.
      * @returns Express middleware
      */
 
-    export const requiresPermissions = function(...tokenPermissions: auth.TokenPermission[]): RequestHandler {
-        return function(req, res, next) {
-            let token = tokenFor(req)
-            let type = auth.getType(token)
+export const requiresPermissions = function(...tokenPermissions: auth.TokenPermission[]): RequestHandler {
+    return function(req, res, next) {
+        let token = tokenFor(req)
+        let type = auth.getType(token)
+        
+        if (type == "App") {
+            let permissions = auth.getPermissions(token)
             
-            if (type == "App") {
-                let permissions = auth.getPermissions(token)
+            if (!permissions) ServeError(res, 403, "insufficient permissions")
+            else {
+
+                for (let v in tokenPermissions) 
+                    if (!permissions.includes(v as auth.TokenPermission)) {
+                        ServeError(res,403,"insufficient permissions")
+                        return
+                    }
                 
-                if (!permissions) ServeError(res, 403, "insufficient permissions")
-                else {
+                next()
 
-                    for (let v in tokenPermissions) 
-                        if (!permissions.includes(v as auth.TokenPermission)) {
-                            ServeError(res,403,"insufficient permissions")
-                            return
-                        }
-                    
-                    next()
-
-                }
-            } else next()
-        }
+            }
+        } else next()
     }
+}
 
-    /**
-     * @description Blocks requests based on whether or not the token being used to access the route is of type `User`.  
-     */
+/**
+ * @description Blocks requests based on whether or not the token being used to access the route is of type `User`.  
+ */
 
-    export const noAPIAccess: RequestHandler = function(req, res, next) {
-        if (auth.getType(tokenFor(req)) == "App") ServeError(res, 403, "apps are not allowed to access this endpoint")
-        else next()
-    }
-
+export const noAPIAccess: RequestHandler = function(req, res, next) {
+    if (auth.getType(tokenFor(req)) == "App") ServeError(res, 403, "apps are not allowed to access this endpoint")
+    else next()
 }
