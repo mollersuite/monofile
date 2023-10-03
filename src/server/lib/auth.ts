@@ -59,16 +59,20 @@ export function tokenFor(req: express.Request) {
     )
 }
 
+function getToken(token:string) {
+    return AuthTokens.find(e => e.token == token && Date.now() < e.expire)
+}
+
 export function validate(token:string) {
-    return AuthTokens.find(e => e.token == token && Date.now() < e.expire)?.account
+    return getToken(token)?.account
 }
 
 export function getType(token:string): TokenType | undefined {
-    return AuthTokens.find(e => e.token == token && Date.now() < e.expire)?.type
+    return getToken(token)?.type
 }
 
 export function getPermissions(token:string): TokenPermission[] | undefined {
-    return AuthTokens.find(e => e.token == token && Date.now() < e.expire)?.tokenPermissions
+    return getToken(token)?.tokenPermissions
 }
 
 export function tokenTimer(token:AuthToken) {

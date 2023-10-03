@@ -41,12 +41,12 @@ export const requiresPermissions = function(...tokenPermissions: auth.TokenPermi
             if (!permissions) ServeError(res, 403, "insufficient permissions")
             else {
 
-                for (let v in tokenPermissions) 
+                for (let v of tokenPermissions) {
                     if (!permissions.includes(v as auth.TokenPermission)) {
                         ServeError(res,403,"insufficient permissions")
                         return
                     }
-                
+                }
                 next()
 
             }
