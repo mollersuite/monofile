@@ -8,12 +8,9 @@ import ServeError from "./lib/errors"
 import Files from "./lib/files"
 import * as auth from "./lib/auth"
 import * as Accounts from "./lib/accounts"
-
-import * as authRoutes from "./routes/authRoutes";
-import * as fileApiRoutes from "./routes/fileApiRoutes";
-import * as adminRoutes from "./routes/adminRoutes";
-import * as primaryApi from "./routes/primaryApi";
 import { getAccount } from "./lib/middleware";
+
+import APIRouter from "./routes/api"
 
 require("dotenv").config()
 
@@ -46,18 +43,11 @@ app.get("/server",(req,res) => {
     }))
 })
 
-app
-    .use("/auth",authRoutes.authRoutes)
-    .use("/admin",adminRoutes.adminRoutes)
-    .use("/files", fileApiRoutes.fileApiRoutes)
-    .use(primaryApi.primaryApi)
 // funcs
 
 // init data
 
 if (!fs.existsSync(__dirname+"/../.data/")) fs.mkdirSync(__dirname+"/../.data/")
-
-
 
 // discord
 
@@ -68,12 +58,11 @@ let client = new Client({intents:[
 
 let files = new Files(client,config)
 
-authRoutes.setFilesObj(files)
-adminRoutes.setFilesObj(files)
-fileApiRoutes.setFilesObj(files)
-primaryApi.setFilesObj(files)
-
-// routes (could probably make these use routers)
+let apiRouter = new APIRouter(files)
+apiRouter.loadAPIMethods().then(() => {
+    app.use(apiRouter.root)
+    console.log("API OK!")
+})
 
 // index, clone
 

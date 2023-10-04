@@ -27,5 +27,5 @@
     },
 
     "trustProxy": true,
-    "forceSSL": true
+    "forceSSL": false
 }
