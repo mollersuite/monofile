@@ -68,7 +68,7 @@ export default class APIRouter {
     async loadAPIMethods() {
         
         let files = await readdir(APIDirectory)
-        for (let v of files) {                    /// temporary. need to figure out something else for this
+        for (let v of files) {                    /// temporary (hopefully). need to figure out something else for this
             let def = JSON.parse((await readFile(`${process.cwd()}/src/server/routes/api/${v}/api.json`)).toString()) as APIDefinition
             this.mount(def)
         }

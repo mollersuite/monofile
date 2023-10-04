@@ -35,9 +35,16 @@ module.exports = function(files: Files) {
         
         if (file) {
             
-            if (file.visibility == "private" && acc?.id != file.owner) {
-                ServeError(res,403,"you do not own this file")
-                return
+            if (file.visibility == "private") {
+                if (acc?.id != file.owner) {
+                    ServeError(res,403,"you do not own this file")
+                    return
+                }
+
+                if (auth.getType(auth.tokenFor(req)) == "App" && auth.getPermissions(auth.tokenFor(req))?.includes("private")) {
+                    ServeError(res,403,"insufficient permissions")
+                    return
+                }
             }
 
             let range: Range | undefined
@@ -93,9 +100,23 @@ module.exports = function(files: Files) {
 
     primaryApi.head(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"], (req: express.Request, res:express.Response) => {
         let file = files.getFilePointer(req.params.fileId)
+            
+        if (
+            file.visibility == "private"
+            && (
+                res.locals.acc?.id != file.owner
+                || (auth.getType(auth.tokenFor(req)) == "App" && auth.getPermissions(auth.tokenFor(req))?.includes("private"))
+            )
+        ) {
+            res.status(403).send()
+            return
+        }
+
         res.setHeader("Access-Control-Allow-Origin", "*")
         res.setHeader("Content-Security-Policy","sandbox allow-scripts")
+
         if (req.query.attachment == "1") res.setHeader("Content-Disposition", "attachment")
+
         if (!file) {
             res.status(404)
             res.send()
@@ -107,6 +128,7 @@ module.exports = function(files: Files) {
             if (file.chunkSize) {
                 res.setHeader("Accept-Ranges", "bytes")
             }
+            res.send()
         }
     })
 

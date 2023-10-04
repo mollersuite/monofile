@@ -18,7 +18,7 @@ export let fileApiRoutes = Router();
 let config = require(`${process.cwd()}/config.json`)
 
 
-module.exports =  function(files: Files) {
+module.exports = function(files: Files) {
 
     fileApiRoutes.use(getAccount);
 

@@ -23,7 +23,7 @@ adminRoutes
 
 let config = require(`${process.cwd()}/config.json`)
 
-module.exports =  function(files: Files) {
+module.exports = function(files: Files) {
     
 
     adminRoutes.post("/reset", parser, (req,res) => {

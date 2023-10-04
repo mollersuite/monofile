@@ -20,7 +20,7 @@ authRoutes.use(getAccount)
 
 let config = require(`${process.cwd()}/config.json`)
 
-module.exports =  function(files: Files) {
+module.exports = function(files: Files) {
 
     authRoutes.post("/login", parser, (req,res) => {
         if (typeof req.body.username != "string" || typeof req.body.password != "string") {
