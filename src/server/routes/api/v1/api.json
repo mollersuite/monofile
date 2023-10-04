@@ -1,0 +1,7 @@
+{
+    "name": "v1",
+    "baseURL": "/api/v1",
+    "mount": [
+        "account", "admin", "file", "public"
+    ]
+}
