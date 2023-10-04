@@ -35,23 +35,22 @@ export interface Account {
  * @returns A Promise which returns the new account's ID
  */
 
-export function create(username:string,pwd:string,admin:boolean=false):Promise<string> {
-    return new Promise((resolve,reject) => {
-        let accId = crypto.randomBytes(12).toString("hex")
+export async function create(username:string,pwd:string,admin:boolean=false):Promise<string> {
+    let accId = crypto.randomBytes(12).toString("hex")
 
-        Accounts.push(
-            {
-                id:     accId,
-                username: username,
-                password: password.hash(pwd),
-                files: [],
-                admin: admin,
-                defaultFileVisibility: "public"
-            }
-        )
+    Accounts.push(
+        {
+            id:     accId,
+            username: username,
+            password: password.hash(pwd),
+            files: [],
+            admin: admin,
+            defaultFileVisibility: "public"
+        }
+    )
 
-        save().then(() => resolve(accId))
-    })
+    await save()
+    return accId
 }
 
 /**
