@@ -74,7 +74,7 @@ export const noAPIAccess: RequestHandler = function(req, res, next) {
 
 /**
  * @description Blocks requests based on whether or not the token being used to access the route is of type `User` unless a condition is met.
- * @param tokenPermissions Permissions which your route requires.
+ * @param condition Permissions which your route requires.
  * @returns Express middleware
  */
 
@@ -83,5 +83,34 @@ export const noAPIAccessIf = function(condition: (acc:Account, token:string) => 
         let reqToken = auth.tokenFor(req)
         if (auth.getType(reqToken) == "App" && !condition(res.locals.acc, reqToken)) ServeError(res, 403, "apps are not allowed to access this endpoint")
         else next()
+    }
+}
+
+type SchemeType = "array" | "object" | "string" | "number" | "boolean"
+
+interface SchemeObject {
+    type: "object"
+    children: {
+        [key: string]: SchemeParameter
+    }
+}
+
+interface SchemeArray {
+    type: "array",
+    children: SchemeParameter /* All children of the array must be this type */ 
+            | SchemeParameter[] /* Array must match this pattern */
+}
+
+type SchemeParameter = SchemeType | SchemeObject | SchemeArray
+
+/**
+ * @description Blocks requests based on whether or not the token being used to access the route is of type `User` unless a condition is met.
+ * @param tokenPermissions Permissions which your route requires.
+ * @returns Express middleware
+ */
+
+export const sanitize = function(scheme: SchemeObject):RequestHandler {
+    return function(req, res, next) {
+        
     }
 }
