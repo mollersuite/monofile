@@ -70,6 +70,7 @@ export const requiresPermissions = function(...tokenPermissions: auth.TokenPermi
 export const noAPIAccess: RequestHandler = function(req, res, next) {
     if (auth.getType(auth.tokenFor(req)) == "App") ServeError(res, 403, "apps are not allowed to access this endpoint")
     else next()
+}
 
 /**
  * @description Blocks requests based on whether or not the token being used to access the route is of type `User` unless a condition is met.
@@ -83,4 +84,4 @@ export const noAPIAccessIf = function(condition: (acc:Account, token:string) => 
         if (auth.getType(reqToken) == "App" && !condition(res.locals.acc, reqToken)) ServeError(res, 403, "apps are not allowed to access this endpoint")
         else next()
     }
-}}
+}
