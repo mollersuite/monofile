@@ -20,11 +20,11 @@ const parser = bodyParser.json({
 
 const router = Router()
 
-router.use(getAccount)
+router.use(getAccount, parser)
 
 module.exports = function(files: Files) {
-    router.post("/login",
-        parser,
+    router.post(
+        "/login",
         (req, res) => {
             if (typeof req.body.username != "string" || typeof req.body.password != "string") {
                 ServeError(res, 400, "please provide a username or password")
@@ -54,8 +54,8 @@ module.exports = function(files: Files) {
         }
     )
 
-    router.post("/create",
-        parser,
+    router.post(
+        "/create",
         (req, res) => {
             if (!Configuration.accounts.registrationEnabled) {
                 ServeError(res , 403, "account registration disabled")
@@ -110,7 +110,8 @@ module.exports = function(files: Files) {
         }
     )
 
-    router.post("/logout",
+    router.post(
+        "/logout",
         (req, res) => {
             if (!Authentication.validate(req.cookies.auth)) {
                 ServeError(res, 401, "not logged in")
@@ -122,10 +123,9 @@ module.exports = function(files: Files) {
         }
     )
 
-    router.put("/dfv",
-        requiresAccount,
-        requiresPermissions("manage"),
-        parser,
+    router.put(
+        "/dfv",
+        requiresAccount, requiresPermissions("manage"),
         (req, res) => {
             const Account = res.locals.acc as Accounts.Account
 
