@@ -1,4 +1,4 @@
-import { Account } from "./accounts";
+import * as Accounts from "./accounts";
 import express, { type RequestHandler } from "express"
 import ServeError from "../lib/errors";
 import * as auth from "./auth";
@@ -78,7 +78,7 @@ export const noAPIAccess: RequestHandler = function(req, res, next) {
  * @returns Express middleware
  */
 
-export const noAPIAccessIf = function(condition: (acc:Account, token:string) => boolean):RequestHandler {
+export const noAPIAccessIf = function(condition: (acc:Accounts.Account, token:string) => boolean):RequestHandler {
     return function(req, res, next) {
         let reqToken = auth.tokenFor(req)
         if (auth.getType(reqToken) == "App" && !condition(res.locals.acc, reqToken)) ServeError(res, 403, "apps are not allowed to access this endpoint")
