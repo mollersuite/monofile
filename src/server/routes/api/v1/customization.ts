@@ -50,12 +50,6 @@ module.exports = function(files: Files) {
         }
     )
 
-    // authRoutes.get("/customCSS", (req,res) => {
-    //     let acc = res.locals.acc
-    //     if (acc?.customCSS) res.redirect(`/file/${acc.customCSS}`)
-    //     else res.send("")
-    // })
-
     router.get('/css',
         requiresAccount,
         (req, res) => {
