@@ -5,10 +5,7 @@
         "account",
         "admin",
         "public",
-        {
-            "file": "file",
-            "to": "/account/files" 
-        },
+        "file",
         {
             "file": "customization",
             "to": "/account/customization"
