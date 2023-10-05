@@ -73,15 +73,13 @@ export const noAPIAccess: RequestHandler = function(req, res, next) {
 }
 
 /**
- * @description Blocks requests based on whether or not the token being used to access the route is of type `User` unless a condition is met.
- * @param condition Permissions which your route requires.
- * @returns Express middleware
- */
+  @description Add a restriction to this route; the condition must be true to allow API requests.
+*/
 
-export const noAPIAccessIf = function(condition: (acc:Accounts.Account, token:string) => boolean):RequestHandler {
+export const assertAPI = function(condition: (acc:Accounts.Account, token:string) => boolean):RequestHandler {
     return function(req, res, next) {
         let reqToken = auth.tokenFor(req)
-        if (auth.getType(reqToken) == "App" && !condition(res.locals.acc, reqToken)) ServeError(res, 403, "apps are not allowed to access this endpoint")
+        if (auth.getType(reqToken) == "App" && condition(res.locals.acc, reqToken)) ServeError(res, 403, "apps are not allowed to access this endpoint")
         else next()
     }
 }
