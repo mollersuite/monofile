@@ -1,5 +1,6 @@
 // Modules
 
+import { writeFile } from 'fs'
 import { Router } from "express";
 import bodyParser from "body-parser";
 
@@ -139,6 +140,36 @@ module.exports = function(files: Files) {
                 
                 res.send("invalid dfv")
             }
+        }
+    )
+
+    router.delete("/me",
+        requiresAccount,
+        noAPIAccess,
+        parser,
+        (req, res) => {
+            const Account = res.locals.acc as Accounts.Account
+
+            const accountId = Account.id
+
+            Authentication.AuthTokens.filter(e => e.account == accountId).forEach((token) => {
+                Authentication.invalidate(token.token)
+            })
+
+            const deleteAccount = () => Accounts.deleteAccount(accountId).then(_ => res.send("account deleted"))
+
+            if (req.body.deleteFiles) {
+                const Files = Account.files.map(e => e)
+
+                for (let fileId of Files) {
+                    files.unlink(fileId, true).catch(err => console.error)
+                }
+
+                writeFile(process.cwd() + "/.data/files.json", JSON.stringify(files.files), (err) => {
+                    if (err) console.log(err)
+                    deleteAccount()
+                })
+            } else deleteAccount()
         }
     )
 
