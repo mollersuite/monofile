@@ -2,6 +2,16 @@
     "name": "v1",
     "baseURL": "/api/v1",
     "mount": [
-        "account", "admin", "file", "public"
+        "account",
+        "admin",
+        "public",
+        {
+            "file": "file",
+            "to": "/account/files" 
+        },
+        {
+            "file": "customization",
+            "to": "/account/customization"
+        }
     ]
 }
