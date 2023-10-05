@@ -11,6 +11,7 @@ import * as Accounts from '../../../lib/accounts'
 import * as Authentication from '../../../lib/auth'
 import { assertAPI, getAccount, noAPIAccess, requiresAccount, requiresPermissions } from "../../../lib/middleware";
 import ServeError from "../../../lib/errors";
+import { sendMail } from '../../../lib/mail';
 
 const Configuration = require(`${process.cwd()}/config.json`)
 
@@ -172,6 +173,58 @@ module.exports = function(files: Files) {
             } else deleteAccount()
         }
     )
+
+    router.put("/me/name",
+        requiresAccount,
+        noAPIAccess,
+        parser,
+        (req, res) => {
+            const Account = res.locals.acc as Accounts.Account
+
+            const newUsername = req.body.username
+
+            if (
+                typeof newUsername != "string"
+                ||
+                newUsername.length < 3
+                ||
+                req.body.username.length > 20
+            ) {
+                ServeError(res, 400, "username must be between 3 and 20 characters in length")
+                return
+            }
+
+            if (Accounts.getFromUsername(newUsername)) {
+                ServeError(res, 400, "account with this username already exists")
+            }
+
+            if (
+                (
+                    newUsername.match(/[A-Za-z0-9_\-\.]+/)
+                    ||
+                    []
+                )[0] != req.body.username
+            ) {
+                ServeError(res, 400, "username contains invalid characters")
+                return
+            }
+
+            Account.username = newUsername
+            Accounts.save()
+
+            if (Account.email) {
+                sendMail(
+                    Account.email,
+                    `Your login details have been updated`,
+                    `<b>Hello there!</b> Your username has been updated to <span username>${newUsername}</span>. Please update your devices accordingly. Thank you for using monofile.`
+                ).then(() => {
+                    res.send("OK")
+                }).catch((err) => {})
+            }
+        }
+    )
+
+    
 
     return router
 }
