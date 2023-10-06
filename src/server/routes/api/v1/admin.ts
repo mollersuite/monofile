@@ -27,7 +27,7 @@ module.exports = function(files: Files) {
     router.patch(
         "/account/:username/password",
         (req, res) => {
-            const Account = res.locals.acc
+            const Account = res.locals.acc as Accounts.Account
 
             const targetUsername = req.params.username
             const password = req.body.password
@@ -78,7 +78,43 @@ module.exports = function(files: Files) {
         }
     )
 
-    
+    router.delete("/account/:username/:deleteFiles",
+        requiresAccount,
+        noAPIAccess,
+        parser,
+        (req, res) => {
+            const targetUsername = req.params.username
+            const deleteFiles = req.params.deleteFiles
+
+            const targetAccount = Accounts.getFromUsername(targetUsername)
+
+            if (!targetAccount) {
+                ServeError(res, 404, "")
+                return
+            }
+
+            const accountId = targetAccount.id
+
+            Authentication.AuthTokens.filter(e => e.account == accountId).forEach((token) => {
+                Authentication.invalidate(token.token)
+            })
+
+            const deleteAccount = () => Accounts.deleteAccount(accountId).then(_ => res.send("account deleted"))
+
+            if (Boolean(deleteFiles)) {
+                const Files = targetAccount.files.map(e => e)
+
+                for (let fileId of Files) {
+                    files.unlink(fileId, true).catch(err => console.error)
+                }
+
+                writeFile(process.cwd() + "/.data/files.json", JSON.stringify(files.files), (err) => {
+                    if (err) console.log(err)
+                    deleteAccount()
+                })
+            } else deleteAccount()
+        }
+    )
 
     return router
 }
