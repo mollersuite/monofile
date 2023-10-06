@@ -124,7 +124,7 @@ module.exports = function(files: Files) {
         }
     )
 
-    router.put(
+    router.patch(
         "/dfv",
         requiresAccount, requiresPermissions("manage"),
         (req, res) => {
@@ -137,9 +137,7 @@ module.exports = function(files: Files) {
                 
                 res.send(`dfv has been set to ${Account.defaultFileVisibility}`)
             } else {
-                res.status(400)
-                
-                res.send("invalid dfv")
+                ServeError(res, 400, "invalid dfv")
             }
         }
     )
@@ -174,7 +172,7 @@ module.exports = function(files: Files) {
         }
     )
 
-    router.put("/me/name",
+    router.patch("/me/name",
         requiresAccount,
         noAPIAccess,
         parser,
