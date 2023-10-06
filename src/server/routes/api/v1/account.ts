@@ -142,7 +142,7 @@ module.exports = function(files: Files) {
         }
     )
 
-    router.delete("/me",
+    router.delete("/me/:deleteFiles",
         requiresAccount,
         noAPIAccess,
         parser,
@@ -157,7 +157,7 @@ module.exports = function(files: Files) {
 
             const deleteAccount = () => Accounts.deleteAccount(accountId).then(_ => res.send("account deleted"))
 
-            if (req.body.deleteFiles) {
+            if (Boolean(req.params.deleteFiles)) {
                 const Files = Account.files.map(e => e)
 
                 for (let fileId of Files) {
