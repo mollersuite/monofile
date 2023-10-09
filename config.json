@@ -11,10 +11,6 @@
         "requiredForUpload": false
     },
 
-    "webdrop": {
-        "accountRequired": false
-    },
-
     "mail": {
         "transport": {
             "host": "smtp.fastmail.com",
