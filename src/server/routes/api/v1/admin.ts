@@ -101,7 +101,7 @@ module.exports = function(files: Files) {
 
             const deleteAccount = () => Accounts.deleteAccount(accountId).then(_ => res.send("account deleted"))
 
-            if (Boolean(deleteFiles)) {
+            if (deleteFiles) {
                 const Files = targetAccount.files.map(e => e)
 
                 for (let fileId of Files) {
