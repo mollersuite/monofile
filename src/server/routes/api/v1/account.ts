@@ -142,9 +142,8 @@ module.exports = function(files: Files) {
         }
     )
 
-    router.delete("/me/:deleteFiles",
-        requiresAccount,
-        noAPIAccess,
+    router.delete("/me",
+        requiresAccount, noAPIAccess,
         parser,
         (req, res) => {
             const Account = res.locals.acc as Accounts.Account
@@ -155,20 +154,7 @@ module.exports = function(files: Files) {
                 Authentication.invalidate(token.token)
             })
 
-            const deleteAccount = () => Accounts.deleteAccount(accountId).then(_ => res.send("account deleted"))
-
-            if (req.params.deleteFiles) {
-                const Files = Account.files.map(e => e)
-
-                for (let fileId of Files) {
-                    files.unlink(fileId, true).catch(err => console.error)
-                }
-
-                writeFile(process.cwd() + "/.data/files.json", JSON.stringify(files.files), (err) => {
-                    if (err) console.log(err)
-                    deleteAccount()
-                })
-            } else deleteAccount()
+            Accounts.deleteAccount(accountId).then(_ => res.send("account deleted"))
         }
     )
 
