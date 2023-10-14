@@ -16,7 +16,8 @@
     let attachmentZone
     let uploads = {}
     let uploadInProgress = false
-    let notificationPermission = Notification.permission
+    let notificationPermission =
+        globalThis?.Notification?.permission ?? "denied"
     let handle_file_upload = (ev) => {
         if (ev.detail.type == "clone") {
             uploads[Math.random().toString().slice(2)] = {
