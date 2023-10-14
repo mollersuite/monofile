@@ -73,10 +73,6 @@
                                     title: "Open",
                                 },
                                 {
-                                    action: "delete",
-                                    title: "Delete",
-                                },
-                                {
                                     action: "copy",
                                     title: "Copy",
                                 },
@@ -89,8 +85,6 @@
                                         "/download/" +
                                             uploads[x].uploadStatus.fileId
                                     )
-                                } else if (action == "delete") {
-                                    alert("TODO")
                                 } else {
                                     navigator.clipboard.writeText(
                                         `${location.origin}/${uploads[x].uploadStatus.fileId}`
