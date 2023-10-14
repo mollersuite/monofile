@@ -1,5 +1,5 @@
 <h1 align="center"><img src="./assets/icons/icon.svg" height="24"> monofile</h1>
-<img src="https://repository-images.githubusercontent.com/542329820/e7bfd0af-179d-43cd-b6e8-945e9bd5acf9">
+<img src="http://fyle.uk/PHZUY">
 <p align="center">The open-source, Discord-based file sharing service.<br><a href="https://fyle.uk">Flagship instance</a> &mdash; <a href="https://beta.fyle.uk">Live test instance</a></p>
 
 <br>
