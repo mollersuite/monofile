@@ -8,7 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "nbitzz",
+  "author": "Etcetera (https://cetera.uk)",
   "license": "Unlicense",
   "engines": {
     "node": ">=v16.11"

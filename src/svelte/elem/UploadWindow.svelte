@@ -225,7 +225,18 @@
     </p>
 
     <p style:color="#999999" style:text-align="center" style:font-size="12px">
-        Made with {Math.floor(Math.random()*10)==0 ? "🐟" : "❤"} by <a href="https://github.com/nbitzz" style:font-size="12px">@nbitzz</a> — <a href="https://github.com/nbitzz/monofile" style:font-size="12px">source</a>
+        Made with {Math.floor(Math.random()*10)==0 ? "🐟" : "❤"} by <a href="https://cetera.uk" style:font-size="12px"><svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 173.8 275.72"
+        height="16"
+        style="vertical-align:middle"
+        fill="currentColor">
+        <circle cx="37.13" cy="26.43" r="21.6" />
+        <circle cx="34.62" cy="117.87" r="34.62" class="middle" />
+        <circle cx="119.78" cy="130.68" r="21.6" class="middle" />
+        <circle cx="127.16" cy="46.64" r="46.65" />
+        <circle cx="102.68" cy="219.58" r="56.14" class="bottom" />
+        </svg> Etcetera</a> — <a href="https://github.com/mollersuite/monofile" style:font-size="12px">source</a>
     </p>
     <div style:height="10px" />
 </div>

@@ -66,10 +66,10 @@ monofile should now be running on either `env.MONOFILE_PORT` or port `3000`.
 
 ## Disclaimer
 
-Although we believe monofile is not against Discord's developer terms of service, monofile's contributors are not liable if Discord takes action against you for running an instance.
+Although we believe monofile is not against Discord's developer terms of service, Etcetera is not liable if Discord takes action against you for running an instance.
 
 ## License
 
-Code written by monofile's contributors is currently licensed under [Unlicense](https://github.com/nbitzz/monofile/blob/main/LICENSE).
+Code written by Etcetera is currently licensed under [Unlicense](./LICENSE).
 
-Icons under `/assets/icons` were created by Microsoft, and as such are licensed under [different terms](https://github.com/nbitzz/monofile/blob/1.3.0/assets/icons/README.md) (MIT).
+Icons under `/assets/icons` were created by Microsoft, and as such are licensed under [different terms](./assets/icons/README.md) (MIT).
