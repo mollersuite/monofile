@@ -1,4 +1,4 @@
-<img src="https://fyle.uk/H7rRb" alt="monofile: Discord-based file sharing. Blue gradient with an image of monofile 1.4.0-dev on the side.">
+<img src="https://fyle.uk/fiAb3" alt="monofile: Discord-based file sharing. Blue gradient with an image of monofile 1.4.0-dev on the side.">
 <p align="center">The open-source, Discord-based file sharing service.<br><a href="https://fyle.uk">Flagship instance</a> &mdash; <a href="https://beta.fyle.uk">Live test instance</a></p>
 
 <br>
