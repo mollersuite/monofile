@@ -16,7 +16,7 @@
         button {
             --col: var(--subtext);
 
-            background-color: #232323;
+            background-color: var(--panel);
             color:var(--col);
             font-size:14px;
             border:1px solid var(--col);
@@ -25,9 +25,9 @@
             transition-duration:250ms;
 
             &:hover {
-                background-color:#333333;
+                background-color:var(--panel-active);
                 transition-duration:250ms;
-                --col:#BBBBBB;
+                --col:var(--text);
             }
         }
     }
@@ -40,12 +40,12 @@
 
         .searchBar {
             transition-duration:150ms;
-            background-color:#212121;
+            background-color:var(--panel);
             width:100%;
             padding:8px;
             color:var(--text);
             border:none;
-            border-bottom: 1px solid #aaaaaa;
+            border-bottom: 1px solid var(--subtext);
             outline: none;
             border-radius:0px;
             font-size:14px;
@@ -75,7 +75,7 @@
                 }
 
                 .detail {
-                    color:#777777;
+                    color:var(--subtext);
                     font-size:14px;
                     position:relative;
 
@@ -150,7 +150,7 @@
 
                 @media screen and (min-width:500px) {
                     &:hover {
-                        background-color: #252525;
+                        background-color: var(--panel-active);
                     }
                 }
                 

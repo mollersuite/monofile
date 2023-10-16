@@ -70,7 +70,7 @@
 
         &:hover {
             transition-duration:150ms;
-            background-color: #252525;
+            background-color: var(--panel-active);
         }
     }
 

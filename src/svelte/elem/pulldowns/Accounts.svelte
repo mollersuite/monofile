@@ -70,7 +70,7 @@
 
         <div class="notLoggedIn" transition:fade={{duration:200}}>
             <div class="container_div">
-                <h1>monofile <span style:color="#999999">accounts</span></h1>
+                <h1>monofile <span style:color="var(--subtext)">accounts</span></h1>
                 <p class="flavor">Gain control of your uploads.</p>
 
                 {#if targetAction}
@@ -78,7 +78,7 @@
                     <div class="fields" out:padding_scaleY|local={{easingFunc:circIn}} in:padding_scaleY|local>
                         {#if !$serverStats.accounts.registrationEnabled && targetAction == "create"}
                             <div class="pwError">
-                                <div style:background-color="#554C33">
+                                <div style:background-color="var(--panel-banner-warning)">
                                     <p>Account registration has been disabled by this instance's owner</p>
                                 </div>
                             </div>
