@@ -7,7 +7,7 @@
     "maxUploadIdLength":30,
 
     "accounts": {
-        "registrationEnabled": true,
+        "registrationEnabled": false,
         "requiredForUpload": false
     },
 

@@ -21,8 +21,8 @@
     position: absolute;
     width: 300px;
     height: 400px;
-    background-color: #222222;
-    color: #dddddd;
+    background-color: var(--panel);
+    color: var(--text);
 
     top:0px;
     left:50%;

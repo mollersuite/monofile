@@ -2,7 +2,7 @@
 
 #uploadWindow {
     .file {
-        background-color:#191919;
+        background-color:var(--subpanel);
         border: 1px solid gray;
         padding: 10px;
         overflow:clip;
@@ -17,7 +17,7 @@
 
         input[type=text] {
             background-color:#333333;
-            color:#DDDDDD;
+            color:var(--text);
             border:none;
             outline:none;
             padding:5px;

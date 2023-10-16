@@ -1,6 +1,6 @@
 #uploadWindow {
     #add_new_files {
-        background-color:#191919;
+        background-color:var(--subpanel);
         border: 1px solid gray;
         padding: 0px 0px 10px 0px;
 
@@ -47,7 +47,7 @@
 
             button, input[type=text] {
                 background-color:#333333;
-                color:#DDDDDD;
+                color:var(--text);
                 border:none;
                 border-radius: 0px;
                 outline:none;

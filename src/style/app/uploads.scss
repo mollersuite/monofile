@@ -15,7 +15,7 @@
         max-height: calc( 100% - 80px );
     }
 
-    background-color:#222222;
+    background:var(--panel);
     color:#ddd;
 
     h1, p, a {
@@ -29,16 +29,16 @@
         margin-top: 5px;
 
         img {
-            color: #666666;
+            color: var(--subtext);
         }
 
         &:hover {
-            img { color: #DDD; }
+            img { color: var(--text); }
         }
     }
 
     a {
-        color:#999;
+        color:var(--subtext);
     }
 
     h1 {
@@ -53,7 +53,7 @@
     button {
         cursor:pointer;
         background-color:#393939;
-        color:#DDDDDD;
+        color:var(--text);
         border:none;
         outline:none;
         padding:5px;

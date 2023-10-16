@@ -9,12 +9,12 @@
 
         .flavor {
             font-size:16px;
-            color:#999999;
+            color:var(--subtext);
             margin: 0 0 10px 0;
         }
 
         button {
-            --col: #999999;
+            --col: var(--subtext);
 
             background-color: #232323;
             color:var(--col);
@@ -43,7 +43,7 @@
             background-color:#212121;
             width:100%;
             padding:8px;
-            color:#dddddd;
+            color:var(--text);
             border:none;
             border-bottom: 1px solid #aaaaaa;
             outline: none;
@@ -52,7 +52,7 @@
 
             &:focus {
                 transition-duration:150ms;
-                border-bottom: 1px solid #dddddd;
+                border-bottom: 1px solid var(--text);
             }
 
             @media screen and (max-width: 500px) {

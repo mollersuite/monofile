@@ -19,3 +19,23 @@
     column-gap:5px;
 
 }
+
+.menuBtn {
+    text-decoration:none;
+    font-size:16px;
+    transition-duration: 100ms;
+
+    color:var(--crust-txt);
+    background-color: #00000000;
+    border:none;
+    margin:0 0 0 0;
+    cursor:pointer;
+
+    position:relative;
+    top:-1px;
+
+    &:hover {
+        color:var(--crust-txt-active);
+        transition-duration: 100ms;
+    }
+}

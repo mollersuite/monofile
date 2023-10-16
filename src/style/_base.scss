@@ -39,22 +39,40 @@ $FallbackFonts:
     colors
 */
 
-$Background: #252525;
-/* hsl(210,12.9,24.3) */
-$darkish: rgb(54, 62, 70);
+:root {
+    // Crust (topbar)
+    --crust: rgb(30, 33, 36); // topbar color
+    --crust-txt: #555555; // buttons
+    --crust-txt-active: slategrey; // hover
+
+    // Background
+    --background: linear-gradient(#333,#252525); // Used for desktop.
+    --background-readable: linear-gradient(#303030, #252525); // Used for mobile, where the uploader is backed a gradient.
+
+    // Panel (pulldown, upload panel)
+    --panel: #222222;
+    --subpanel: #191919;
+    
+    // Panel banners
+    --panel-banner-error: #663333;
+    --panel-banner-warning: #554C33;
+    --panel-banner-success: #335544;
+    --panel-banner-info: #334466;
+
+    // Text
+    --text-visible: #FFF; // Use for best possible visibility. Used in button interactives on hover. 
+    --text: #DDD;
+    --subtext: #999;
+}
 
 /*
     then other stuff
 */
 
 body {
-    background-color: rgb(30, 33, 36); // this is here so that
+    background-color: var(--crust); // this is here so that
                                          // pulling down to refresh
                                          // on mobile looks good
-}
-
-#appContent {
-    background-color: $Background
 }
 
 /*
@@ -70,7 +88,7 @@ body {
         }
 
         &::-webkit-scrollbar-track {
-            background-color:#222222;
+            background-color:var(--panel);
         }
 
         &::-webkit-scrollbar-thumb {

@@ -4,9 +4,9 @@
         position:relative;
         width:100%;
         height:50px;
-        background-color: #222222;
+        background-color: var(--panel);
         border:none;
-        border-bottom:1px solid #AAAAAA;
+        border-bottom:1px solid var(--subtext);
         transition-duration:150ms;
 
         img {
@@ -21,14 +21,14 @@
             position:absolute;
             top:50%;
             left:50px;
-            color:#DDDDDD;
+            color:var(--text);
             transform:translateY(-50%);
             font-size:14px;
             background-color:#00000000;
             border:none;
 
             span {
-                color:#777777;
+                color:/*#777777*/ var(--subtext);
                 font-size:12px;
             }
         }
@@ -75,10 +75,10 @@
     }
 
     .category {
-        border-bottom: 1px solid #AAAAAA;
+        border-bottom: 1px solid var(--subtext);
 
         p {
-            color: #AAAAAA;
+            color: var(--subtext);
             font-size: 14px;
             margin: 10px 0px 3px 0px;
             text-align:center;
@@ -106,7 +106,7 @@
 
 .modal {
     position:absolute;
-    background-color:#222222;
+    background-color: var(--panel);
     width:100%;
     transform:translateY(-100%);
     top:100%;
