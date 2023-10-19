@@ -40,28 +40,28 @@ $FallbackFonts:
 */
 
 :root {
-    // Crust (topbar)
-    --crust: rgb(30, 33, 36); // topbar color
-    --crust-txt: #555555; // buttons
-    --crust-txt-active: slategrey; // hover
+    /* Crust (topbar) */
+    --crust: rgb(30, 33, 36); /* topbar color */
+    --crust-txt: #555555; /* buttons */
+    --crust-txt-active: slategrey; /* hover */
 
-    // Background
-    --background: linear-gradient(#333,#252525); // Used for desktop.
-    --background-readable: linear-gradient(#303030, #252525); // Used for mobile, where the uploader is backed a gradient.
+    /* Background */
+    --background: linear-gradient(#333,#252525); /* Used for desktop. */
+    --background-readable: linear-gradient(#303030, #252525); /* Used for mobile, where the uploader is backed a gradient. */
 
-    // Panel (pulldown, upload panel)
-    --panel-active: #252525; // Color to show on option hover
+    /* Panel (pulldown, upload panel) */
+    --panel-active: #252525; /* Color to show on option hover */
     --panel: #222222;
     --subpanel: #191919;
     
-    // Panel banners
+    /* Panel banners */
     --panel-banner-error: #663333;
     --panel-banner-warning: #554C33;
     --panel-banner-success: #335544;
     --panel-banner-info: #334466;
 
-    // Text
-    --text-visible: #FFF; // Use for best possible visibility. Used in button interactives on hover. 
+    /* Text */
+    --text-visible: #FFF; /* Use for best possible visibility. Used in button interactives on hover.  */
     --text: #DDD;
     --subtext: #999;
 }
