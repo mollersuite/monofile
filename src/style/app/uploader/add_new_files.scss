@@ -46,7 +46,7 @@
             column-gap:10px;
 
             button, input[type=text] {
-                background-color:#333333;
+                background-color:var(--text-input);
                 color:var(--text);
                 border:none;
                 border-radius: 0px;
@@ -71,8 +71,8 @@
                         transition-duration:250ms;
                         flex-basis: 60%;
                     }
-                    background-color:#393939;
-                    color: #ffffff;
+                    background-color:var(--button);
+                    color: var(--text);
                 }
             }
 

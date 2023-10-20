@@ -52,7 +52,7 @@
 
     button {
         cursor:pointer;
-        background-color:#393939;
+        background-color:var(--button);
         color:var(--text);
         border:none;
         outline:none;
@@ -67,8 +67,8 @@
 
         &:hover {
             transition-duration: 250ms;
-            background-color:#434343;
-            color: #ffffff;
+            background-color:var(--button-active);
+            color: var(--text-visible);
         }
     }
 

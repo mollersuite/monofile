@@ -16,7 +16,7 @@
         }
 
         input[type=text] {
-            background-color:#333333;
+            background-color:var(--text-input);
             color:var(--text);
             border:none;
             outline:none;

@@ -60,8 +60,13 @@ $FallbackFonts:
     --panel-banner-success: #335544;
     --panel-banner-info: #334466;
 
+    /* Buttons, inputs... */
+    --button-active: #434343; /* on hover */
+    --button: #393939;
+    --text-input: #333333;
+
     /* Text */
-    --text-visible: #FFF; /* Use for best possible visibility. Used in button interactives on hover.  */
+    --text-visible: #FFF; /* Use for best possible visibility. Used in buttons on hover.  */
     --text: #DDD;
     --subtext: #999;
 }
