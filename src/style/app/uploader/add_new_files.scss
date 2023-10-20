@@ -81,7 +81,7 @@
                 height:100px;
                 position:relative;
 
-                background-color:var(--text-input); // todo rename text-input to just input
+                background-color:var(--panel);
                 transition-duration:250ms;
 
                 input[type=file] {
@@ -107,7 +107,7 @@
 
                 &:hover {
                     transition-duration:250ms;
-                    background-color:var(--button);
+                    background-color:var(--text-input);
                 }
             }
         }

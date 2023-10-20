@@ -1,0 +1,31 @@
+:root {
+    /* Crust (topbar) */
+    --crust: #1a1b26; /* topbar color */
+    --crust-txt: #565f89; /* buttons */
+    --crust-txt-active:#a9b1d6; /* hover */
+
+    /* Background */
+    --background: #1a1b26; /* Used for desktop. */
+    --background-readable: #1a1b26; /* Used for mobile, where the uploader is backed a gradient. */
+
+    /* Panel (pulldown, upload panel) */
+    --panel-active: #414868; /* Color to show on option hover */
+    --panel: #24283b;
+    --subpanel: #1a1b26;
+    
+    /* Panel banners */
+    --panel-banner-error: #f7768e;
+    --panel-banner-warning: #e0af68;
+    --panel-banner-success: #9ece6a;
+    --panel-banner-info: #7aa2f7;
+
+    /* Buttons, inputs... */
+    --button-active: #565f89; /* on hover */
+    --button: #414868;
+    --text-input: #1a1b26;
+
+    /* Text */
+    --text-visible: #c0caf5; /* Use for best possible visibility. Used in buttons on hover.  */
+    --text: #a9b1d6;
+    --subtext: #565f89;
+}
