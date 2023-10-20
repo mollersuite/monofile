@@ -1,7 +1,7 @@
 #uploadWindow {
     #add_new_files {
         background-color:var(--subpanel);
-        border: 1px solid gray;
+        border: 1px solid var(--subtext);
         padding: 0px 0px 10px 0px;
 
         p {
@@ -81,7 +81,7 @@
                 height:100px;
                 position:relative;
 
-                background-color:#262626;
+                background-color:var(--text-input); // todo rename text-input to just input
                 transition-duration:250ms;
 
                 input[type=file] {
@@ -107,7 +107,7 @@
 
                 &:hover {
                     transition-duration:250ms;
-                    background-color:#292929;
+                    background-color:var(--button);
                 }
             }
         }

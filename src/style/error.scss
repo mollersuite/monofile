@@ -2,7 +2,7 @@
 
 .error {
     font-size:20px;
-    color: lightslategray;
+    color: var(--subtext);
 
     position: fixed;
     left: 50%;
@@ -14,7 +14,7 @@
     .code {
         font-size:25px;
         font-family: "Inconsolata", monospace;
-        color: white;
+        color: var(--text);
     }
 }
 

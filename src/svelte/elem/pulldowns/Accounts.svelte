@@ -239,7 +239,7 @@
                     </button>
 
                 {/if}
-                <p style="font-size:12px;color:#AAAAAA;text-align:center;" class="monospace"><br />{$account.id}</p>
+                <p style="font-size:12px;color:var(--subtext);text-align:center;" class="monospace"><br />{$account.id}</p>
             </div>
         </div>
         

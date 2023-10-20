@@ -3,7 +3,7 @@
 #uploadWindow {
     .file {
         background-color:var(--subpanel);
-        border: 1px solid gray;
+        border: 1px solid var(--subtext);
         padding: 10px;
         overflow:clip;
         position:relative;
