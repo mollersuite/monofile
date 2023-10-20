@@ -193,7 +193,7 @@
             </button>
         {/if}
     </h1>
-    <p style:color="#999999">
+    <p style:color="var(--subtext)">
         <span class="number"
             >{$serverStats.version ? `v${$serverStats.version}` : "•••"}</span
         >&nbsp;&nbsp;—&nbsp;&nbsp;Discord based file sharing
@@ -216,7 +216,7 @@
                 >
                     <h2>
                         {upload[1].name}
-                        <span style:color="#999999" style:font-weight="400"
+                        <span style:color="var(--subtext)" style:font-weight="400"
                             >{upload[1].type}{@html upload[1].type == "upload"
                                 ? `&nbsp;(${Math.round(
                                       upload[1].file.size / 1048576
@@ -362,7 +362,7 @@
                 />
             {/if}
         {:else}
-            <p transition:_void style:color="#999999" style:text-align="center">
+            <p transition:_void style:color="var(--subtext)" style:text-align="center">
                 Please log in to upload files.
             </p>
             <div
@@ -372,7 +372,7 @@
         {/if}
     {/if}
 
-    <p style:color="#999999" style:text-align="center">
+    <p style:color="var(--subtext)" style:text-align="center">
         Hosting <span class="number" style:font-weight="600"
             >{$serverStats.files || "•••"}</span
         >
@@ -384,7 +384,7 @@
         >
         <br />
     </p>
-    <p style:color="#999999" style:text-align="center" style:font-size="12px">
+    <p style:color="var(--subtext)" style:text-align="center" style:font-size="12px">
         Made with {Math.floor(Math.random() * 10) == 0 ? "🐟" : "❤"} by
         <a href="https://cetera.uk" style:font-size="12px"
             ><svg

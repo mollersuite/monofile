@@ -163,7 +163,7 @@
         h1 {
             font-weight:600;
             font-size:20px;
-            color: #AAAAAA;
+            color: var(--subtext);
 
             @media screen and (max-width:500px) {
                 font-size:24px;

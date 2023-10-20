@@ -16,7 +16,7 @@
     }
 
     background:var(--panel);
-    color:#ddd;
+    color:var(--text);
 
     h1, p, a {
         margin: 0px;
@@ -28,12 +28,12 @@
         padding: 0;
         margin-top: 5px;
 
-        img {
+        svg {
             color: var(--subtext);
         }
 
         &:hover {
-            img { color: var(--text); }
+            svg { color: var(--text); }
         }
     }
 
