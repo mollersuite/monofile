@@ -31,8 +31,8 @@ export default async function ServeError(
     res.header("x-backup-status-message", reason) // glitch default nginx configuration
     res.send(
         errorPage
-            .replace(/\$code/g,code.toString())
-            .replace(/\$text/g,reason)
+            .replaceAll("$code",code.toString())
+            .replaceAll("$text",reason)
     )
 }
 /**
