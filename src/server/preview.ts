@@ -2,31 +2,32 @@ import fs from "fs/promises"
 import bytes from "bytes"
 import ServeError from "./lib/errors"
 import * as Accounts from "./lib/accounts"
-import type { Handler } from "express"
+import type { Handler } from "hono"
 import type Files from "./lib/files"
 const pkg = require(`${process.cwd()}/package.json`)
 export = (files: Files): Handler =>
-    async (req, res) => {
-        let acc = res.locals.acc as Accounts.Account
-        const file = files.getFilePointer(req.params.fileId)
+    async (ctx) => {
+        let acc = ctx.get("account") as Accounts.Account
+        const fileId = ctx.req.param("fileId")
+        const host = ctx.req.header("Host")
+        const file = files.getFilePointer(fileId)
         if (file) {
             if (file.visibility == "private" && acc?.id != file.owner) {
-                ServeError(res, 403, "you do not own this file")
-                return
+                return ServeError(ctx, 403, "you do not own this file")
             }
 
             const template = await fs
                 .readFile(process.cwd() + "/dist/download.html", "utf8")
                 .catch(() => {
-                    throw res.sendStatus(500)
+                    throw ctx.status(500)
                 })
             let fileOwner = file.owner
                 ? Accounts.getFromId(file.owner)
                 : undefined
 
-            res.send(
+            return ctx.html(
                 template
-                    .replaceAll("$FileId", req.params.fileId)
+                    .replaceAll("$FileId", fileId)
                     .replaceAll("$Version", pkg.version)
                     .replaceAll(
                         "$FileSize",
@@ -44,18 +45,14 @@ export = (files: Files): Handler =>
                     .replace(
                         "<!--metaTags-->",
                         (file.mime.startsWith("image/")
-                            ? `<meta name="og:image" content="https://${req.headers.host}/file/${req.params.fileId}" />`
+                            ? `<meta name="og:image" content="https://${host}/file/${fileId}" />`
                             : file.mime.startsWith("video/")
-                            ? `<meta property="og:video:url" content="https://${
-                                  req.headers.host
-                              }/cpt/${req.params.fileId}/video.${
+                            ? `<meta property="og:video:url" content="https://${host}/cpt/${fileId}/video.${
                                   file.mime.split("/")[1] == "quicktime"
                                       ? "mov"
                                       : file.mime.split("/")[1]
                               }" />
-                                <meta property="og:video:secure_url" content="https://${
-                                    req.headers.host
-                                }/cpt/${req.params.fileId}/video.${
+                                <meta property="og:video:secure_url" content="https://${host}/cpt/${fileId}/video.${
                                   file.mime.split("/")[1] == "quicktime"
                                       ? "mov"
                                       : file.mime.split("/")[1]
@@ -79,7 +76,7 @@ export = (files: Files): Handler =>
                             `\n<meta name="theme-color" content="${
                                 fileOwner?.embed?.color &&
                                 file.visibility != "anonymous" &&
-                                (req.headers["user-agent"] || "").includes(
+                                (ctx.req.header("user-agent") || "").includes(
                                     "Discordbot"
                                 )
                                     ? `#${fileOwner.embed.color}`
@@ -89,11 +86,11 @@ export = (files: Files): Handler =>
                     .replace(
                         "<!--preview-->",
                         file.mime.startsWith("image/")
-                            ? `<div style="min-height:10px"></div><img src="/file/${req.params.fileId}" />`
+                            ? `<div style="min-height:10px"></div><img src="/file/${fileId}" />`
                             : file.mime.startsWith("video/")
-                            ? `<div style="min-height:10px"></div><video src="/file/${req.params.fileId}" controls></video>`
+                            ? `<div style="min-height:10px"></div><video src="/file/${fileId}" controls></video>`
                             : file.mime.startsWith("audio/")
-                            ? `<div style="min-height:10px"></div><audio src="/file/${req.params.fileId}" controls></audio>`
+                            ? `<div style="min-height:10px"></div><audio src="/file/${fileId}" controls></audio>`
                             : ""
                     )
                     .replaceAll(
@@ -104,6 +101,6 @@ export = (files: Files): Handler =>
                     )
             )
         } else {
-            ServeError(res, 404, "file not found")
+            ServeError(ctx, 404, "file not found")
         }
     }

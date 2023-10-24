@@ -1,45 +1,63 @@
-import cookieParser from "cookie-parser"
 import { IntentsBitField, Client } from "discord.js"
-import express from "express"
+import { serve } from "@hono/node-server"
+import { serveStatic } from "@hono/node-server/serve-static"
+import { Hono } from "hono"
 import fs from "fs"
 import Files from "./lib/files"
 import { getAccount } from "./lib/middleware"
-
 import APIRouter from "./routes/api"
 import preview from "./preview"
 
 require("dotenv").config()
 
 const pkg = require(`${process.cwd()}/package.json`)
-let app = express()
+const app = new Hono()
 let config = require(`${process.cwd()}/config.json`)
 
-app.use("/static/assets", express.static("assets"))
-app.use("/static/vite", express.static("dist/static/vite"))
+app.get(
+    "/static/assets/*",
+    serveStatic({
+        rewriteRequestPath: (path) => {
+            return path.replace("/static/assets", "/assets")
+        },
+    })
+)
+app.get(
+    "/static/vite/*",
+    serveStatic({
+        rewriteRequestPath: (path) => {
+            return path.replace("/static/vite", "/dist/static/vite")
+        },
+    })
+)
 
 //app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
 
-app.use(cookieParser())
-
 // check for ssl, if not redirect
-if (config.trustProxy) app.enable("trust proxy")
+if (config.trustProxy) {
+    // app.enable("trust proxy")
+}
 if (config.forceSSL) {
-    app.use((req, res, next) => {
-        if (req.protocol == "http")
-            res.redirect(`https://${req.get("host")}${req.originalUrl}`)
-        else next()
+    app.use(async (ctx, next) => {
+        if (new URL(ctx.req.url).protocol == "http") {
+            return ctx.redirect(
+                `https://${ctx.req.header("host")}${
+                    new URL(ctx.req.url).pathname
+                }`
+            )
+        } else {
+            return next()
+        }
     })
 }
 
-app.get("/server", (req, res) => {
-    res.send(
-        JSON.stringify({
-            ...config,
-            version: pkg.version,
-            files: Object.keys(files.files).length,
-        })
-    )
-})
+app.get("/server", (ctx) =>
+    ctx.json({
+        ...config,
+        version: pkg.version,
+        files: Object.keys(files.files).length,
+    })
+)
 
 // funcs
 
@@ -60,17 +78,19 @@ let client = new Client({
 
 let files = new Files(client, config)
 
-let apiRouter = new APIRouter(files)
+const apiRouter = new APIRouter(files)
 apiRouter.loadAPIMethods().then(() => {
-    app.use(apiRouter.root)
+    app.route("/", apiRouter.root)
     console.log("API OK!")
 })
 
 // index, clone
 
-app.get("/", function (req, res) {
-    res.sendFile(process.cwd() + "/dist/index.html")
-})
+app.get("/", async (ctx) =>
+    ctx.html(
+        await fs.promises.readFile(process.cwd() + "/dist/index.html", "utf-8")
+    )
+)
 
 // serve download page
 
@@ -87,8 +107,16 @@ app.get("/download/:fileId", getAccount, preview(files))
 
 // listen on 3000 or MONOFILE_PORT
 
-app.listen(process.env.MONOFILE_PORT || 3000, function () {
-    console.log("Web OK!")
-})
+serve(
+    {
+        fetch: app.fetch,
+        port: Number(process.env.MONOFILE_PORT || 3000),
+    },
+    (info) => {
+        console.log("Web OK!", info.port, info.address)
+    }
+)
 
 client.login(process.env.TOKEN)
+
+export = app

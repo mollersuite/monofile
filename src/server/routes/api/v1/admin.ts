@@ -1,118 +1,117 @@
 // Modules
 
-import { writeFile } from 'fs'
-import { Router } from "express";
-import bodyParser from "body-parser";
+import { writeFile } from "fs/promises"
+import { Hono } from "hono"
 
 // Libs
 
-import Files, { id_check_regex } from "../../../lib/files";
-import * as Accounts from '../../../lib/accounts'
-import * as Authentication from '../../../lib/auth'
-import { assertAPI, getAccount, noAPIAccess, requiresAccount, requiresAdmin, requiresPermissions } from "../../../lib/middleware";
-import ServeError from "../../../lib/errors";
-import { sendMail } from '../../../lib/mail';
+import Files, { id_check_regex } from "../../../lib/files"
+import * as Accounts from "../../../lib/accounts"
+import * as Authentication from "../../../lib/auth"
+import {
+    getAccount,
+    noAPIAccess,
+    requiresAccount,
+    requiresAdmin,
+} from "../../../lib/middleware"
+import ServeError from "../../../lib/errors"
+import { sendMail } from "../../../lib/mail"
 
 const Configuration = require(`${process.cwd()}/config.json`)
 
-const parser = bodyParser.json({
-    type: [ "type/plain", "application/json" ]
-})
+const router = new Hono<{
+    Variables: {
+        account?: Accounts.Account
+    }
+}>()
 
-const router = Router()
+router.use(getAccount, requiresAccount, requiresAdmin)
 
-router.use(getAccount, requiresAccount, requiresAdmin, parser)
+module.exports = function (files: Files) {
+    router.patch("/account/:username/password", async (ctx) => {
+        const Account = ctx.get("account") as Accounts.Account
+        const body = await ctx.req.json()
 
-module.exports = function(files: Files) {
-    router.patch(
-        "/account/:username/password",
-        (req, res) => {
-            const Account = res.locals.acc as Accounts.Account
+        const targetUsername = ctx.req.param("username")
+        const password = body.password
 
-            const targetUsername = req.params.username
-            const password = req.body.password
+        if (typeof password !== "string") return ServeError(ctx, 404, "")
 
-            if (typeof password !== "string") {
-                ServeError(res, 404, "")
-                return
-            }
+        const targetAccount = Accounts.getFromUsername(targetUsername)
 
-            const targetAccount = Accounts.getFromUsername(targetUsername)
+        if (!targetAccount) return ServeError(ctx, 404, "")
 
-            if (!targetAccount) {
-                ServeError(res, 404, "")
-                return
-            }
+        Accounts.password.set(targetAccount.id, password)
 
-            Accounts.password.set( targetAccount.id, password )
-            
-            Authentication.AuthTokens.filter(e => e.account == targetAccount?.id).forEach((accountToken) => {
-                Authentication.invalidate(accountToken.token)
-            })
+        Authentication.AuthTokens.filter(
+            (e) => e.account == targetAccount?.id
+        ).forEach((accountToken) => {
+            Authentication.invalidate(accountToken.token)
+        })
 
-            if (targetAccount.email) {
-                sendMail(targetAccount.email, `Your login details have been updated`, `<b>Hello there!</b> This email is to notify you of a password change that an administrator, <span username>${Account.username}</span>, has initiated. You have been logged out of your devices. Thank you for using monofile.`).then(() => {
-                    res.send("OK")
-                }).catch((err) => {})
-            }
-
-            res.send()
+        if (targetAccount.email) {
+            await sendMail(
+                targetAccount.email,
+                `Your login details have been updated`,
+                `<b>Hello there!</b> This email is to notify you of a password change that an administrator, <span username>${Account.username}</span>, has initiated. You have been logged out of your devices. Thank you for using monofile.`
+            ).catch()
         }
-    )
 
-    router.patch(
-        "/account/:username/elevate",
-        (req, res) => {
-            const targetUsername = req.params.username
-            const targetAccount = Accounts.getFromUsername(targetUsername)
+        return ctx.text("")
+    })
 
-            if (!targetAccount) {
-                ServeError(res, 404, "")
-                return
-            }
+    router.patch("/account/:username/elevate", (ctx) => {
+        const targetUsername = ctx.req.param("username")
+        const targetAccount = Accounts.getFromUsername(targetUsername)
 
-            targetAccount.admin = true
-            Accounts.save()
-
-            res.send()
+        if (!targetAccount) {
+            return ServeError(ctx, 404, "")
         }
-    )
 
-    router.delete("/account/:username/:deleteFiles",
+        targetAccount.admin = true
+        Accounts.save()
+
+        return ctx.text("")
+    })
+
+    router.delete(
+        "/account/:username/:deleteFiles",
         requiresAccount,
         noAPIAccess,
-        parser,
-        (req, res) => {
-            const targetUsername = req.params.username
-            const deleteFiles = req.params.deleteFiles
+        async (ctx) => {
+            const targetUsername = ctx.req.param("username")
+            const deleteFiles = ctx.req.param("deleteFiles")
 
             const targetAccount = Accounts.getFromUsername(targetUsername)
 
-            if (!targetAccount) {
-                ServeError(res, 404, "")
-                return
-            }
+            if (!targetAccount) return ServeError(ctx, 404, "")
 
             const accountId = targetAccount.id
 
-            Authentication.AuthTokens.filter(e => e.account == accountId).forEach((token) => {
+            Authentication.AuthTokens.filter(
+                (e) => e.account == accountId
+            ).forEach((token) => {
                 Authentication.invalidate(token.token)
             })
 
-            const deleteAccount = () => Accounts.deleteAccount(accountId).then(_ => res.send("account deleted"))
+            const deleteAccount = () =>
+                Accounts.deleteAccount(accountId).then((_) =>
+                    ctx.text("account deleted")
+                )
 
             if (deleteFiles) {
-                const Files = targetAccount.files.map(e => e)
+                const Files = targetAccount.files.map((e) => e)
 
                 for (let fileId of Files) {
-                    files.unlink(fileId, true).catch(err => console.error)
+                    files.unlink(fileId, true).catch((err) => console.error)
                 }
 
-                writeFile(process.cwd() + "/.data/files.json", JSON.stringify(files.files), (err) => {
-                    if (err) console.log(err)
-                    deleteAccount()
-                })
-            } else deleteAccount()
+                await writeFile(
+                    process.cwd() + "/.data/files.json",
+                    JSON.stringify(files.files)
+                )
+                return deleteAccount()
+            } else return deleteAccount()
         }
     )
 

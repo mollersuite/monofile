@@ -1,96 +1,95 @@
-// Modules
-
-import { Router } from "express";
-import bodyParser from "body-parser";
-
-// Libs
-
-import Files, { id_check_regex } from "../../../lib/files";
-import * as Accounts from '../../../lib/accounts'
-import { getAccount, requiresAccount, requiresPermissions } from "../../../lib/middleware";
-import ServeError from "../../../lib/errors";
+import { Hono } from "hono"
+import Files, { id_check_regex } from "../../../lib/files"
+import * as Accounts from "../../../lib/accounts"
+import {
+    getAccount,
+    requiresAccount,
+    requiresPermissions,
+} from "../../../lib/middleware"
+import ServeError from "../../../lib/errors"
 
 const Configuration = require(`${process.cwd()}/config.json`)
 
-const parser = bodyParser.json({
-    type: [ "type/plain", "application/json" ]
-})
+const router = new Hono<{
+    Variables: {
+        account?: Accounts.Account
+    }
+}>()
 
-const router = Router()
+router.use(getAccount)
 
-router.use(getAccount, parser)
-
-module.exports = function(files: Files) {
+module.exports = function (files: Files) {
     router.put(
         "/css",
-        requiresAccount, requiresPermissions("customize"),
-        async (req, res) => {
-            const Account = res.locals.acc as Accounts.Account
-
-            if (typeof req.body.fileId != "string") req.body.fileId = undefined;
-
-            if (
-                !req.body.fileId
-                ||
-                (req.body.fileId.match(id_check_regex) == req.body.fileId 
-              && req.body.fileId.length <= Configuration.maxUploadIdLength)
-            ) {
-                Account.customCSS = req.body.fileId || undefined
-
-                await Accounts.save()
-                res.send("custom css saved")
-            } else ServeError(res, 400, "invalid fileId")
-        }
-    )
-
-    router.get('/css',
         requiresAccount,
-        (req, res) => {
-            const Account = res.locals.acc
+        requiresPermissions("customize"),
+        async (ctx) => {
+            const Account = ctx.get("account") as Accounts.Account
+            const body = await ctx.req.json()
+            if (typeof body.fileId != "string") body.fileId = undefined
 
-            if (Account?.customCSS) res.redirect(`/file/${Account.customCSS}`)
-            else res.send("");
-        }
-    )
-
-    router.put("/embed/color",
-        requiresAccount, requiresPermissions("customize"),
-        async (req, res) => {
-            const Account = res.locals.acc as Accounts.Account
-
-            if (typeof req.body.color != "string") req.body.color = undefined;
-            
             if (
-                !req.body.color
-                || (req.body.color.toLowerCase().match(/[a-f0-9]+/) == req.body.color.toLowerCase())
-                && req.body.color.length == 6
+                !body.fileId ||
+                (body.fileId.match(id_check_regex) == body.fileId &&
+                    body.fileId.length <= Configuration.maxUploadIdLength)
             ) {
-
-                if (!Account.embed) Account.embed = {};
-                Account.embed.color = req.body.color || undefined
+                Account.customCSS = body.fileId || undefined
 
                 await Accounts.save()
-                res.send("custom embed color saved")
-
-            } else ServeError(res,400,"invalid hex code")
+                return ctx.text("custom css saved")
+            } else return ServeError(ctx, 400, "invalid fileId")
         }
     )
 
-    router.put("/embed/size",
-        requiresAccount, requiresPermissions("customize"),
-        async (req, res) => {
-            const Account = res.locals.acc as Accounts.Account
+    router.get("/css", requiresAccount, async (ctx) => {
+        const Account = ctx.get("account")
 
-            if (typeof req.body.largeImage != "boolean") {
-                ServeError(res, 400, "largeImage must be bool");
+        if (Account?.customCSS)
+            return ctx.redirect(`/file/${Account.customCSS}`)
+        else return ctx.text("")
+    })
+
+    router.put(
+        "/embed/color",
+        requiresAccount,
+        requiresPermissions("customize"),
+        async (ctx) => {
+            const Account = ctx.get("account") as Accounts.Account
+            const body = await ctx.req.json()
+            if (typeof body.color != "string") body.color = undefined
+
+            if (
+                !body.color ||
+                (body.color.toLowerCase().match(/[a-f0-9]+/) ==
+                    body.color.toLowerCase() &&
+                    body.color.length == 6)
+            ) {
+                if (!Account.embed) Account.embed = {}
+                Account.embed.color = body.color || undefined
+
+                await Accounts.save()
+                return ctx.text("custom embed color saved")
+            } else return ServeError(ctx, 400, "invalid hex code")
+        }
+    )
+
+    router.put(
+        "/embed/size",
+        requiresAccount,
+        requiresPermissions("customize"),
+        async (ctx) => {
+            const Account = ctx.get("account") as Accounts.Account
+            const body = await ctx.req.json()
+            if (typeof body.largeImage != "boolean") {
+                ServeError(ctx, 400, "largeImage must be bool")
                 return
             }
 
-            if (!Account.embed) Account.embed = {};
-            Account.embed.largeImage = req.body.largeImage
+            if (!Account.embed) Account.embed = {}
+            Account.embed.largeImage = body.largeImage
 
             await Accounts.save()
-            res.send(`custom embed image size saved`)
+            return ctx.text(`custom embed image size saved`)
         }
     )
 

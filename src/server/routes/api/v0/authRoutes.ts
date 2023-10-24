@@ -1,356 +1,483 @@
-import bodyParser from "body-parser";
-import { Router } from "express";
-import * as Accounts from "../../../lib/accounts";
-import * as auth from "../../../lib/auth";
-import { sendMail } from "../../../lib/mail";
-import { getAccount, noAPIAccess, requiresAccount, requiresPermissions } from "../../../lib/middleware"
+import { Hono, Handler } from "hono"
+import { getCookie, setCookie } from "hono/cookie"
+import * as Accounts from "../../../lib/accounts"
+import * as auth from "../../../lib/auth"
+import { sendMail } from "../../../lib/mail"
+import {
+    getAccount,
+    noAPIAccess,
+    requiresAccount,
+    requiresPermissions,
+} from "../../../lib/middleware"
 import { accountRatelimit } from "../../../lib/ratelimit"
 
-import ServeError from "../../../lib/errors";
-import Files, { FileVisibility, generateFileId, id_check_regex } from "../../../lib/files";
+import ServeError from "../../../lib/errors"
+import Files, {
+    FileVisibility,
+    generateFileId,
+    id_check_regex,
+} from "../../../lib/files"
 
-import { writeFile } from "fs";
+import { writeFile } from "fs/promises"
 
-let parser = bodyParser.json({
-    type: ["text/plain","application/json"]
-})
-
-export let authRoutes = Router();
-authRoutes.use(getAccount)
+export let authRoutes = new Hono<{
+    Variables: {
+        account: Accounts.Account
+    }
+}>()
 
 let config = require(`${process.cwd()}/config.json`)
+authRoutes.all("*", getAccount)
 
-module.exports = function(files: Files) {
-
-    authRoutes.post("/login", parser, (req,res) => {
-        if (typeof req.body.username != "string" || typeof req.body.password != "string") {
-            ServeError(res,400,"please provide a username or password")
-            return
+module.exports = function (files: Files) {
+    authRoutes.post("/login", async (ctx) => {
+        console.log(ctx)
+        const body = await ctx.req.json()
+        if (
+            typeof body.username != "string" ||
+            typeof body.password != "string"
+        ) {
+            return ServeError(ctx, 400, "please provide a username or password")
         }
 
-        if (auth.validate(req.cookies.auth)) return
+        if (auth.validate(getCookie(ctx, "auth")!))
+            return ctx.text("You are already authed")
 
         /*
             check if account exists  
         */
 
-        let acc = Accounts.getFromUsername(req.body.username)
+        let acc = Accounts.getFromUsername(body.username)
 
         if (!acc) {
-            ServeError(res,401,"username or password incorrect")
-            return
+            return ServeError(ctx, 401, "username or password incorrect")
         }
 
-        if (!Accounts.password.check(acc.id,req.body.password)) {
-            ServeError(res,401,"username or password incorrect")
-            return
+        if (!Accounts.password.check(acc.id, body.password)) {
+            return ServeError(ctx, 401, "username or password incorrect")
         }
 
         /*
             assign token
         */
 
-        res.cookie("auth",auth.create(acc.id,(3*24*60*60*1000)))
-        res.status(200)
-        res.end()
+        setCookie(ctx, "auth", auth.create(acc.id, 3 * 24 * 60 * 60 * 1000))
+        return ctx.text("")
     })
 
-    authRoutes.post("/create", parser, (req,res) => {
+    authRoutes.post("/create", async (ctx) => {
         if (!config.accounts.registrationEnabled) {
-            ServeError(res,403,"account registration disabled")
-            return
+            return ServeError(ctx, 403, "account registration disabled")
         }
 
-        if (auth.validate(req.cookies.auth)) return
-
-        if (typeof req.body.username != "string" || typeof req.body.password != "string") {
-            ServeError(res,400,"please provide a username or password")
-            return
+        if (auth.validate(getCookie(ctx, "auth")!)) return
+        const body = await ctx.req.json()
+        if (
+            typeof body.username != "string" ||
+            typeof body.password != "string"
+        ) {
+            return ServeError(ctx, 400, "please provide a username or password")
         }
 
         /*
             check if account exists  
         */
 
-        let acc = Accounts.getFromUsername(req.body.username)
+        let acc = Accounts.getFromUsername(body.username)
 
         if (acc) {
-            ServeError(res,400,"account with this username already exists")
+            ServeError(ctx, 400, "account with this username already exists")
             return
         }
 
-        if (req.body.username.length < 3 || req.body.username.length > 20) {
-            ServeError(res,400,"username must be over or equal to 3 characters or under or equal to 20 characters in length")
+        if (body.username.length < 3 || body.username.length > 20) {
+            return ServeError(
+                ctx,
+                400,
+                "username must be over or equal to 3 characters or under or equal to 20 characters in length"
+            )
+        }
+
+        if (
+            (body.username.match(/[A-Za-z0-9_\-\.]+/) || [])[0] != body.username
+        ) {
+            return ServeError(ctx, 400, "username contains invalid characters")
+        }
+
+        if (body.password.length < 8) {
+            ServeError(ctx, 400, "password must be 8 characters or longer")
             return
         }
 
-        if ((req.body.username.match(/[A-Za-z0-9_\-\.]+/) || [])[0] != req.body.username) {
-            ServeError(res,400,"username contains invalid characters")
-            return
-        }
-
-        if (req.body.password.length < 8) {
-            ServeError(res,400,"password must be 8 characters or longer")
-            return
-        }
-
-        Accounts.create(req.body.username,req.body.password)
+        return Accounts.create(body.username, body.password)
             .then((newAcc) => {
                 /*
                     assign token
                 */
 
-                res.cookie("auth",auth.create(newAcc,(3*24*60*60*1000)))
-                res.status(200)
-                res.end()
+                setCookie(
+                    ctx,
+                    "auth",
+                    auth.create(newAcc, 3 * 24 * 60 * 60 * 1000)
+                )
+                return ctx.text("")
             })
-            .catch(() => {
-                ServeError(res,500,"internal server error")
-            })
+            .catch(() => ServeError(ctx, 500, "internal server error"))
     })
 
-    authRoutes.post("/logout", (req,res) => {
-        if (!auth.validate(req.cookies.auth)) {
-            ServeError(res, 401, "not logged in")
-            return
+    authRoutes.post("/logout", async (ctx) => {
+        if (!auth.validate(getCookie(ctx, "auth")!)) {
+            return ServeError(ctx, 401, "not logged in")
         }
 
-        auth.invalidate(req.cookies.auth)
-        res.send("logged out")
+        auth.invalidate(getCookie(ctx, "auth")!)
+        return ctx.text("logged out")
     })
 
-    authRoutes.post("/dfv", requiresAccount, requiresPermissions("manage"), parser, (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
+    authRoutes.post(
+        "/dfv",
+        requiresAccount,
+        requiresPermissions("manage"),
+        // Used body-parser
+        async (ctx) => {
+            const body = await ctx.req.json()
+            let acc = ctx.get("account") as Accounts.Account
 
-        if (['public','private','anonymous'].includes(req.body.defaultFileVisibility)) {
-            acc.defaultFileVisibility = req.body.defaultFileVisibility
-            Accounts.save()
-            res.send(`dfv has been set to ${acc.defaultFileVisibility}`)
-        } else {
-            res.status(400)
-            res.send("invalid dfv")
+            if (
+                ["public", "private", "anonymous"].includes(
+                    body.defaultFileVisibility
+                )
+            ) {
+                acc.defaultFileVisibility = body.defaultFileVisibility
+                Accounts.save()
+                return ctx.text(
+                    `dfv has been set to ${acc.defaultFileVisibility}`
+                )
+            } else {
+                return ctx.text("invalid dfv", 400)
+            }
         }
-    })
+    )
 
-    authRoutes.post("/customcss", requiresAccount, requiresPermissions("customize"), parser, (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
-        
-        if (typeof req.body.fileId != "string") req.body.fileId = undefined;
-        
-        if (
+    authRoutes.post(
+        "/customcss",
+        requiresAccount,
+        requiresPermissions("customize"),
+        // Used body-parser
+        async (ctx) => {
+            const body = await ctx.req.json()
+            let acc = ctx.get("account") as Accounts.Account
 
-            !req.body.fileId
-            || (req.body.fileId.match(id_check_regex) == req.body.fileId 
-            && req.body.fileId.length <= config.maxUploadIdLength)
-            
-        ) {
-            acc.customCSS = req.body.fileId || undefined
-            if (!req.body.fileId) delete acc.customCSS
-            Accounts.save()
-            res.send(`custom css saved`)
-        } else {
-            res.status(400)
-            res.send("invalid fileid")
+            if (typeof body.fileId != "string") body.fileId = undefined
+
+            if (
+                !body.fileId ||
+                (body.fileId.match(id_check_regex) == body.fileId &&
+                    body.fileId.length <= config.maxUploadIdLength)
+            ) {
+                acc.customCSS = body.fileId || undefined
+                if (!body.fileId) delete acc.customCSS
+                Accounts.save()
+                return ctx.text(`custom css saved`)
+            } else {
+                return ctx.text("invalid fileid", 400)
+            }
         }
-    })
+    )
 
-    authRoutes.post("/embedcolor", requiresAccount, requiresPermissions("customize"), parser, (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
-        
-        if (typeof req.body.color != "string") req.body.color = undefined;
-        
-        if (
+    authRoutes.post(
+        "/embedcolor",
+        requiresAccount,
+        requiresPermissions("customize"),
+        // Used body-parser
+        async (ctx) => {
+            let acc = ctx.get("account") as Accounts.Account
+            const body = await ctx.req.json()
+            if (typeof body.color != "string") body.color = undefined
 
-            !req.body.color
-            || (req.body.color.toLowerCase().match(/[a-f0-9]+/) == req.body.color.toLowerCase())
-            && req.body.color.length == 6
-            
-        ) {
+            if (
+                !body.color ||
+                (body.color.toLowerCase().match(/[a-f0-9]+/) ==
+                    body.color.toLowerCase() &&
+                    body.color.length == 6)
+            ) {
+                if (!acc.embed) acc.embed = {}
+                acc.embed.color = body.color || undefined
+                if (!body.color) delete acc.embed.color
+                Accounts.save()
+                return ctx.text(`custom embed color saved`)
+            } else {
+                return ctx.text("invalid hex code", 400)
+            }
+        }
+    )
+
+    authRoutes.post(
+        "/embedsize",
+        requiresAccount,
+        requiresPermissions("customize"),
+        // Used body-parser
+        async (ctx) => {
+            let acc = ctx.get("account") as Accounts.Account
+            const body = await ctx.req.json()
+            if (typeof body.largeImage != "boolean") body.color = false
+
             if (!acc.embed) acc.embed = {}
-            acc.embed.color = req.body.color || undefined
-            if (!req.body.color) delete acc.embed.color
+            acc.embed.largeImage = body.largeImage
+            if (!body.largeImage) delete acc.embed.largeImage
             Accounts.save()
-            res.send(`custom embed color saved`)
-        } else {
-            res.status(400)
-            res.send("invalid hex code")
+            return ctx.text(`custom embed image size saved`)
         }
-    })
+    )
 
-    authRoutes.post("/embedsize", requiresAccount, requiresPermissions("customize"), parser, (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
-        
-        if (typeof req.body.largeImage != "boolean") req.body.color = false;
+    authRoutes.post(
+        "/delete_account",
+        requiresAccount,
+        noAPIAccess,
+        // Used body-parser
+        async (ctx) => {
+            let acc = ctx.get("account") as Accounts.Account
+            const body = await ctx.req.json()
+            let accId = acc.id
 
-        if (!acc.embed) acc.embed = {}
-        acc.embed.largeImage = req.body.largeImage
-        if (!req.body.largeImage) delete acc.embed.largeImage
-        Accounts.save()
-        res.send(`custom embed image size saved`)
-    })
+            auth.AuthTokens.filter((e) => e.account == accId).forEach((v) => {
+                auth.invalidate(v.token)
+            })
 
-    authRoutes.post("/delete_account", requiresAccount, noAPIAccess, parser, async (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
-        
-        let accId = acc.id
+            let cpl = () =>
+                Accounts.deleteAccount(accId).then((_) =>
+                    ctx.text("account deleted")
+                )
 
-        auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
-            auth.invalidate(v.token)
-        })
+            if (body.deleteFiles) {
+                let f = acc.files.map((e) => e) // make shallow copy so that iterating over it doesnt Die
+                for (let v of f) {
+                    files.unlink(v, true).catch((err) => console.error(err))
+                }
 
-        let cpl = () => Accounts.deleteAccount(accId).then(_ => res.send("account deleted"))
-        
-        if (req.body.deleteFiles) {
-            let f = acc.files.map(e=>e) // make shallow copy so that iterating over it doesnt Die
-            for (let v of f) {
-                files.unlink(v,true).catch(err => console.error(err))
+                return writeFile(
+                    process.cwd() + "/.data/files.json",
+                    JSON.stringify(files.files)
+                ).then(cpl)
+            } else cpl()
+        }
+    )
+
+    authRoutes.post(
+        "/change_username",
+        requiresAccount,
+        noAPIAccess,
+        // Used body-parser
+        async (ctx) => {
+            let acc = ctx.get("account") as Accounts.Account
+            const body = await ctx.req.json()
+            if (
+                typeof body.username != "string" ||
+                body.username.length < 3 ||
+                body.username.length > 20
+            ) {
+                return ServeError(
+                    ctx,
+                    400,
+                    "username must be between 3 and 20 characters in length"
+                )
             }
 
-            writeFile(process.cwd()+"/.data/files.json",JSON.stringify(files.files), (err) => {
-                if (err) console.log(err)
-                cpl()
-            })
-        } else cpl()
-    })
+            let _acc = Accounts.getFromUsername(body.username)
 
-    authRoutes.post("/change_username", requiresAccount, noAPIAccess, parser, (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
+            if (_acc) {
+                return ServeError(
+                    ctx,
+                    400,
+                    "account with this username already exists"
+                )
+            }
 
-        if (typeof req.body.username != "string" || req.body.username.length < 3 || req.body.username.length > 20) {
-            ServeError(res,400,"username must be between 3 and 20 characters in length")
-            return
+            if (
+                (body.username.match(/[A-Za-z0-9_\-\.]+/) || [])[0] !=
+                body.username
+            ) {
+                return ServeError(
+                    ctx,
+                    400,
+                    "username contains invalid characters"
+                )
+            }
+
+            acc.username = body.username
+            Accounts.save()
+
+            if (acc.email) {
+                return sendMail(
+                    acc.email,
+                    `Your login details have been updated`,
+                    `<b>Hello there!</b> Your username has been updated to <span username>${body.username}</span>. Please update your devices accordingly. Thank you for using monofile.`
+                )
+                    .then(() => ctx.text("OK"))
+                    .catch((err) => {})
+            }
+
+            return ctx.text("username changed")
         }
-
-        let _acc = Accounts.getFromUsername(req.body.username)
-
-        if (_acc) {
-            ServeError(res,400,"account with this username already exists")
-            return
-        }
-
-        if ((req.body.username.match(/[A-Za-z0-9_\-\.]+/) || [])[0] != req.body.username) {
-            ServeError(res,400,"username contains invalid characters")
-            return
-        }
-
-        acc.username = req.body.username
-        Accounts.save()
-
-        if (acc.email) {
-            sendMail(acc.email, `Your login details have been updated`, `<b>Hello there!</b> Your username has been updated to <span username>${req.body.username}</span>. Please update your devices accordingly. Thank you for using monofile.`).then(() => {
-                res.send("OK")
-            }).catch((err) => {})
-        }
-
-        res.send("username changed")
-    })
+    )
 
     // shit way to do this but...
 
-    let verificationCodes = new Map<string, {code: string, email: string, expiry: NodeJS.Timeout}>()
+    let verificationCodes = new Map<
+        string,
+        { code: string; email: string; expiry: NodeJS.Timeout }
+    >()
 
-    authRoutes.post("/request_email_change", requiresAccount, noAPIAccess, accountRatelimit({ requests: 4, per: 60*60*1000 }), parser, (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
-        
-        
-        if (typeof req.body.email != "string" || !req.body.email) {
-            ServeError(res,400, "supply an email")
-            return
-        }
+    authRoutes.post(
+        "/request_email_change",
+        requiresAccount,
+        noAPIAccess,
+        accountRatelimit({ requests: 4, per: 60 * 60 * 1000 }),
+        // Used body-parser
+        async (ctx) => {
+            let acc = ctx.get("account") as Accounts.Account
+            const body = await ctx.req.json()
+            if (typeof body.email != "string" || !body.email) {
+                ServeError(ctx, 400, "supply an email")
+                return
+            }
 
-        let vcode = verificationCodes.get(acc.id) 
+            let vcode = verificationCodes.get(acc.id)
 
-        // delete previous if any
-        let e = vcode?.expiry
-        if (e) clearTimeout(e)
-        verificationCodes.delete(acc?.id||"")
-
-        let code = generateFileId(12).toUpperCase()
-
-        // set
-
-        verificationCodes.set(acc.id, {
-            code,
-            email: req.body.email,
-            expiry: setTimeout( () => verificationCodes.delete(acc?.id||""), 15*60*1000)
-        })
-
-        // this is a mess but it's fine
-
-        sendMail(req.body.email, `Hey there, ${acc.username} - let's connect your email`, `<b>Hello there!</b> You are recieving this message because you decided to link your email, <span code>${req.body.email.split("@")[0]}<span style="opacity:0.5">@${req.body.email.split("@")[1]}</span></span>, to your account, <span username>${acc.username}</span>. If you would like to continue, please <a href="https://${req.header("Host")}/auth/confirm_email/${code}"><span code>click here</span></a>, or go to https://${req.header("Host")}/auth/confirm_email/${code}.`).then(() => {
-            res.send("OK")
-        }).catch((err) => {
-            let e = verificationCodes.get(acc?.id||"")?.expiry
+            // delete previous if any
+            let e = vcode?.expiry
             if (e) clearTimeout(e)
-            verificationCodes.delete(acc?.id||"")
-            res.locals.undoCount();
-            ServeError(res, 500, err?.toString())
-        })
-    })
+            verificationCodes.delete(acc?.id || "")
 
-    authRoutes.get("/confirm_email/:code", requiresAccount, noAPIAccess, (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
-        
+            let code = generateFileId(12).toUpperCase()
 
-        let vcode = verificationCodes.get(acc.id)
+            // set
 
-        if (!vcode) { ServeError(res, 400, "nothing to confirm"); return }
+            verificationCodes.set(acc.id, {
+                code,
+                email: body.email,
+                expiry: setTimeout(
+                    () => verificationCodes.delete(acc?.id || ""),
+                    15 * 60 * 1000
+                ),
+            })
 
-        if (typeof req.params.code == "string" && req.params.code.toUpperCase() == vcode.code) {
-            acc.email = vcode.email
-            Accounts.save();
+            // this is a mess but it's fine
 
-            let e = verificationCodes.get(acc?.id||"")?.expiry
-            if (e) clearTimeout(e)
-            verificationCodes.delete(acc?.id||"")
-
-            res.redirect("/")
-        } else {
-            ServeError(res, 400, "invalid code")
+            sendMail(
+                body.email,
+                `Hey there, ${acc.username} - let's connect your email`,
+                `<b>Hello there!</b> You are recieving this message because you decided to link your email, <span code>${
+                    body.email.split("@")[0]
+                }<span style="opacity:0.5">@${
+                    body.email.split("@")[1]
+                }</span></span>, to your account, <span username>${
+                    acc.username
+                }</span>. If you would like to continue, please <a href="https://${ctx.req.header(
+                    "Host"
+                )}/auth/confirm_email/${code}"><span code>click here</span></a>, or go to https://${ctx.req.header(
+                    "Host"
+                )}/auth/confirm_email/${code}.`
+            )
+                .then(() => ctx.text("OK"))
+                .catch((err) => {
+                    let e = verificationCodes.get(acc?.id || "")?.expiry
+                    if (e) clearTimeout(e)
+                    verificationCodes.delete(acc?.id || "")
+                    ;(ctx.get("undoCount" as never) as () => {})()
+                    return ServeError(ctx, 500, err?.toString())
+                })
         }
-    })
+    )
 
-    authRoutes.post("/remove_email", requiresAccount, noAPIAccess, (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
-        
-        if (acc.email) {
-            delete acc.email;
-            Accounts.save()
-            res.send("email detached")
-        } 
-        else ServeError(res, 400, "email not attached")
-    })
+    authRoutes.get(
+        "/confirm_email/:code",
+        requiresAccount,
+        noAPIAccess,
+        async (ctx) => {
+            let acc = ctx.get("account") as Accounts.Account
 
-    let pwReset = new Map<string, {code: string, expiry: NodeJS.Timeout, requestedAt:number}>()
+            let vcode = verificationCodes.get(acc.id)
+
+            if (!vcode) {
+                ServeError(ctx, 400, "nothing to confirm")
+                return
+            }
+
+            if (
+                typeof ctx.req.param("code") == "string" &&
+                ctx.req.param("code").toUpperCase() == vcode.code
+            ) {
+                acc.email = vcode.email
+                Accounts.save()
+
+                let e = verificationCodes.get(acc?.id || "")?.expiry
+                if (e) clearTimeout(e)
+                verificationCodes.delete(acc?.id || "")
+
+                return ctx.redirect("/")
+            } else {
+                return ServeError(ctx, 400, "invalid code")
+            }
+        }
+    )
+
+    authRoutes.post(
+        "/remove_email",
+        requiresAccount,
+        noAPIAccess,
+        async (ctx) => {
+            let acc = ctx.get("account") as Accounts.Account
+
+            if (acc.email) {
+                delete acc.email
+                Accounts.save()
+                return ctx.text("email detached")
+            } else return ServeError(ctx, 400, "email not attached")
+        }
+    )
+
+    let pwReset = new Map<
+        string,
+        { code: string; expiry: NodeJS.Timeout; requestedAt: number }
+    >()
     let prcIdx = new Map<string, string>()
 
-    authRoutes.post("/request_emergency_login", parser, (req,res) => {
-        if (auth.validate(req.cookies.auth || "")) return
-        
-        if (typeof req.body.account != "string" || !req.body.account) {
-            ServeError(res,400, "supply a username")
+    authRoutes.post("/request_emergency_login", async (ctx) => {
+        if (auth.validate(getCookie(ctx, "auth") || "")) return
+        const body = await ctx.req.json()
+        if (typeof body.account != "string" || !body.account) {
+            ServeError(ctx, 400, "supply a username")
             return
         }
 
-        let acc = Accounts.getFromUsername(req.body.account)
+        let acc = Accounts.getFromUsername(body.account)
         if (!acc || !acc.email) {
-            ServeError(res, 400, "this account either does not exist or does not have an email attached; please contact the server's admin for a reset if you would still like to access it")
-            return
+            return ServeError(
+                ctx,
+                400,
+                "this account either does not exist or does not have an email attached; please contact the server's admin for a reset if you would still like to access it"
+            )
         }
 
-        let pResetCode = pwReset.get(acc.id) 
+        let pResetCode = pwReset.get(acc.id)
 
-        if (pResetCode && pResetCode.requestedAt+(15*60*1000) > Date.now()) {
-            ServeError(res, 429, `Please wait a few moments to request another emergency login.`)
-            return
+        if (
+            pResetCode &&
+            pResetCode.requestedAt + 15 * 60 * 1000 > Date.now()
+        ) {
+            return ServeError(
+                ctx,
+                429,
+                `Please wait a few moments to request another emergency login.`
+            )
         }
-
 
         // delete previous if any
         let e = pResetCode?.expiry
         if (e) clearTimeout(e)
-        pwReset.delete(acc?.id||"")
-        prcIdx.delete(pResetCode?.code||"")
+        pwReset.delete(acc?.id || "")
+        prcIdx.delete(pResetCode?.code || "")
 
         let code = generateFileId(12).toUpperCase()
 
@@ -358,107 +485,146 @@ module.exports = function(files: Files) {
 
         pwReset.set(acc.id, {
             code,
-            expiry: setTimeout( () => { pwReset.delete(acc?.id||""); prcIdx.delete(pResetCode?.code||"") }, 15*60*1000),
-            requestedAt: Date.now()
+            expiry: setTimeout(() => {
+                pwReset.delete(acc?.id || "")
+                prcIdx.delete(pResetCode?.code || "")
+            }, 15 * 60 * 1000),
+            requestedAt: Date.now(),
         })
 
         prcIdx.set(code, acc.id)
 
         // this is a mess but it's fine
 
-        sendMail(acc.email, `Emergency login requested for ${acc.username}`, `<b>Hello there!</b> You are recieving this message because you forgot your password to your monofile account, <span username>${acc.username}</span>. To log in, please <a href="https://${req.header("Host")}/auth/emergency_login/${code}"><span code>click here</span></a>, or go to https://${req.header("Host")}/auth/emergency_login/${code}. If it doesn't appear that you are logged in after visiting this link, please try refreshing. Once you have successfully logged in, you may reset your password.`).then(() => {
-            res.send("OK")
-        }).catch((err) => {
-            let e = pwReset.get(acc?.id||"")?.expiry
-            if (e) clearTimeout(e)
-            pwReset.delete(acc?.id||"")
-            prcIdx.delete(code||"")
-            ServeError(res, 500, err?.toString())
-        })
+        return sendMail(
+            acc.email,
+            `Emergency login requested for ${acc.username}`,
+            `<b>Hello there!</b> You are recieving this message because you forgot your password to your monofile account, <span username>${
+                acc.username
+            }</span>. To log in, please <a href="https://${ctx.req.header(
+                "Host"
+            )}/auth/emergency_login/${code}"><span code>click here</span></a>, or go to https://${ctx.req.header(
+                "Host"
+            )}/auth/emergency_login/${code}. If it doesn't appear that you are logged in after visiting this link, please try refreshing. Once you have successfully logged in, you may reset your password.`
+        )
+            .then(() => ctx.text("OK"))
+            .catch((err) => {
+                let e = pwReset.get(acc?.id || "")?.expiry
+                if (e) clearTimeout(e)
+                pwReset.delete(acc?.id || "")
+                prcIdx.delete(code || "")
+                return ServeError(ctx, 500, err?.toString())
+            })
     })
 
-    authRoutes.get("/emergency_login/:code", (req,res) => {
-        if (auth.validate(req.cookies.auth || "")) {
-            ServeError(res, 403, "already logged in")
-            return
+    authRoutes.get("/emergency_login/:code", async (ctx) => {
+        if (auth.validate(getCookie(ctx, "auth") || "")) {
+            return ServeError(ctx, 403, "already logged in")
         }
 
-        let vcode = prcIdx.get(req.params.code)
+        let vcode = prcIdx.get(ctx.req.param("code"))
 
-        if (!vcode) { ServeError(res, 400, "invalid emergency login code"); return }
+        if (!vcode) {
+            return ServeError(ctx, 400, "invalid emergency login code")
+        }
 
-        if (typeof req.params.code == "string" && vcode) {
-            res.cookie("auth",auth.create(vcode,(3*24*60*60*1000)))
-            res.redirect("/")
-
+        if (typeof ctx.req.param("code") == "string" && vcode) {
+            setCookie(ctx, "auth", auth.create(vcode, 3 * 24 * 60 * 60 * 1000))
             let e = pwReset.get(vcode)?.expiry
             if (e) clearTimeout(e)
             pwReset.delete(vcode)
-            prcIdx.delete(req.params.code)
+            prcIdx.delete(ctx.req.param("code"))
+            return ctx.redirect("/")
         } else {
-            ServeError(res, 400, "invalid code")
+            ServeError(ctx, 400, "invalid code")
         }
     })
 
-    authRoutes.post("/change_password", requiresAccount, noAPIAccess, parser, (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
-        
-        if (typeof req.body.password != "string" || req.body.password.length < 8) {
-            ServeError(res,400,"password must be 8 characters or longer")
-            return
+    authRoutes.post(
+        "/change_password",
+        requiresAccount,
+        noAPIAccess,
+        // Used body-parser
+        async (ctx) => {
+            let acc = ctx.get("account") as Accounts.Account
+            const body = await ctx.req.json()
+            if (typeof body.password != "string" || body.password.length < 8) {
+                ServeError(ctx, 400, "password must be 8 characters or longer")
+                return
+            }
+
+            let accId = acc.id
+
+            Accounts.password.set(accId, body.password)
+
+            auth.AuthTokens.filter((e) => e.account == accId).forEach((v) => {
+                auth.invalidate(v.token)
+            })
+
+            if (acc.email) {
+                return sendMail(
+                    acc.email,
+                    `Your login details have been updated`,
+                    `<b>Hello there!</b> This email is to notify you of a password change that you have initiated. You have been logged out of your devices. Thank you for using monofile.`
+                )
+                    .then(() => ctx.text("OK"))
+                    .catch((err) => {})
+            }
+
+            return ctx.text("password changed - logged out all sessions")
         }
+    )
 
-        let accId = acc.id
+    authRoutes.post(
+        "/logout_sessions",
+        requiresAccount,
+        noAPIAccess,
+        async (ctx) => {
+            let acc = ctx.get("account") as Accounts.Account
 
-        Accounts.password.set(accId,req.body.password)
+            let accId = acc.id
 
-        auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
-            auth.invalidate(v.token)
-        })
+            auth.AuthTokens.filter((e) => e.account == accId).forEach((v) => {
+                auth.invalidate(v.token)
+            })
 
-        if (acc.email) {
-            sendMail(acc.email, `Your login details have been updated`, `<b>Hello there!</b> This email is to notify you of a password change that you have initiated. You have been logged out of your devices. Thank you for using monofile.`).then(() => {
-                res.send("OK")
-            }).catch((err) => {})
+            return ctx.text("logged out all sessions")
         }
+    )
 
-        res.send("password changed - logged out all sessions")
+    authRoutes.get(
+        "/me",
+        requiresAccount,
+        requiresPermissions("user"),
+        async (ctx) => {
+            let acc = ctx.get("account") as Accounts.Account
+            let sessionToken = auth.tokenFor(ctx)!
+            let accId = acc.id
+            return ctx.json({
+                ...acc,
+                sessionCount: auth.AuthTokens.filter(
+                    (e) =>
+                        e.type != "App" &&
+                        e.account == accId &&
+                        (e.expire > Date.now() || !e.expire)
+                ).length,
+                sessionExpires: auth.AuthTokens.find(
+                    (e) => e.token == sessionToken
+                )?.expire,
+                password: undefined,
+                email:
+                    auth.getType(sessionToken) == "User" ||
+                    auth.getPermissions(sessionToken)?.includes("email")
+                        ? acc.email
+                        : undefined,
+            })
+        }
+    )
+
+    authRoutes.get("/customCSS", async (ctx) => {
+        let acc = ctx.get("account")
+        if (acc?.customCSS) return ctx.redirect(`/file/${acc.customCSS}`)
+        else return ctx.text("")
     })
-
-    authRoutes.post("/logout_sessions", requiresAccount, noAPIAccess, (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
-
-        let accId = acc.id
-
-        auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
-            auth.invalidate(v.token)
-        })
-
-        res.send("logged out all sessions")
-    })
-
-    authRoutes.get("/me", requiresAccount, requiresPermissions("user"), (req,res) => {
-        let acc = res.locals.acc as Accounts.Account
-        
-        let sessionToken = auth.tokenFor(req)
-        let accId = acc.id
-        res.send({
-            ...acc,
-            sessionCount: auth.AuthTokens.filter(e => e.type != "App" && e.account == accId && (e.expire > Date.now() || !e.expire)).length,
-            sessionExpires: auth.AuthTokens.find(e => e.token == sessionToken)?.expire,
-            password: undefined,
-            email: 
-                auth.getType(sessionToken) == "User" || auth.getPermissions(sessionToken)?.includes("email")
-                ? acc.email
-                : undefined
-        })
-    })
-
-    authRoutes.get("/customCSS", (req,res) => {
-        let acc = res.locals.acc
-        if (acc?.customCSS) res.redirect(`/file/${acc.customCSS}`)
-        else res.send("")
-    })
-
     return authRoutes
 }

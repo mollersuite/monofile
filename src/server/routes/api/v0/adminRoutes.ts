@@ -1,20 +1,21 @@
-import bodyParser from "body-parser";
-import { Router } from "express";
-import * as Accounts from "../../../lib/accounts";
-import * as auth from "../../../lib/auth";
-import bytes from "bytes"
-import {writeFile} from "fs";
-import { sendMail } from "../../../lib/mail";
-import { getAccount, requiresAccount, requiresAdmin, requiresPermissions } from "../../../lib/middleware"
+import { Hono } from "hono"
+import * as Accounts from "../../../lib/accounts"
+import * as auth from "../../../lib/auth"
+import { writeFile } from "fs/promises"
+import { sendMail } from "../../../lib/mail"
+import {
+    getAccount,
+    requiresAccount,
+    requiresAdmin,
+    requiresPermissions,
+} from "../../../lib/middleware"
+import Files from "../../../lib/files"
 
-import ServeError from "../../../lib/errors";
-import Files from "../../../lib/files";
-
-let parser = bodyParser.json({
-    type: ["text/plain","application/json"]
-})
-
-export let adminRoutes = Router();
+export let adminRoutes = new Hono<{
+    Variables: {
+        account: Accounts.Account
+    }
+}>()
 adminRoutes
     .use(getAccount)
     .use(requiresAccount)
@@ -23,213 +24,197 @@ adminRoutes
 
 let config = require(`${process.cwd()}/config.json`)
 
-module.exports = function(files: Files) {
-    
+module.exports = function (files: Files) {
+    adminRoutes.post("/reset", async (ctx) => {
+        let acc = ctx.get("account") as Accounts.Account
+        const body = await ctx.req.json()
 
-    adminRoutes.post("/reset", parser, (req,res) => {
-
-        let acc = res.locals.acc as Accounts.Account
-        
-        if (typeof req.body.target !== "string" || typeof req.body.password !== "string") {
-            res.status(404)
-            res.send()
-            return
+        if (
+            typeof body.target !== "string" ||
+            typeof body.password !== "string"
+        ) {
+            return ctx.status(404)
         }
 
-        let targetAccount = Accounts.getFromUsername(req.body.target)
+        let targetAccount = Accounts.getFromUsername(body.target)
         if (!targetAccount) {
-            res.status(404)
-            res.send()
-            return
+            return ctx.status(404)
         }
 
-        Accounts.password.set ( targetAccount.id, req.body.password )
-        auth.AuthTokens.filter(e => e.account == targetAccount?.id).forEach((v) => {
-            auth.invalidate(v.token)
-        })
+        Accounts.password.set(targetAccount.id, body.password)
+        auth.AuthTokens.filter((e) => e.account == targetAccount?.id).forEach(
+            (v) => {
+                auth.invalidate(v.token)
+            }
+        )
 
         if (targetAccount.email) {
-            sendMail(targetAccount.email, `Your login details have been updated`, `<b>Hello there!</b> This email is to notify you of a password change that an administrator, <span username>${acc.username}</span>, has initiated. You have been logged out of your devices. Thank you for using monofile.`).then(() => {
-                res.send("OK")
-            }).catch((err) => {})
+            return sendMail(
+                targetAccount.email,
+                `Your login details have been updated`,
+                `<b>Hello there!</b> This email is to notify you of a password change that an administrator, <span username>${acc.username}</span>, has initiated. You have been logged out of your devices. Thank you for using monofile.`
+            )
+                .then(() => ctx.text("OK"))
+                .catch(() => ctx.status(500))
         }
-
-
-        res.send()
-
     })
 
-    adminRoutes.post("/elevate", parser, (req,res) => {
+    adminRoutes.post("/elevate", async (ctx) => {
+        const body = await ctx.req.json()
+        let acc = ctx.get("account") as Accounts.Account
 
-        let acc = res.locals.acc as Accounts.Account
-
-        if (typeof req.body.target !== "string") {
-            res.status(404)
-            res.send()
-            return
+        if (typeof body.target !== "string") {
+            return ctx.status(404)
         }
 
-        let targetAccount = Accounts.getFromUsername(req.body.target)
+        let targetAccount = Accounts.getFromUsername(body.target)
         if (!targetAccount) {
-            res.status(404)
-            res.send()
-            return
+            return ctx.status(404)
         }
 
-        targetAccount.admin = true;
         Accounts.save()
-        res.send()
-
+        return ctx.text("OK")
     })
 
-    adminRoutes.post("/delete", parser, (req,res) => {
-        
-        if (typeof req.body.target !== "string") {
-            res.status(404)
-            res.send()
-            return
+    adminRoutes.post("/delete", async (ctx) => {
+        const body = await ctx.req.json()
+        if (typeof body.target !== "string") {
+            return ctx.status(404)
         }
 
-        let targetFile = files.getFilePointer(req.body.target)
+        let targetFile = files.getFilePointer(body.target)
 
         if (!targetFile) {
-            res.status(404)
-            res.send()
-            return
+            return ctx.status(404)
         }
 
-        files.unlink(req.body.target).then(() => {
-            res.status(200)
-        }).catch(() => {
-            res.status(500)
-        }).finally(() => res.send())
-
+        return files
+            .unlink(body.target)
+            .then(() => ctx.status(200))
+            .catch(() => ctx.status(500))
+            .finally(() => ctx.status(200))
     })
 
-    adminRoutes.post("/delete_account", parser, async (req,res) => {
-
-        let acc = res.locals.acc as Accounts.Account
-        
-        if (typeof req.body.target !== "string") {
-            res.status(404)
-            res.send()
-            return
+    adminRoutes.post("/delete_account", async (ctx) => {
+        let acc = ctx.get("account") as Accounts.Account
+        const body = await ctx.req.json()
+        if (typeof body.target !== "string") {
+            return ctx.status(404)
         }
 
-        let targetAccount = Accounts.getFromUsername(req.body.target)
+        let targetAccount = Accounts.getFromUsername(body.target)
         if (!targetAccount) {
-            res.status(404)
-            res.send()
-            return
+            return ctx.status(404)
         }
 
         let accId = targetAccount.id
 
-        auth.AuthTokens.filter(e => e.account == accId).forEach((v) => {
+        auth.AuthTokens.filter((e) => e.account == accId).forEach((v) => {
             auth.invalidate(v.token)
         })
 
-        let cpl = () => Accounts.deleteAccount(accId).then(_ => {
-            if (targetAccount?.email) {
-                sendMail(targetAccount.email, "Notice of account deletion", `Your account, <span username>${targetAccount.username}</span>, has been deleted by <span username>${acc.username}</span> for the following reason: <br><br><span style="font-weight:600">${req.body.reason || "(no reason specified)"}</span><br><br> Your files ${req.body.deleteFiles ? "have been deleted" : "have not been modified"}. Thank you for using monofile.`)
-            }
-            res.send("account deleted")
-        })
-        
-        if (req.body.deleteFiles) {
-            let f = targetAccount.files.map(e=>e) // make shallow copy so that iterating over it doesnt Die
+        let cpl = () =>
+            Accounts.deleteAccount(accId).then((_) => {
+                if (targetAccount?.email) {
+                    sendMail(
+                        targetAccount.email,
+                        "Notice of account deletion",
+                        `Your account, <span username>${
+                            targetAccount.username
+                        }</span>, has been deleted by <span username>${
+                            acc.username
+                        }</span> for the following reason: <br><br><span style="font-weight:600">${
+                            body.reason || "(no reason specified)"
+                        }</span><br><br> Your files ${
+                            body.deleteFiles
+                                ? "have been deleted"
+                                : "have not been modified"
+                        }. Thank you for using monofile.`
+                    )
+                }
+                return ctx.text("account deleted")
+            })
+
+        if (body.deleteFiles) {
+            let f = targetAccount.files.map((e) => e) // make shallow copy so that iterating over it doesnt Die
             for (let v of f) {
-                files.unlink(v,true).catch(err => console.error(err))
+                files.unlink(v, true).catch((err) => console.error(err))
             }
 
-            writeFile(process.cwd()+"/.data/files.json",JSON.stringify(files.files), (err) => {
-                if (err) console.log(err)
-                cpl()
-            })
-        } else cpl()
+            return writeFile(
+                process.cwd() + "/.data/files.json",
+                JSON.stringify(files.files)
+            ).then(cpl)
+        } else return cpl()
     })
 
-    adminRoutes.post("/transfer", parser, (req,res) => {
-        
-        if (typeof req.body.target !== "string" || typeof req.body.owner !== "string") {
-            res.status(404)
-            res.send()
-            return
-        }
-        
-        let targetFile = files.getFilePointer(req.body.target)
-        if (!targetFile) {
-            res.status(404)
-            res.send()
-            return
+    adminRoutes.post("/transfer", async (ctx) => {
+        const body = await ctx.req.json()
+        if (typeof body.target !== "string" || typeof body.owner !== "string") {
+            return ctx.status(404)
         }
 
-        let newOwner = Accounts.getFromUsername(req.body.owner || "")
+        let targetFile = files.getFilePointer(body.target)
+        if (!targetFile) {
+            return ctx.status(404)
+        }
+
+        let newOwner = Accounts.getFromUsername(body.owner || "")
 
         // clear old owner
 
         if (targetFile.owner) {
             let oldOwner = Accounts.getFromId(targetFile.owner)
             if (oldOwner) {
-                Accounts.files.deindex(oldOwner.id, req.body.target)
-            } 
+                Accounts.files.deindex(oldOwner.id, body.target)
+            }
         }
 
         if (newOwner) {
-            Accounts.files.index(newOwner.id, req.body.target)
+            Accounts.files.index(newOwner.id, body.target)
         }
-        targetFile.owner = newOwner ? newOwner.id : undefined;
+        targetFile.owner = newOwner ? newOwner.id : undefined
 
-        files.writeFile(req.body.target, targetFile).then(() => {
-            res.send()
-        }).catch(() => {
-            res.status(500)
-            res.send()
-        }) // wasting a reassignment but whatee
-
+        files
+            .writeFile(body.target, targetFile)
+            .then(() => ctx.status(200))
+            .catch(() => ctx.status(500))
     })
 
-    adminRoutes.post("/idchange", parser, (req,res) => {
-        
-        if (typeof req.body.target !== "string" || typeof req.body.new !== "string") {
-            res.status(400)
-            res.send()
-            return
+    adminRoutes.post("/idchange", async (ctx) => {
+        const body = await ctx.req.json()
+        if (typeof body.target !== "string" || typeof body.new !== "string") {
+            return ctx.status(400)
         }
-        
-        let targetFile = files.getFilePointer(req.body.target)
+
+        let targetFile = files.getFilePointer(body.target)
         if (!targetFile) {
-            res.status(404)
-            res.send()
-            return
+            return ctx.status(404)
         }
-        
-        if (files.getFilePointer(req.body.new)) {
-            res.status(400)
-            res.send()
-            return
+
+        if (files.getFilePointer(body.new)) {
+            return ctx.status(400)
         }
 
         if (targetFile.owner) {
-            Accounts.files.deindex(targetFile.owner, req.body.target)
-            Accounts.files.index(targetFile.owner, req.body.new)
+            Accounts.files.deindex(targetFile.owner, body.target)
+            Accounts.files.index(targetFile.owner, body.new)
         }
-        delete files.files[req.body.target]
+        delete files.files[body.target]
 
-        files.writeFile(req.body.new, targetFile).then(() => {
-            res.send()
-        }).catch(() => {
-            files.files[req.body.target] = req.body.new
+        return files
+            .writeFile(body.new, targetFile)
+            .then(() => ctx.status(200))
+            .catch(() => {
+                files.files[body.target] = body.new
 
-            if (targetFile.owner) {
-                Accounts.files.deindex(targetFile.owner, req.body.new)
-                Accounts.files.index(targetFile.owner, req.body.target)
-            }
+                if (targetFile.owner) {
+                    Accounts.files.deindex(targetFile.owner, body.new)
+                    Accounts.files.index(targetFile.owner, body.target)
+                }
 
-            res.status(500)
-            res.send()
-        })
-
+                return ctx.status(500)
+            })
     })
 
     return adminRoutes
