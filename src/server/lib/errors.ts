@@ -18,7 +18,7 @@ export default async function ServeError(
     if (!errorPage) {
         errorPage = 
             (
-                await readFile(`${process.cwd()}/pages/error.html`)
+                await readFile(`${process.cwd()}/dist/error.html`)
                       .catch((err) => console.error(err))
                 || "<pre>$code $text</pre>"
             )

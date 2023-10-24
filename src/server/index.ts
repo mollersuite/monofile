@@ -2,11 +2,7 @@ import cookieParser from "cookie-parser"
 import { IntentsBitField, Client } from "discord.js"
 import express from "express"
 import fs from "fs"
-import bytes from "bytes"
-
-import ServeError from "./lib/errors"
 import Files from "./lib/files"
-import * as Accounts from "./lib/accounts"
 import { getAccount } from "./lib/middleware"
 
 import APIRouter from "./routes/api"
@@ -19,8 +15,7 @@ let app = express()
 let config = require(`${process.cwd()}/config.json`)
 
 app.use("/static/assets", express.static("assets"))
-app.use("/static/style", express.static("out/style"))
-app.use("/static/js", express.static("out/client"))
+app.use("/static/vite", express.static("dist/static/vite"))
 
 //app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
 
@@ -74,7 +69,7 @@ apiRouter.loadAPIMethods().then(() => {
 // index, clone
 
 app.get("/", function (req, res) {
-    res.sendFile(process.cwd() + "/pages/index.html")
+    res.sendFile(process.cwd() + "/dist/index.html")
 })
 
 // serve download page

@@ -1,20 +1,14 @@
 {
-    "maxDiscordFiles": 20,
-    "maxDiscordFileSize": 26214400,
-    "targetGuild": "1024080490677936248",
-    "targetChannel": "1024080525993971913",
-    "requestTimeout":120000,
-    "maxUploadIdLength":30,
-
+    "maxDiscordFiles": 50,
+    "maxDiscordFileSize": 10485760,
+    "targetGuild": "906767804575928390",
+    "targetChannel": "1160783463696302182",
+    "requestTimeout": 120000,
+    "maxUploadIdLength": 30,
     "accounts": {
         "registrationEnabled": true,
         "requiredForUpload": false
     },
-
-    "webdrop": {
-        "accountRequired": false
-    },
-
     "mail": {
         "transport": {
             "host": "smtp.fastmail.com",
@@ -25,7 +19,6 @@
             "from": "mono@fyle.uk"
         }
     },
-
     "trustProxy": true,
     "forceSSL": false
 }

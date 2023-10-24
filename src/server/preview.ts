@@ -16,7 +16,7 @@ export = (files: Files): Handler =>
             }
 
             const template = await fs
-                .readFile(process.cwd() + "/pages/download.html", "utf8")
+                .readFile(process.cwd() + "/dist/download.html", "utf8")
                 .catch(() => {
                     throw res.sendStatus(500)
                 })
