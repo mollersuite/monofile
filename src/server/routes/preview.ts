@@ -1,9 +1,9 @@
 import fs from "fs/promises"
 import bytes from "bytes"
-import ServeError from "./lib/errors"
-import * as Accounts from "./lib/accounts"
+import ServeError from "../lib/errors"
+import * as Accounts from "../lib/accounts"
 import type { Handler } from "hono"
-import type Files from "./lib/files"
+import type Files from "../lib/files"
 const pkg = require(`${process.cwd()}/package.json`)
 export = (files: Files): Handler =>
     async (ctx) => {

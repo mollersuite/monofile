@@ -6,7 +6,7 @@ import fs from "fs"
 import Files from "./lib/files"
 import { getAccount } from "./lib/middleware"
 import APIRouter from "./routes/api"
-import preview from "./preview"
+import preview from "./routes/preview"
 
 require("dotenv").config()
 
