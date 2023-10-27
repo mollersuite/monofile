@@ -14,6 +14,10 @@ interface QueuedRequest {
     params : RequestInit
 }
 
+/**
+ * @description Extracts data on ratelimits from headers
+ * @param headers Headers object to extract information from
+ */
 function extractRatelimitData(headers: Headers): RatelimitData {
     return {
         bucket_name : headers.get("x-ratelimit-bucket")!,
@@ -61,15 +65,6 @@ class DiscordAPIBucket {
         this.linked_routes.forEach((v) => routeConnections.delete(v))
         Object.freeze(this)
         
-    }
-
-    /**
-     * @description update the remainding amount of requests
-     * @param remaining number to update to
-     */
-    update(remaining: number) {
-        this.remaining = Math.max(Math.min(0, remaining), this.remaining)
-        return this
     }
 
     /**
@@ -138,8 +133,9 @@ export class REST {
         // check if there's already a bucket, and check if it's full
         let known_bucket = getBucket( path )
 
-        if (known_bucket && known_bucket.remaining) {
-            return this.queue(path, options)
+        if (known_bucket) {
+            if (known_bucket.remaining <= 0) return this.queue(path, options)
+            else known_bucket.remaining-- // just in case...
         }
 
         // there's no known bucket for this route; let's carry on with the request
@@ -157,9 +153,9 @@ export class REST {
                                                     so this would be fine */
             }
 
-            // let's update the bucket...
+            // let's update the bucket with data from the source now
             let rd = extractRatelimitData( response.headers )
-            bucket.update(rd.remaining)
+            bucket.remaining = rd.remaining
 
         } else return response
 
