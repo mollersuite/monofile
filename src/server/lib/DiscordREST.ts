@@ -1,3 +1,5 @@
+import { EventEmitter } from "node:events"
+
 const base = "https://discord.com/api/v10"
 const buckets = new Map<string, DiscordAPIBucket>()
 const routeConnections = new Map<string, DiscordAPIBucket>()
@@ -9,9 +11,27 @@ interface RatelimitData {
     expires     : number
 }
 
-interface QueuedRequest {
-    path   : `/${string}`
-    params : RequestInit
+/**
+ * @description Hold a REST.fetch to be executed later
+ * @param rest REST to execute fetch() on
+ * @param path Path for your request
+ * @param params Params for your request
+ * @returns An object which contains a Promise: `promise`, which resolves after `execute` is called
+ */
+function heldFetch( rest: REST, path: `/${string}`, params?: RequestInit ) {
+    let resolve: (_:Response) => any
+    
+    return {
+
+        promise: new Promise<Response>(res => resolve = res),
+
+        async execute() {
+            let response = await rest.fetch(path, params)
+            resolve(response)
+            return response
+        }
+
+    }
 }
 
 /**
@@ -112,6 +132,7 @@ function getBucket(response: Response | string) {
 export class REST {
 
     private readonly token : string
+    private requestQueue: {[key: `/${string}`]: (ReturnType<typeof heldFetch>["execute"])[]} = {}
 
     constructor(token:string) {
         this.token = token;
@@ -120,9 +141,17 @@ export class REST {
     /**
      * @description Queues a request 
      */
-    async queue(path: `/${string}`, options?: RequestInit) {
-        // TODO: actually write the queue lmao
+    queue(path: `/${string}`, options?: RequestInit) {
         console.warn(`Request added to queue: ${(options?.method ?? "get").toUpperCase()} ${path}`)
+
+        let {promise, execute} = heldFetch(this, path, options)
+
+        if (!this.requestQueue[path])
+            this.requestQueue[path] = []
+
+        this.requestQueue[path].push(execute)
+        
+        return promise
     }
 
     /**
@@ -142,22 +171,22 @@ export class REST {
         let response = await fetch(base+path, options)
 
         if ( checkHeaders(response.headers) ) {
-            // a ratelimit is attached, let's set up our buckets..
-
-            let bucket = getBucket( response )
             if (response.status == 429) {
+                let bucket = getBucket( response )
                 bucket.link(path) // link the bucket so that hopefully no future errors occur
 
                 return this.queue(path, options) /* it was ratelimited after all
                                                     getBucket() would have generated a DiscordAPIBucket
                                                     so this would be fine */
             }
-
-            // let's update the bucket with data from the source now
-            let rd = extractRatelimitData( response.headers )
-            bucket.remaining = rd.remaining
-
-        } else return response
+            /* commented out cause i feel like it'll cause issues
+                // let's update the bucket with data from the source now
+                let rd = extractRatelimitData( response.headers )
+                bucket.remaining = rd.remaining
+            */
+        }
+        
+        return response
 
     }
 
