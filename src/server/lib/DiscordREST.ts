@@ -12,11 +12,11 @@ interface RatelimitData {
 }
 
 /**
- * @description Hold a REST.fetch to be executed later
- * @param rest REST to execute fetch() on
+ * @description Hold a {@link REST.fetch} to be executed later
+ * @param rest {@link REST} to execute {@link REST.fetch|fetch()} on
  * @param path Path for your request
  * @param params Params for your request
- * @returns An object which contains a Promise: `promise`, which resolves after `execute` is called
+ * @returns An object which contains a {@link Promise}: `promise`, which resolves after `execute` is called
  */
 function heldFetch( rest: REST, path: `/${string}`, params?: RequestInit ) {
     let resolve: (_:Response) => any
@@ -36,7 +36,7 @@ function heldFetch( rest: REST, path: `/${string}`, params?: RequestInit ) {
 
 /**
  * @description Extracts data on ratelimits from headers
- * @param headers Headers object to extract information from
+ * @param headers {@link Headers} object to extract information from
  */
 function extractRatelimitData(headers: Headers): RatelimitData {
     return {
@@ -56,7 +56,7 @@ class DiscordAPIBucket {
 
     readonly expirationHold   : ReturnType<typeof setTimeout> // Timeout which fires after this bucket expires
     dead                      : boolean  = false              // True if bucket has expired
-    linked_routes             : string[] = []
+    linked_routes             : string[] = []                 // Routes linked to this bucket
 
     constructor(base: Response) {
 
@@ -77,6 +77,7 @@ class DiscordAPIBucket {
 
     /**
      * @description Renders this bucket invalid
+     * 
      */
     destroy() {
 
@@ -96,11 +97,11 @@ class DiscordAPIBucket {
         routeConnections.set(route, this)
         this.linked_routes.push(route)
     }
-
 }
 
 /**
  * @description Returns whether or not a Response's Headers object includes Discord's ratelimit information headers
+ * @param headers {@link Headers} object to extract information from
  */
 function checkHeaders(headers: Headers) {
     return Boolean(
@@ -113,7 +114,8 @@ function checkHeaders(headers: Headers) {
 }
 
 /**
- * @description Returns or creates a DiscordAPIBucket from a Response
+ * @description Returns or creates a {@link DiscordAPIBucket} from a Response
+ * @param response Response or route to get a DiscordAPIBucket from
  */
 function getBucket(response: string): DiscordAPIBucket | undefined
 function getBucket(response: Response): DiscordAPIBucket
@@ -123,7 +125,6 @@ function getBucket(response: Response | string) {
 
         if (buckets.has(response.headers.get("x-ratelimit-bucket")!)) 
             return buckets.get(response.headers.get("x-ratelimit-bucket")!)!
-
         else
             return new DiscordAPIBucket(response)
     } else return routeConnections.get(response)
@@ -140,6 +141,8 @@ export class REST {
 
     /**
      * @description Queues a request 
+     * @param path Path to request
+     * @param options Options for your request
      */
     queue(path: `/${string}`, options?: RequestInit) {
         console.warn(`Request added to queue: ${(options?.method ?? "get").toUpperCase()} ${path}`)
@@ -156,6 +159,8 @@ export class REST {
 
     /**
      * @description Make a fetch requests where further requests are automatically queued in case of ratelimit
+     * @param path Path to request
+     * @param options Options for your request
      */
     async fetch(path: `/${string}`, options?: RequestInit) {
 
@@ -167,8 +172,14 @@ export class REST {
             else known_bucket.remaining-- // just in case...
         }
 
-        // there's no known bucket for this route; let's carry on with the request
-        let response = await fetch(base+path, options)
+        // there's no known bucket for this route; let's carry on with the request                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+        let response = await fetch(base+path, {
+            ...options,
+            headers: {
+                ...options?.headers,
+                Authorization: `Bot ${this.token}`
+            }
+        })
 
         if ( checkHeaders(response.headers) ) {
             if (response.status == 429) {

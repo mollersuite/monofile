@@ -15,13 +15,12 @@ export default async function ServeError(
     reason: string
 ) {
     // fetch error page if not cached
-    if (!errorPage) {
-        errorPage = (
+    errorPage ??= (
             (await readFile(`${process.cwd()}/dist/error.html`).catch((err) =>
                 console.error(err)
-            )) || "<pre>$code $text</pre>"
-        ).toString()
-    }
+            )) ?? "<pre>$code $text</pre>"
+    ).toString()
+    
 
     // serve error
     return ctx.html(
