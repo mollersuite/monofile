@@ -204,7 +204,7 @@ export class REST {
                 return this.queue(path, options) /* it was ratelimited after all
                                                     getBucket() would have generated a DiscordAPIBucket
                                                     so this would be fine */
-            }
+            } 
             /* commented out cause i feel like it'll cause issues
                 // let's update the bucket with data from the source now
                 let rd = extractRatelimitData( response.headers )
