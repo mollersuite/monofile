@@ -1,5 +1,3 @@
-import { EventEmitter } from "node:events"
-
 const base = "https://discord.com/api/v10"
 const buckets = new Map<string, DiscordAPIBucket>()
 const routeConnections = new Map<string, DiscordAPIBucket>()
@@ -53,15 +51,17 @@ class DiscordAPIBucket {
     readonly limit            : number                        // bucket limit (X-Ratelimit-Limit)
     remaining                 : number                        // requests remaining (X-Ratelimit-Remaining)
     readonly expires          : number                        // when this ratelimit expires (X-Ratelimit-Reset)
+    readonly parent           : REST                          // parent REST
 
     readonly expirationHold   : ReturnType<typeof setTimeout> // Timeout which fires after this bucket expires
     dead                      : boolean  = false              // True if bucket has expired
-    linked_routes             : string[] = []                 // Routes linked to this bucket
+    linked_routes             : `/${string}`[] = []           // Routes linked to this bucket
 
-    constructor(base: Response) {
+    constructor(rest: REST, base: Response) {
 
         let rd = extractRatelimitData(base.headers)
 
+        this.parent    = rest
         this.name      = rd.bucket_name
         this.limit     = rd.limit
         this.remaining = rd.remaining
@@ -77,14 +77,29 @@ class DiscordAPIBucket {
 
     /**
      * @description Renders this bucket invalid
-     * 
      */
     destroy() {
 
         buckets.delete(this.name)
-        this.dead = true
+        this.dead = true        
         this.linked_routes.forEach((v) => routeConnections.delete(v))
         Object.freeze(this)
+
+        // execute queued requests...
+        // @Jack5079 i have no idea if there's a better way to do this
+        // fix it if there is one after you wake up
+        let requestsToExecute: (ReturnType<typeof heldFetch>["execute"])[] = []
+        this.linked_routes.forEach((v) => {
+            let queue = this.parent.requestQueue[v]
+            if (queue)
+                requestsToExecute.push(
+                    ...queue.splice(
+                        0, 
+                        Math.min( this.limit-requestsToExecute.length, queue.length )
+                    )
+                )
+        })
+        requestsToExecute.forEach(a=>a())
         
     }
 
@@ -92,7 +107,7 @@ class DiscordAPIBucket {
      * @description Link a route to this bucket
      * @param route Route to link
      */
-    link(route: string) {
+    link(route: `/${string}`) {
         if (this.linked_routes.includes(route)) return
         routeConnections.set(route, this)
         this.linked_routes.push(route)
@@ -118,22 +133,22 @@ function checkHeaders(headers: Headers) {
  * @param response Response or route to get a DiscordAPIBucket from
  */
 function getBucket(response: string): DiscordAPIBucket | undefined
-function getBucket(response: Response): DiscordAPIBucket
-function getBucket(response: Response | string) {
-    if (response instanceof Response) {
+function getBucket(rest: REST, response: Response): DiscordAPIBucket
+function getBucket(rest: REST | string, response?: Response) {
+    if (response instanceof Response && rest instanceof REST) {
         if (!checkHeaders(response.headers)) throw new Error("Required ratelimiting headers not found")
 
         if (buckets.has(response.headers.get("x-ratelimit-bucket")!)) 
             return buckets.get(response.headers.get("x-ratelimit-bucket")!)!
         else
-            return new DiscordAPIBucket(response)
-    } else return routeConnections.get(response)
+            return new DiscordAPIBucket(rest, response)
+    } else if (typeof rest == "string") return routeConnections.get(rest)
 }
 
 export class REST {
 
     private readonly token : string
-    private requestQueue: {[key: `/${string}`]: (ReturnType<typeof heldFetch>["execute"])[]} = {}
+    requestQueue: {[key: `/${string}`]: (ReturnType<typeof heldFetch>["execute"])[]} = {}
 
     constructor(token:string) {
         this.token = token;
@@ -169,7 +184,7 @@ export class REST {
 
         if (known_bucket) {
             if (known_bucket.remaining <= 0) return this.queue(path, options)
-            else known_bucket.remaining-- // just in case...
+            else known_bucket.remaining--
         }
 
         // there's no known bucket for this route; let's carry on with the request                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
@@ -183,7 +198,7 @@ export class REST {
 
         if ( checkHeaders(response.headers) ) {
             if (response.status == 429) {
-                let bucket = getBucket( response )
+                let bucket = getBucket( this, response )
                 bucket.link(path) // link the bucket so that hopefully no future errors occur
 
                 return this.queue(path, options) /* it was ratelimited after all
