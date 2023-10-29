@@ -39,6 +39,7 @@
     "@types/bytes": "^3.1.1",
     "@types/cookie-parser": "^1.4.3",
     "@types/range-parser": "^1.2.6",
+    "discord-api-types": "^0.37.61",
     "sass": "^1.57.1",
     "svelte": "^3.55.1",
     "vite": "^4.5.0"
