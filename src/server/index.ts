@@ -1,4 +1,3 @@
-import { IntentsBitField, Client } from "discord.js"
 import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
 import { Hono } from "hono"
@@ -67,16 +66,7 @@ if (!fs.existsSync(__dirname + "/../.data/"))
     fs.mkdirSync(__dirname + "/../.data/")
 
 // discord
-
-let client = new Client({
-    intents: [
-        IntentsBitField.Flags.GuildMessages,
-        IntentsBitField.Flags.MessageContent,
-    ],
-    rest: { timeout: config.requestTimeout },
-})
-
-let files = new Files(client, config)
+let files = new Files(config)
 
 const apiRouter = new APIRouter(files)
 apiRouter.loadAPIMethods().then(() => {
@@ -116,7 +106,5 @@ serve(
         console.log("Web OK!", info.port, info.address)
     }
 )
-
-client.login(process.env.TOKEN)
 
 export = app

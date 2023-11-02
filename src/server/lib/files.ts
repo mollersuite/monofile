@@ -1,5 +1,5 @@
 import axios from "axios"
-import Discord, { Client, Message, TextBasedChannel } from "discord.js"
+import Discord, { Client, Message, TextBasedChannel, IntentsBitField } from "discord.js"
 import { readFile, writeFile } from "node:fs/promises"
 import { Readable } from "node:stream"
 import crypto from "node:crypto"
@@ -74,14 +74,21 @@ export default class Files {
     files: { [key: string]: FilePointer } = {}
     uploadChannel?: TextBasedChannel
 
-    constructor(client: Client, config: Configuration) {
+    constructor(config: Configuration) {
         this.config = config
-        this.client = client
+        this.client = new Client({
+            intents: [
+                IntentsBitField.Flags.GuildMessages,
+                IntentsBitField.Flags.MessageContent,
+            ],
+            rest: { timeout: config.requestTimeout },
+        })
+        
 
-        client.on("ready", () => {
+        this.client.on("ready", () => {
             console.log("Discord OK!")
 
-            client.guilds.fetch(config.targetGuild).then((g) => {
+            this.client.guilds.fetch(config.targetGuild).then((g) => {
                 g.channels.fetch(config.targetChannel).then((a) => {
                     if (a?.isTextBased()) {
                         this.uploadChannel = a
@@ -89,6 +96,8 @@ export default class Files {
                 })
             })
         })
+
+        this.client.login(process.env.TOKEN)
 
         readFile(process.cwd() + "/.data/files.json")
             .then((buf) => {
@@ -333,6 +342,7 @@ export default class Files {
                     let attach = Array.from(msg.attachments.values())
                     for (
                         let i =
+                        
                             useRanges && xi == scan_msg_begin
                                 ? scan_files_begin - xi * 10
                                 : 0;
