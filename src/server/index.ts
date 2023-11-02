@@ -7,8 +7,6 @@ import { getAccount } from "./lib/middleware"
 import APIRouter from "./routes/api"
 import preview from "./routes/preview"
 
-require("dotenv").config()
-
 const pkg = require(`${process.cwd()}/package.json`)
 const app = new Hono()
 let config = require(`${process.cwd()}/config.json`)

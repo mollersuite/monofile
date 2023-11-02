@@ -4,6 +4,8 @@ import { readFile, writeFile } from "node:fs/promises"
 import { Readable } from "node:stream"
 import crypto from "node:crypto"
 import { files } from "./accounts"
+import * as API from "./DiscordAPI"
+import type {APIAttachment} from "discord-api-types/v10"
 
 import * as Accounts from "./accounts"
 
@@ -11,6 +13,8 @@ export let id_check_regex = /[A-Za-z0-9_\-\.\!\=\:\&\$\,\+\;\@\~\*\(\)\']+/
 export let alphanum = Array.from(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 )
+
+require("dotenv").config()
 
 // bad solution but whatever
 
@@ -71,11 +75,13 @@ export interface StatusCodeError {
 export default class Files {
     config: Configuration
     client: Client
+    api: API.Client
     files: { [key: string]: FilePointer } = {}
     uploadChannel?: TextBasedChannel
 
     constructor(config: Configuration) {
         this.config = config
+        this.api = new API.Client(process.env.TOKEN!, config.targetChannel)
         this.client = new Client({
             intents: [
                 IntentsBitField.Flags.GuildMessages,
@@ -290,7 +296,7 @@ export default class Files {
      * @description Read a file
      * @param uploadId Target file's ID
      * @param range Byte range to get
-     * @returns A `Readable` containing the file's contents
+     * @returns A {@link Readable} containing the file's contents
      */
     async readFileStream(
         uploadId: string,
@@ -325,7 +331,7 @@ export default class Files {
                 scan_msg_end = Math.ceil(scan_files_end / 10)
             }
 
-            let attachments: Discord.Attachment[] = []
+            let attachments: APIAttachment[] = []
 
             /* File updates */
             let file_updates: Pick<FilePointer, "chunkSize" | "sizeInBytes"> =
@@ -333,8 +339,8 @@ export default class Files {
             let atSIB: number[] = [] // kepes track of the size of each file...
 
             for (let xi = scan_msg_begin; xi < scan_msg_end + 1; xi++) {
-                let msg = await this.uploadChannel.messages
-                    .fetch(file.messageids[xi])
+                let msg = await this.api
+                    .fetchMessage(file.messageids[xi])
                     .catch(() => {
                         return null
                     })
