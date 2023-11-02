@@ -57,9 +57,9 @@ class DiscordAPIBucket {
     dead                      : boolean  = false              // True if bucket has expired
     linked_routes             : `/${string}`[] = []           // Routes linked to this bucket
 
-    constructor(rest: REST, base: Response) {
+    constructor(rest: REST, base: Headers) {
 
-        let rd = extractRatelimitData(base.headers)
+        let rd = extractRatelimitData(base)
 
         this.parent    = rest
         this.name      = rd.bucket_name
@@ -70,7 +70,7 @@ class DiscordAPIBucket {
         this.expirationHold = 
             setTimeout(
                 this.destroy, 
-                parseFloat(base.headers.get("x-ratelimit-reset-after")!)
+                parseFloat(base.get("x-ratelimit-reset-after")!)
             )
         
     }
@@ -133,15 +133,15 @@ function checkHeaders(headers: Headers) {
  * @param response Response or route to get a DiscordAPIBucket from
  */
 function getBucket(response: string): DiscordAPIBucket | undefined
-function getBucket(rest: REST, response: Response): DiscordAPIBucket
-function getBucket(rest: REST | string, response?: Response) {
-    if (response instanceof Response && rest instanceof REST) {
-        if (!checkHeaders(response.headers)) throw new Error("Required ratelimiting headers not found")
+function getBucket(rest: REST, headers: Headers): DiscordAPIBucket
+function getBucket(rest: REST | string, headers?: Headers) {
+    if (headers instanceof Headers && rest instanceof REST) {
+        if (!checkHeaders(headers)) throw new Error("Required ratelimiting headers not found")
 
-        if (buckets.has(response.headers.get("x-ratelimit-bucket")!)) 
-            return buckets.get(response.headers.get("x-ratelimit-bucket")!)!
+        if (buckets.has(headers.get("x-ratelimit-bucket")!)) 
+            return buckets.get(headers.get("x-ratelimit-bucket")!)!
         else
-            return new DiscordAPIBucket(rest, response)
+            return new DiscordAPIBucket(rest, headers)
     } else if (typeof rest == "string") return routeConnections.get(rest)
 }
 
@@ -198,7 +198,7 @@ export class REST {
 
         if ( checkHeaders(response.headers) ) {
             if (response.status == 429) {
-                let bucket = getBucket( this, response )
+                let bucket = getBucket( this, response.headers )
                 bucket.link(path) // link the bucket so that hopefully no future errors occur
 
                 return this.queue(path, options) /* it was ratelimited after all

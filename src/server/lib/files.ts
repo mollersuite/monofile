@@ -4,7 +4,7 @@ import { readFile, writeFile } from "node:fs/promises"
 import { Readable } from "node:stream"
 import crypto from "node:crypto"
 import { files } from "./accounts"
-import * as API from "./DiscordAPI"
+import { Client as API } from "./DiscordAPI"
 import type {APIAttachment} from "discord-api-types/v10"
 
 import * as Accounts from "./accounts"
@@ -75,13 +75,13 @@ export interface StatusCodeError {
 export default class Files {
     config: Configuration
     client: Client
-    api: API.Client
+    api: API
     files: { [key: string]: FilePointer } = {}
     uploadChannel?: TextBasedChannel
 
     constructor(config: Configuration) {
         this.config = config
-        this.api = new API.Client(process.env.TOKEN!, config.targetChannel)
+        this.api = new API(process.env.TOKEN!, config.targetChannel)
         this.client = new Client({
             intents: [
                 IntentsBitField.Flags.GuildMessages,
@@ -236,8 +236,7 @@ export default class Files {
 
         if (existingFile && this.uploadChannel) {
             for (let x of existingFile.messageids) {
-                this.uploadChannel.messages
-                    .delete(x)
+                this.api.deleteMessage(x)
                     .catch((err) => console.error(err))
             }
         }
@@ -499,8 +498,7 @@ export default class Files {
             return
         }
         for (let x of tmp.messageids) {
-            this.uploadChannel.messages
-                .delete(x)
+            this.api.deleteMessage(x)
                 .catch((err) => console.error(err))
         }
 
