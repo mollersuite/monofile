@@ -367,12 +367,6 @@ export default class Files {
                 file_updates.sizeInBytes = atSIB.reduce((a, b) => a + b, 0)
             if (!file.chunkSize) file_updates.chunkSize = atSIB[0]
             if (Object.keys(file_updates).length) {
-                // if file_updates not empty
-                // i gotta do these weird workarounds, ts is weird sometimes
-                // originally i was gonna do key is keyof FilePointer but for some reason
-                // it ended up making typeof file[key] never??? so
-                // its 10pm and chinese people suck at being quiet so i just wanna get this over with
-                // chinese is the worst language in terms of volume lmao
                 let valid_fp_keys = ["sizeInBytes", "chunkSize"]
                 let isValidFilePointerKey = (
                     key: string
