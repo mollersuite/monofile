@@ -70,7 +70,21 @@ export interface StatusCodeError {
     message: string
 }
 
-/*  */
+// this is probably really stupid. I'm sorry!
+
+type ResolveType<T extends Promise<any>> = T extends Promise<infer U> ? U: never;
+
+async function pushWebStream(stream: Readable, webStream: ReadableStream) {
+    const reader = await webStream.getReader()
+    let result: ResolveType<ReturnType<typeof reader.read>> = { done: false, value: undefined }
+    let last = true
+
+    while ( !result.done ) {
+        result = await reader.read()
+        last = stream.push(result.value)
+    }
+    return last
+}
 
 export default class Files {
     config: Configuration
@@ -366,6 +380,7 @@ export default class Files {
             if (!file.sizeInBytes)
                 file_updates.sizeInBytes = atSIB.reduce((a, b) => a + b, 0)
             if (!file.chunkSize) file_updates.chunkSize = atSIB[0]
+
             if (Object.keys(file_updates).length) {
                 let valid_fp_keys = ["sizeInBytes", "chunkSize"]
                 let isValidFilePointerKey = (
@@ -378,6 +393,8 @@ export default class Files {
                 }
 
                 // The original was a callback so I don't think I'm supposed to `await` this -Jack
+                // Jack you need to get more sleep man we're using fs/promises
+                // but also it would slow us down so maybe not
                 writeFile(
                     process.cwd() + "/.data/files.json",
                     JSON.stringify(
@@ -396,46 +413,37 @@ export default class Files {
                     return null
                 }
 
-                let d = await axios
-                    .get(scanning_chunk.url, {
-                        responseType: "arraybuffer",
-                        headers: {
-                            ...(useRanges
-                                ? {
-                                      Range: `bytes=${
-                                          position == 0 &&
-                                          range &&
-                                          file.chunkSize
-                                              ? range.start -
-                                                scan_files_begin *
-                                                    file.chunkSize
-                                              : "0"
-                                      }-${
-                                          position == attachments.length - 1 &&
-                                          range &&
-                                          file.chunkSize
-                                              ? range.end -
-                                                scan_files_end * file.chunkSize
-                                              : ""
-                                      }`,
-                                  }
-                                : {}),
-                        },
-                    })
+                let headers: HeadersInit =
+                    useRanges
+                        ? {
+                              Range: `bytes=${
+                                  position == 0 &&
+                                  range &&
+                                  file.chunkSize
+                                      ? range.start -
+                                        scan_files_begin *
+                                            file.chunkSize
+                                      : "0"
+                              }-${
+                                  position == attachments.length - 1 &&
+                                  range &&
+                                  file.chunkSize
+                                      ? range.end -
+                                        scan_files_end * file.chunkSize
+                                      : ""
+                              }`,
+                          }
+                        : {}
+
+                let d = await fetch(scanning_chunk.url, {headers})
                     .catch((e: Error) => {
                         console.error(e)
+                        return {body: "__ERR"}
                     })
 
                 position++
 
-                if (d) {
-                    return d.data
-                } else {
-                    throw {
-                        status: 500,
-                        message: "internal server error",
-                    }
-                }
+                return d.body
             }
 
             let ord: number[] = []
@@ -447,17 +455,19 @@ export default class Files {
                     if (!lastChunkSent) return
                     lastChunkSent = false
                     getNextChunk().then(async (nextChunk) => {
-                        if (nextChunk == "__ERR") {
+                        if (typeof nextChunk == "string") {
                             this.destroy(new Error("file read error"))
                             return
                         }
-                        let response = this.push(nextChunk)
 
                         if (!nextChunk) return // EOF
 
+                        let response = await pushWebStream(this, nextChunk)
+
+
                         while (response) {
                             let nextChunk = await getNextChunk()
-                            response = this.push(nextChunk)
+                            response = await pushWebStream(this, nextChunk)
                             if (!nextChunk) return
                         }
                         lastChunkSent = true
