@@ -1,6 +1,6 @@
 {
   "name": "monofile",
-  "version": "1.4.0-dev",
+  "version": "2.0.0-dev",
   "description": "Discord-based file sharing",
   "main": "index.js",
   "scripts": {
