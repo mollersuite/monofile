@@ -2,14 +2,19 @@ import { RequestHandler } from "express"
 import { type Account } from "./accounts"
 import ServeError from "./errors"
 
-interface ratelimitSettings {
+interface RatelimitSettings {
 
     requests: number
     per: number
 
 }
 
-export function accountRatelimit( settings: ratelimitSettings ): RequestHandler {
+/**
+ * @description Ratelimits a route based on res.locals.acc
+ * @param settings Ratelimit settings
+ * @returns Express middleware
+ */
+export function accountRatelimit( settings: RatelimitSettings ): RequestHandler {
     let activeLimits: {
         [ key: string ]: {
             requests: number,

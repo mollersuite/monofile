@@ -13,6 +13,7 @@ import * as authRoutes from "./routes/authRoutes";
 import * as fileApiRoutes from "./routes/fileApiRoutes";
 import * as adminRoutes from "./routes/adminRoutes";
 import * as primaryApi from "./routes/primaryApi";
+import { getAccount } from "./lib/middleware";
 
 require("dotenv").config()
 
@@ -82,11 +83,14 @@ app.get("/", function(req,res) {
 
 // serve download page
 
-app.get("/download/:fileId",(req,res) => {
+app.get("/download/:fileId", getAccount, (req,res) => {
+    
+    let acc = res.locals.acc as Accounts.Account
+
     if (files.getFilePointer(req.params.fileId)) {
         let file = files.getFilePointer(req.params.fileId)
 
-        if (file.visibility == "private" && Accounts.getFromToken(req.cookies.auth)?.id != file.owner) {
+        if (file.visibility == "private" && acc?.id != file.owner) {
             ServeError(res,403,"you do not own this file")
             return
         }

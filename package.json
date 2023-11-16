@@ -1,14 +1,15 @@
 {
   "name": "monofile",
-  "version": "1.3.4",
+  "version": "2.0.0-dev",
   "description": "Discord-based file sharing",
   "main": "index.js",
   "scripts": {
     "start": "node ./out/server/index.js",
+    "build": "tsc\nsass src/style:out/style\nrollup -c",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "nbitzz",
+  "author": "Etcetera (https://cetera.uk)",
   "license": "Unlicense",
   "engines": {
     "node": ">=v16.11"

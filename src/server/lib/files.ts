@@ -2,21 +2,27 @@ import axios from "axios";
 import Discord, { Client, TextBasedChannel } from "discord.js";
 import { readFile, writeFile } from "fs";
 import { Readable } from "node:stream";
+import crypto from "node:crypto";
 import { files } from "./accounts";
 
 import * as Accounts from "./accounts";
 
-export let id_check_regex = /[A-Za-z0-9_\-\.\!\=\:]+/
+export let id_check_regex = /[A-Za-z0-9_\-\.\!\=\:\&\$\,\+\;\@\~\*\(\)\']+/
 export let alphanum = Array.from("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
 
 // bad solution but whatever
 
 export type FileVisibility = "public" | "anonymous" | "private"
 
+/**
+ * @description Generates an alphanumeric string, used for files
+ * @param length Length of the ID
+ * @returns a random alphanumeric string
+ */
 export function generateFileId(length:number=5) {
     let fid = ""
     for (let i = 0; i < length; i++) {
-        fid += alphanum[Math.floor(Math.random()*alphanum.length)]
+        fid += alphanum[crypto.randomInt(0,alphanum.length)]
     }
     return fid
 }
@@ -39,7 +45,10 @@ export interface Configuration {
     accounts: {
         registrationEnabled: boolean,
         requiredForUpload: boolean
-    }
+    },
+
+    trustProxy: boolean,
+    forceSSL: boolean
 }
 
 export interface FilePointer {
@@ -92,6 +101,12 @@ export default class Files {
 
     }
     
+    /**
+     * @description Uploads a new file
+     * @param settings Settings for your new upload
+     * @param fBuffer Buffer containing file content
+     * @returns Promise which resolves to the ID of the new file
+     */
     uploadFile(settings:FileUploadSettings,fBuffer:Buffer):Promise<string|StatusCodeError> {
         return new Promise<string>(async (resolve,reject) => {
             if (!this.uploadChannel) {
@@ -243,6 +258,12 @@ export default class Files {
     
     // fs
 
+    /**
+     * @description Writes a file to disk
+     * @param uploadId New file's ID
+     * @param file FilePointer representing the new file
+     * @returns Promise which resolves to the file's ID
+     */
     writeFile(uploadId: string, file: FilePointer):Promise<string> {
         return new Promise((resolve, reject) => {
 
@@ -263,8 +284,12 @@ export default class Files {
         }) 
     }
 
-    // todo: move read code here
-
+    /**
+     * @description Read a file
+     * @param uploadId Target file's ID
+     * @param range Byte range to get
+     * @returns A `Readable` containing the file's contents
+     */
     readFileStream(uploadId: string, range?: {start:number, end:number}):Promise<Readable> {
         return new Promise(async (resolve,reject) => {
             if (!this.uploadChannel) {
@@ -400,6 +425,11 @@ export default class Files {
         })
     }
 
+    /**
+     * @description Deletes a file
+     * @param uploadId Target file's ID
+     * @param noWrite Whether or not the change should be written to disk. Enable for bulk deletes
+     */
     unlink(uploadId:string, noWrite: boolean = false):Promise<void> {
         return new Promise(async (resolve,reject) => {
             let tmp = this.files[uploadId];
@@ -430,6 +460,11 @@ export default class Files {
         })
     }
 
+    /**
+     * @description Get a file's FilePointer
+     * @param uploadId Target file's ID
+     * @returns FilePointer for the file
+     */
     getFilePointer(uploadId:string):FilePointer {
         return this.files[uploadId]
     }

@@ -8,6 +8,7 @@ import multer, {memoryStorage} from "multer"
 
 import ServeError from "../lib/errors";
 import Files from "../lib/files";
+import { getAccount, requiresPermissions } from "../lib/middleware";
 
 let parser = bodyParser.json({
     type: ["text/plain","application/json"]
@@ -24,9 +25,12 @@ const multerSetup = multer({storage:memoryStorage()})
 
 let config = require(`${process.cwd()}/config.json`)
 
+primaryApi.use(getAccount);
 
 primaryApi.get(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"], async (req:express.Request,res:express.Response) => {
     
+    let acc = res.locals.acc as Accounts.Account
+
     let file = files.getFilePointer(req.params.fileId)
     res.setHeader("Access-Control-Allow-Origin", "*")
     res.setHeader("Content-Security-Policy","sandbox allow-scripts")
@@ -34,7 +38,7 @@ primaryApi.get(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"], async (req:expre
     
     if (file) {
         
-        if (file.visibility == "private" && Accounts.getFromToken(req.cookies.auth)?.id != file.owner) {
+        if (file.visibility == "private" && acc?.id != file.owner) {
             ServeError(res,403,"you do not own this file")
             return
         }
@@ -111,7 +115,10 @@ primaryApi.head(["/file/:fileId", "/cpt/:fileId/*", "/:fileId"], (req: express.R
 
 // upload handlers
 
-primaryApi.post("/upload",multerSetup.single('file'),async (req,res) => {
+primaryApi.post("/upload", requiresPermissions("upload"), multerSetup.single('file'), async (req,res) => {
+    
+    let acc = res.locals.acc as Accounts.Account
+
     if (req.file) {
         try {
             let prm = req.header("monofile-params")
@@ -121,7 +128,7 @@ primaryApi.post("/upload",multerSetup.single('file'),async (req,res) => {
             }
 
             files.uploadFile({
-                owner: auth.validate(req.cookies.auth),
+                owner: acc?.id,
 
                 uploadId:params.uploadId,
                 name:req.file.originalname,
@@ -142,12 +149,15 @@ primaryApi.post("/upload",multerSetup.single('file'),async (req,res) => {
     }
 })
 
-primaryApi.post("/clone", bodyParser.json({type: ["text/plain","application/json"]}) ,(req,res) => {
+primaryApi.post("/clone", requiresPermissions("upload"), bodyParser.json({type: ["text/plain","application/json"]}) ,(req,res) => {
+    
+    let acc = res.locals.acc as Accounts.Account
+
     try {
         axios.get(req.body.url,{responseType:"arraybuffer"}).then((data:AxiosResponse) => {
 
             files.uploadFile({
-                owner: auth.validate(req.cookies.auth),
+                owner: acc?.id,
 
                 name:req.body.url.split("/")[req.body.url.split("/").length-1] || "generic",
                 mime:data.headers["content-type"],
