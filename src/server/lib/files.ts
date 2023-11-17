@@ -476,8 +476,10 @@ export default class Files {
 
                         while (response) {
                             let nextChunk = await getNextChunk()
+                            // idk why this line was below but i moved it on top
+                            // hopefully it wasn't for some other weird reason
+                            if (!nextChunk || typeof nextChunk == "string") return
                             response = await pushWebStream(this, nextChunk)
-                            if (!nextChunk) return
                         }
                         lastChunkSent = true
                     })
