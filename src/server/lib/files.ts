@@ -349,25 +349,31 @@ export default class Files {
             /* File updates */
             let file_updates: Pick<FilePointer, "chunkSize" | "sizeInBytes"> =
                 {}
-            let atSIB: number[] = [] // kepes track of the size of each file...
+            let atSIB: number[] = [] // keeps track of the size of each file...
 
-            for (let xi = scan_msg_begin; xi < scan_msg_end + 1; xi++) {
+            let msgIdx = scan_msg_begin
+
+            let getNextAttachment = async () => {
+                let ret = attachments.splice(0,1)[0]
+                if (ret) return ret
+
                 let msg = await this.api
-                    .fetchMessage(file.messageids[xi])
+                    .fetchMessage(file.messageids[msgIdx])
                     .catch(() => {
                         return null
                     })
+
                 if (msg?.attachments) {
                     let attach = Array.from(msg.attachments.values())
                     for (
                         let i =
                         
-                            useRanges && xi == scan_msg_begin
-                                ? scan_files_begin - xi * 10
+                            useRanges && msgIdx == scan_msg_begin
+                                ? scan_files_begin - msgIdx * 10
                                 : 0;
                         i <
-                        (useRanges && xi == scan_msg_end
-                            ? scan_files_end - xi * 10 + 1
+                        (useRanges && msgIdx == scan_msg_end
+                            ? scan_files_end - msgIdx * 10 + 1
                             : attach.length);
                         i++
                     ) {
@@ -375,6 +381,9 @@ export default class Files {
                         atSIB.push(attach[i].size)
                     }
                 }
+
+                msgIdx++
+                return attachments.splice(0,1)[0]
             }
 
             if (!file.sizeInBytes)
@@ -408,7 +417,7 @@ export default class Files {
             let position = 0
 
             let getNextChunk = async () => {
-                let scanning_chunk = attachments[position]
+                let scanning_chunk = await getNextAttachment()
                 if (!scanning_chunk) {
                     return null
                 }
