@@ -425,22 +425,25 @@ export default class Files {
                 let headers: HeadersInit =
                     useRanges
                         ? {
-                              Range: `bytes=${
-                                  position == 0 &&
-                                  range &&
-                                  file.chunkSize
-                                      ? range.start -
-                                        scan_files_begin *
-                                            file.chunkSize
-                                      : "0"
-                              }-${
-                                  position == attachments.length - 1 &&
-                                  range &&
-                                  file.chunkSize
-                                      ? range.end -
-                                        scan_files_end * file.chunkSize
-                                      : ""
-                              }`,
+                            Range: `bytes=${
+                                // If this is the first chunk of the file (position == 0)
+                                // and both 'range' and 'file.chunkSize' are defined,
+                                // calculate the start of the range.
+                                // Otherwise, default to "0".
+                                position == 0 && range 
+                                && file.chunkSize
+                                    ? range.start - scan_files_begin * file.chunkSize
+                                    : "0"
+                            }-${
+                                // If this is the last chunk of the file (position == attachments.length - 1)
+                                // and both 'range' and 'file.chunkSize' are defined,
+                                // calculate the end of the range.
+                                // Otherwise, default to an empty string.
+                                position == attachments.length - 1 && range 
+                                && file.chunkSize
+                                    ? range.end - scan_files_end * file.chunkSize
+                                    : ""
+                            }`,
                           }
                         : {}
 
