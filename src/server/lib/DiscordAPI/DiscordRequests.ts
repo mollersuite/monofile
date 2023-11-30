@@ -1,3 +1,5 @@
+import fetch, { type RequestInit, type Response, Headers } from "node-fetch"
+
 const base = "https://discord.com/api/v10"
 const buckets = new Map<string, DiscordAPIBucket>()
 const routeConnections = new Map<string, DiscordAPIBucket>()

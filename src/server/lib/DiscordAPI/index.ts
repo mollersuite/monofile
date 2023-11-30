@@ -1,5 +1,6 @@
 import { REST } from "./DiscordRequests"
 import type { APIMessage } from "discord-api-types/v10"
+import { FormData } from "node-fetch"
 
 const EXPIRE_AFTER = 20 * 60 * 1000
 const DISCORD_EPOCH = 1420070400000
