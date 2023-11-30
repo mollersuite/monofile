@@ -51,12 +51,28 @@ export class Client {
 	// https://discord.com/developers/docs/resources/channel#bulk-delete-messages
     // "This endpoint will not delete messages older than 2 weeks" so we need to check each id
     async deleteMessages(ids: string[]) {
-        // TODO check if any are older than two weeks
-        await this.rest.fetch(`/channels/${this.targetChannel}/messages/bulk-delete`, {method: "POST",body: JSON.stringify({messages: ids})})
-        ids.forEach(Map.prototype.delete.bind(this.messageCache))
+        
+		// Remove bulk deletable messages
+
+		let bulkDeletable = ids.filter(e => convertSnowflakeToDate(e).valueOf() < 2 * 7 * 24 * 60 * 60 * 1000)
+        await this.rest.fetch(`/channels/${this.targetChannel}/messages/bulk-delete`, {method: "POST",body: JSON.stringify({messages: bulkDeletable})})
+        bulkDeletable.forEach(Map.prototype.delete.bind(this.messageCache))
+
+		// everything else, we can do manually...
+		// there's probably a better way to do this @Jack5079
+		// fix for me if possible
+		await Promise.all(ids.map(async e => {
+			if (convertSnowflakeToDate(e).valueOf() >= 2 * 7 * 24 * 60 * 60 * 1000) {
+				return await this.deleteMessage(e)
+			}
+		}).filter(Boolean)) // filter based on whether or not it's undefined
+
     }
 	
 	async sendDataMessage(formData: FormData) {
-		
+		this.rest.fetch(`/channels/${this.targetChannel}/messages`, {
+			method: "POST",
+			body: formData
+		})
 	}
 }
