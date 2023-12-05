@@ -256,7 +256,8 @@ export default class Files {
         }
 
         const { filename, mime, owner } = metadata
-        return this.writeFile(uploadId, {
+
+        this.files[uploadId] = {
             filename,
             messageids: msgIds,
             mime,
@@ -272,21 +273,22 @@ export default class Files {
             ...((existingFile || {}).tag ? { tag: existingFile.tag } : {}),
 
             chunkSize: this.config.maxDiscordFileSize,
+        }
+
+        return this.write().then(_ => uploadId).catch(_ => {
+            delete this.files[uploadId]
+            throw { status: 500, message: "failed to save database" }
         })
     }
 
     // fs
 
     /**
-     * @description Writes a file to disk
-     * @param uploadId New file's ID
-     * @param file FilePointer representing the new file
-     * @returns Promise which resolves to the file's ID
+     * @description Saves file database
+     * 
      */
-    async writeFile(uploadId: string, file: FilePointer): Promise<string> {
-        this.files[uploadId] = file
-
-        return writeFile(
+    async write(): Promise<void> {
+        await writeFile(
             process.cwd() + "/.data/files.json",
             JSON.stringify(
                 this.files,
@@ -294,15 +296,31 @@ export default class Files {
                 process.env.NODE_ENV === "development" ? 4 : undefined
             )
         )
-            .then(() => uploadId)
-            .catch(() => {
-                delete this.files[uploadId]
-                throw {
-                    status: 500,
-                    message:
-                        "server may be misconfigured, contact admin for help",
-                }
-            })
+    }
+
+    /**
+     * @description Update a file from monofile 1.2 to allow for range requests with Content-Length to that file.
+     * @param uploadId Target file's ID
+     */
+
+    async update( uploadId: string ) {
+        let target_file = this.files[uploadId]
+        let attachment_sizes = []
+
+        for (let message of target_file.messageids) {
+            let attachments = (await this.api.fetchMessage(message)).attachments
+            for (let attachment of attachments) {
+                attachment_sizes.push(attachment.size)
+            }
+        }
+
+        if (!target_file.sizeInBytes)
+            target_file.sizeInBytes = attachment_sizes.reduce((a, b) => a + b, 0) 
+        
+        if (!target_file.chunkSize)
+            target_file.chunkSize = attachment_sizes[0]
+
+        
     }
 
     /**
@@ -315,15 +333,9 @@ export default class Files {
         uploadId: string,
         range?: { start: number; end: number }
     ): Promise<Readable> {
-        if (!this.uploadChannel) {
-            throw {
-                status: 503,
-                message: "server is not ready - please try again later",
-            }
-        }
-
         if (this.files[uploadId]) {
             let file = this.files[uploadId]
+            if (!file.sizeInBytes || !file.chunkSize) await this.update(uploadId)
 
             let scan_msg_begin = 0,
                 scan_msg_end = file.messageids.length - 1,
@@ -346,17 +358,15 @@ export default class Files {
 
             let attachments: APIAttachment[] = []
 
-            /* File updates */
-            let file_updates: Pick<FilePointer, "chunkSize" | "sizeInBytes"> =
-                {}
-            let atSIB: number[] = [] // keeps track of the size of each file...
-
             let msgIdx = scan_msg_begin
 
             let getNextAttachment = async () => {
+                // return first in our attachment buffer
                 let ret = attachments.splice(0,1)[0]
                 if (ret) return ret
 
+                // oh, there's none left. let's fetch a new message, then.
+                if (!file.messageids[msgIdx]) return null
                 let msg = await this.api
                     .fetchMessage(file.messageids[msgIdx])
                     .catch(() => {
@@ -378,40 +388,11 @@ export default class Files {
                         i++
                     ) {
                         attachments.push(attach[i])
-                        atSIB.push(attach[i].size)
                     }
                 }
 
                 msgIdx++
                 return attachments.splice(0,1)[0]
-            }
-
-            if (!file.sizeInBytes)
-                file_updates.sizeInBytes = atSIB.reduce((a, b) => a + b, 0)
-            if (!file.chunkSize) file_updates.chunkSize = atSIB[0]
-
-            if (Object.keys(file_updates).length) {
-                let valid_fp_keys = ["sizeInBytes", "chunkSize"]
-                let isValidFilePointerKey = (
-                    key: string
-                ): key is "sizeInBytes" | "chunkSize" =>
-                    valid_fp_keys.includes(key)
-
-                for (let [key, value] of Object.entries(file_updates)) {
-                    if (isValidFilePointerKey(key)) file[key] = value
-                }
-
-                // The original was a callback so I don't think I'm supposed to `await` this -Jack
-                // Jack you need to get more sleep man we're using fs/promises
-                // but also it would slow us down so maybe not
-                writeFile(
-                    process.cwd() + "/.data/files.json",
-                    JSON.stringify(
-                        this.files,
-                        null,
-                        process.env.NODE_ENV === "development" ? 4 : undefined
-                    )
-                )
             }
 
             let position = 0
@@ -515,10 +496,12 @@ export default class Files {
         if (!this.uploadChannel) {
             return
         }
+        /*
         for (let x of tmp.messageids) {
             this.api.deleteMessage(x)
                 .catch((err) => console.error(err))
-        }
+        }*/
+        this.api.deleteMessages(tmp.messageids)
 
         delete this.files[uploadId]
         if (noWrite) {

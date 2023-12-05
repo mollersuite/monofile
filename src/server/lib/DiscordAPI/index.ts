@@ -69,10 +69,12 @@ export class Client {
 
     }
 	
-	async sendDataMessage(formData: FormData) {
-		this.rest.fetch(`/channels/${this.targetChannel}/messages`, {
+	async sendMessageChunk(formData: FormData) {
+		let returned = await this.rest.fetch(`/channels/${this.targetChannel}/messages`, {
 			method: "POST",
 			body: formData
 		})
+
+		return (await returned.json() as { id: string }).id
 	}
 }
