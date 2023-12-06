@@ -82,7 +82,7 @@ module.exports = function (files: Files) {
             return ctx.status(404)
         }
 
-        let targetFile = files.getFilePointer(body.target)
+        let targetFile = files.files[body.target]
 
         if (!targetFile) {
             return ctx.status(404)
@@ -154,7 +154,7 @@ module.exports = function (files: Files) {
             return ctx.status(404)
         }
 
-        let targetFile = files.getFilePointer(body.target)
+        let targetFile = files.files[body.target]
         if (!targetFile) {
             return ctx.status(404)
         }
@@ -176,7 +176,7 @@ module.exports = function (files: Files) {
         targetFile.owner = newOwner ? newOwner.id : undefined
 
         files
-            .writeFile(body.target, targetFile)
+            .write()
             .then(() => ctx.status(200))
             .catch(() => ctx.status(500))
     })
@@ -187,12 +187,12 @@ module.exports = function (files: Files) {
             return ctx.status(400)
         }
 
-        let targetFile = files.getFilePointer(body.target)
+        let targetFile = files.files[body.target]
         if (!targetFile) {
             return ctx.status(404)
         }
 
-        if (files.getFilePointer(body.new)) {
+        if (files.files[body.new]) {
             return ctx.status(400)
         }
 
@@ -201,9 +201,10 @@ module.exports = function (files: Files) {
             Accounts.files.index(targetFile.owner, body.new)
         }
         delete files.files[body.target]
+        files.files[body.new] = targetFile
 
         return files
-            .writeFile(body.new, targetFile)
+            .write()
             .then(() => ctx.status(200))
             .catch(() => {
                 files.files[body.target] = body.new

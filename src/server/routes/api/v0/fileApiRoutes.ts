@@ -41,7 +41,7 @@ module.exports = function (files: Files) {
             ctx.json(
                 acc.files
                     .map((e) => {
-                        let fp = files.getFilePointer(e)
+                        let fp = files.files[e]
                         if (!fp) {
                             Accounts.files.deindex(accId, e)
                             return null
@@ -77,7 +77,7 @@ module.exports = function (files: Files) {
             body.target.forEach((e: string) => {
                 if (!acc.files.includes(e)) return
 
-                let fp = files.getFilePointer(e)
+                let fp = files.files[e]
 
                 if (fp.reserved) {
                     return

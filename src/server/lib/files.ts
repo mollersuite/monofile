@@ -245,15 +245,7 @@ export default class Files {
             }
         }
 
-        // this code deletes the files from discord, btw
-        // if need be, replace with job queue system
-
-        if (existingFile && this.uploadChannel) {
-            for (let x of existingFile.messageids) {
-                this.api.deleteMessage(x)
-                    .catch((err) => console.error(err))
-            }
-        }
+        if (existingFile) this.api.deleteMessages(existingFile.messageids)
 
         const { filename, mime, owner } = metadata
 
@@ -482,50 +474,20 @@ export default class Files {
      * @param noWrite Whether or not the change should be written to disk. Enable for bulk deletes
      */
     async unlink(uploadId: string, noWrite: boolean = false): Promise<void> {
-        let tmp = this.files[uploadId]
-        if (!tmp) {
-            return
-        }
-        if (tmp.owner) {
-            let id = files.deindex(tmp.owner, uploadId, noWrite)
+        let target = this.files[uploadId]
+        if (!target) return
+        if (target.owner) {
+            let id = files.deindex(target.owner, uploadId, noWrite)
             if (id) await id
         }
-        // this code deletes the files from discord, btw
-        // if need be, replace with job queue system
 
-        if (!this.uploadChannel) {
-            return
-        }
-        /*
-        for (let x of tmp.messageids) {
-            this.api.deleteMessage(x)
-                .catch((err) => console.error(err))
-        }*/
-        this.api.deleteMessages(tmp.messageids)
+        await this.api.deleteMessages(target.messageids)
 
         delete this.files[uploadId]
-        if (noWrite) {
-            return
-        }
-        return writeFile(
-            process.cwd() + "/.data/files.json",
-            JSON.stringify(
-                this.files,
-                null,
-                process.env.NODE_ENV === "development" ? 4 : undefined
-            )
-        ).catch((err) => {
-            this.files[uploadId] = tmp // !! this may not work, since tmp is a link to this.files[uploadId]?
+        if (noWrite) return
+        return this.write().catch((err) => {
             throw err
         })
     }
 
-    /**
-     * @description Get a file's FilePointer
-     * @param uploadId Target file's ID
-     * @returns FilePointer for the file
-     */
-    getFilePointer(uploadId: string): FilePointer {
-        return this.files[uploadId]
-    }
 }

@@ -10,7 +10,7 @@ export = (files: Files): Handler =>
         let acc = ctx.get("account") as Accounts.Account
         const fileId = ctx.req.param("fileId")
         const host = ctx.req.header("Host")
-        const file = files.getFilePointer(fileId)
+        const file = files.files[fileId]
         if (file) {
             if (file.visibility == "private" && acc?.id != file.owner) {
                 return ServeError(ctx, 403, "you do not own this file")

@@ -36,7 +36,7 @@ module.exports = function (files: Files) {
 
             let acc = ctx.get("account") as Accounts.Account
 
-            let file = files.getFilePointer(fileId)
+            let file = files.files[fileId]
             ctx.header("Access-Control-Allow-Origin", "*")
             ctx.header("Content-Security-Policy", "sandbox allow-scripts")
             if (ctx.req.query("attachment") == "1")
@@ -119,7 +119,7 @@ module.exports = function (files: Files) {
     // primaryApi.head(
     //     ["/file/:fileId", "/cpt/:fileId/*", "/:fileId"],
     //     async (ctx) => {
-    //         let file = files.getFilePointer(req.params.fileId)
+    //         let file = files.files[req.params.fileId]
 
     //         if (
     //             file.visibility == "private" &&
