@@ -1,5 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises"
-import { Readable } from "node:stream"
+import { Readable, Writable } from "node:stream"
 import crypto from "node:crypto"
 import { files } from "./accounts"
 import { Client as API } from "./DiscordAPI"
@@ -29,6 +29,17 @@ export function generateFileId(length: number = 5) {
         fid += alphanum[crypto.randomInt(0, alphanum.length)]
     }
     return fid
+}
+
+/**
+ * @description Assert multiple conditions... this exists out of pure laziness
+ * @param conditions 
+ */
+
+function multiAssert(conditions: Map<boolean, any>) {
+    conditions.forEach((err, cond) => {
+        if (cond) throw err
+    })
 }
 
 export type FileUploadSettings = Partial<Pick<FilePointer, "mime" | "owner">> &
@@ -98,6 +109,41 @@ export default class Files {
                 this.files = JSON.parse(buf.toString() || "{}")
             })
             .catch(console.error)
+    }
+
+    async writeFileStream(metadata: FileUploadSettings) {
+
+        let uploadId = (metadata.uploadId || generateFileId()).toString()
+
+        multiAssert(
+            new Map()
+                .set(!metadata.filename, {status: 400, message: "missing filename"})
+                .set(metadata.filename.length > 128, {status: 400, message: "filename too long"})
+                .set(!metadata.mime, {status: 400, message: "missing mime type"})
+                .set(metadata.mime.length > 128, {status: 400, message: "mime type too long"})
+                .set(
+                    uploadId.match(id_check_regex)?.[0] != uploadId
+                    || uploadId.length > this.config.maxUploadIdLength,
+                    { status: 400, message: "invalid file ID" }
+                )
+                .set(
+                    this.files[uploadId] &&
+                    (metadata.owner
+                        ? this.files[uploadId].owner != metadata.owner
+                        : true),
+                    { status: 403, message: "you don't own this file" }
+                )
+                .set(
+                    this.files[uploadId]?.reserved,
+                    {
+                        status: 400,
+                        message: "already uploading this file. if your file is stuck in this state, contact an administrator"
+                    }
+                )
+        )
+
+        
+
     }
 
     /**
