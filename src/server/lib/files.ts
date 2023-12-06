@@ -1,5 +1,3 @@
-import axios from "axios"
-import Discord, { Client, Message, TextBasedChannel, IntentsBitField } from "discord.js"
 import { readFile, writeFile } from "node:fs/promises"
 import { Readable } from "node:stream"
 import crypto from "node:crypto"
@@ -88,36 +86,12 @@ async function pushWebStream(stream: Readable, webStream: ReadableStream) {
 
 export default class Files {
     config: Configuration
-    client: Client
     api: API
     files: { [key: string]: FilePointer } = {}
-    uploadChannel?: TextBasedChannel
 
     constructor(config: Configuration) {
         this.config = config
         this.api = new API(process.env.TOKEN!, config.targetChannel)
-        this.client = new Client({
-            intents: [
-                IntentsBitField.Flags.GuildMessages,
-                IntentsBitField.Flags.MessageContent,
-            ],
-            rest: { timeout: config.requestTimeout },
-        })
-        
-
-        this.client.on("ready", () => {
-            console.log("Discord OK!")
-
-            this.client.guilds.fetch(config.targetGuild).then((g) => {
-                g.channels.fetch(config.targetChannel).then((a) => {
-                    if (a?.isTextBased()) {
-                        this.uploadChannel = a
-                    }
-                })
-            })
-        })
-
-        this.client.login(process.env.TOKEN)
 
         readFile(process.cwd() + "/.data/files.json")
             .then((buf) => {
@@ -136,11 +110,6 @@ export default class Files {
         metadata: FileUploadSettings,
         buffer: Buffer
     ): Promise<string | StatusCodeError> {
-        if (!this.uploadChannel)
-            throw {
-                status: 503,
-                message: "server is not ready - please try again later",
-            }
 
         if (!metadata.filename || !metadata.mime)
             throw { status: 400, message: "missing filename/mime" }
@@ -214,29 +183,18 @@ export default class Files {
         }
 
         // begin uploading
-        let uploadTmplt: Discord.AttachmentBuilder[] = toUpload.map((e) => {
-            return new Discord.AttachmentBuilder(e).setName(
-                Math.random().toString().slice(2)
-            )
-        })
         let uploadGroups = []
 
-        for (let i = 0; i < Math.ceil(uploadTmplt.length / 10); i++) {
-            uploadGroups.push(uploadTmplt.slice(i * 10, (i + 1) * 10))
+        for (let i = 0; i < Math.ceil(toUpload.length / 10); i++) {
+            uploadGroups.push(toUpload.slice(i * 10, (i + 1) * 10))
         }
 
         let msgIds = []
 
         for (const uploadGroup of uploadGroups) {
-            let message = await this.uploadChannel
-                .send({
-                    files: uploadGroup,
-                })
-                .catch((e) => {
-                    console.error(e)
-                })
+            let message = await this.api.send(uploadGroup)
 
-            if (message && message instanceof Message) {
+            if (message) {
                 msgIds.push(message.id)
             } else {
                 if (!existingFile) delete this.files[uploadId]

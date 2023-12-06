@@ -1,6 +1,7 @@
 import { REST } from "./DiscordRequests"
 import type { APIMessage } from "discord-api-types/v10"
-import { FormData } from "node-fetch"
+import FormData from "form-data"
+import { Readable } from "node:stream"
 
 const EXPIRE_AFTER = 20 * 60 * 1000
 const DISCORD_EPOCH = 1420070400000
@@ -69,12 +70,18 @@ export class Client {
 
     }
 	
-	async sendMessageChunk(formData: FormData) {
-		let returned = await this.rest.fetch(`/channels/${this.targetChannel}/messages`, {
-			method: "POST",
-			body: formData
+	async send(chunks: (Readable|Buffer)[]) {
+		// make formdata
+		let fd = new FormData()
+		chunks.forEach((v,x) => {
+			fd.append(`files[${x}]`, v, { filename: Math.random().toString().slice(2) })
 		})
 
-		return (await returned.json() as { id: string }).id
+		let returned = await this.rest.fetch(`/channels/${this.targetChannel}/messages`, {
+			method: "POST",
+			body: fd
+		})
+
+		return (await returned.json() as APIMessage)
 	}
 }
