@@ -95,6 +95,11 @@ async function pushWebStream(stream: Readable, webStream: ReadableStream) {
     return last
 }
 
+interface UploadStream {
+    uploaded: number // number of bytes uploaded
+    stream  : Readable
+}
+
 export default class Files {
     config: Configuration
     api: API
@@ -111,38 +116,72 @@ export default class Files {
             .catch(console.error)
     }
 
-    async writeFileStream(metadata: FileUploadSettings) {
+    /**
+     * @description Start a new message.
+     * @param streamCount Number of files to upload.
+     */
+    private startMessage(streamCount: number): UploadStream[] {
+        
+        let streams = []
+
+        // can't think of a better way to do
+        for (let i = 0; i < streamCount; i++) {
+            streams.push({
+                uploaded: 0,
+                stream: new Readable()
+            })
+        }
+
+        this.api.send(streams.map(e =< e.stream));
+
+        return streams
+        
+    }
+
+    writeFileStream(metadata: FileUploadSettings & { size: number }) {
 
         let uploadId = (metadata.uploadId || generateFileId()).toString()
+        let processor = new Promise((resolve, reject) => {
+            
+            multiAssert(
+                new Map()
+                    .set(!metadata.filename, {status: 400, message: "missing filename"})
+                    .set(metadata.filename.length > 128, {status: 400, message: "filename too long"})
+                    .set(!metadata.mime, {status: 400, message: "missing mime type"})
+                    .set(metadata.mime.length > 128, {status: 400, message: "mime type too long"})
+                    .set(
+                        uploadId.match(id_check_regex)?.[0] != uploadId
+                        || uploadId.length > this.config.maxUploadIdLength,
+                        { status: 400, message: "invalid file ID" }
+                    )
+                    .set(
+                        this.files[uploadId] &&
+                        (metadata.owner
+                            ? this.files[uploadId].owner != metadata.owner
+                            : true),
+                        { status: 403, message: "you don't own this file" }
+                    )
+                    .set(
+                        this.files[uploadId]?.reserved,
+                        {
+                            status: 400,
+                            message: "already uploading this file. if your file is stuck in this state, contact an administrator"
+                        }
+                    )
+            )    
 
-        multiAssert(
-            new Map()
-                .set(!metadata.filename, {status: 400, message: "missing filename"})
-                .set(metadata.filename.length > 128, {status: 400, message: "filename too long"})
-                .set(!metadata.mime, {status: 400, message: "missing mime type"})
-                .set(metadata.mime.length > 128, {status: 400, message: "mime type too long"})
-                .set(
-                    uploadId.match(id_check_regex)?.[0] != uploadId
-                    || uploadId.length > this.config.maxUploadIdLength,
-                    { status: 400, message: "invalid file ID" }
-                )
-                .set(
-                    this.files[uploadId] &&
-                    (metadata.owner
-                        ? this.files[uploadId].owner != metadata.owner
-                        : true),
-                    { status: 403, message: "you don't own this file" }
-                )
-                .set(
-                    this.files[uploadId]?.reserved,
-                    {
-                        status: 400,
-                        message: "already uploading this file. if your file is stuck in this state, contact an administrator"
-                    }
-                )
-        )
+        })
 
-        
+        return {
+            stream: new Writable({
+                write(data: any) {
+
+                    
+
+                }
+            }),
+            processor
+        }
 
     }
 
