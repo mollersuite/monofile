@@ -95,9 +95,53 @@ async function pushWebStream(stream: Readable, webStream: ReadableStream) {
     return last
 }
 
-interface UploadStream {
-    uploaded: number // number of bytes uploaded
-    stream  : Readable
+namespace StreamHelpers {
+
+    interface UploadStream {
+        uploaded: number // number of bytes uploaded
+        stream  : Readable
+    }
+
+    class StreamBuffer {
+
+        readonly targetSize: number
+        filled: number = 0
+        buffer: UploadStream[] = []
+
+        api: API
+
+        constructor( api: API, targetSize: number ) {
+            this.api = api
+            this.targetSize = targetSize
+        }
+
+        private startMessage(streamCount: number): UploadStream[] {
+        
+            let streams = []
+    
+            // can't think of a better way to do
+            for (let i = 0; i < streamCount; i++) {
+                streams.push({
+                    uploaded: 0,
+                    stream: new Readable()
+                })
+            }
+    
+            this.api.send(streams.map(e => e.stream));
+    
+            return streams
+            
+        }
+
+        async getNextStream() {
+            if (this.buffer[0]) return this.buffer[0]
+            else {
+                // startmessage.... idk
+            }
+        }
+
+    }
+
 }
 
 export default class Files {
@@ -114,28 +158,6 @@ export default class Files {
                 this.files = JSON.parse(buf.toString() || "{}")
             })
             .catch(console.error)
-    }
-
-    /**
-     * @description Start a new message.
-     * @param streamCount Number of files to upload.
-     */
-    private startMessage(streamCount: number): UploadStream[] {
-        
-        let streams = []
-
-        // can't think of a better way to do
-        for (let i = 0; i < streamCount; i++) {
-            streams.push({
-                uploaded: 0,
-                stream: new Readable()
-            })
-        }
-
-        this.api.send(streams.map(e =< e.stream));
-
-        return streams
-        
     }
 
     writeFileStream(metadata: FileUploadSettings & { size: number }) {
@@ -168,7 +190,7 @@ export default class Files {
                             message: "already uploading this file. if your file is stuck in this state, contact an administrator"
                         }
                     )
-            )    
+            )
 
         })
 
@@ -176,7 +198,7 @@ export default class Files {
             stream: new Writable({
                 write(data: any) {
 
-                    
+
 
                 }
             }),
