@@ -36,10 +36,10 @@ export function generateFileId(length: number = 5) {
  * @param conditions 
  */
 
-function multiAssert(conditions: Map<boolean, any>) {
-    conditions.forEach((err, cond) => {
-        if (cond) throw err
-    })
+function multiAssert(conditions: Map<boolean, { message: string, status: number }>) {
+    for (let [cond, err] of conditions.entries()) {
+        if (cond) return err
+    }
 }
 
 export type FileUploadSettings = Partial<Pick<FilePointer, "mime" | "owner">> &
@@ -97,12 +97,12 @@ async function pushWebStream(stream: Readable, webStream: ReadableStream) {
 
 namespace StreamHelpers {
 
-    interface UploadStream {
+    export interface UploadStream {
         uploaded: number // number of bytes uploaded
         stream  : Readable
     }
 
-    class StreamBuffer {
+    export class StreamBuffer {
 
         readonly targetSize: number
         filled: number = 0
@@ -160,50 +160,77 @@ export default class Files {
             .catch(console.error)
     }
 
+    validateUpload(metadata: FileUploadSettings & { size : number, uploadId: string }) {
+        return multiAssert(
+            new Map()
+                .set(!metadata.filename, {status: 400, message: "missing filename"})
+                .set(metadata.filename.length > 128, {status: 400, message: "filename too long"})
+                .set(!metadata.mime, {status: 400, message: "missing mime type"})
+                .set(metadata.mime.length > 128, {status: 400, message: "mime type too long"})
+                .set(
+                    metadata.uploadId.match(id_check_regex)?.[0] != metadata.uploadId
+                    || metadata.uploadId.length > this.config.maxUploadIdLength,
+                    { status: 400, message: "invalid file ID" }
+                )
+                .set(
+                    this.files[metadata.uploadId] &&
+                    (metadata.owner
+                        ? this.files[metadata.uploadId].owner != metadata.owner
+                        : true),
+                    { status: 403, message: "you don't own this file" }
+                )
+                .set(
+                    this.files[metadata.uploadId]?.reserved,
+                    {
+                        status: 400,
+                        message: "already uploading this file. if your file is stuck in this state, contact an administrator"
+                    }
+                )
+        )
+    }
+
     writeFileStream(metadata: FileUploadSettings & { size: number }) {
 
         let uploadId = (metadata.uploadId || generateFileId()).toString()
-        let processor = new Promise((resolve, reject) => {
-            
-            multiAssert(
-                new Map()
-                    .set(!metadata.filename, {status: 400, message: "missing filename"})
-                    .set(metadata.filename.length > 128, {status: 400, message: "filename too long"})
-                    .set(!metadata.mime, {status: 400, message: "missing mime type"})
-                    .set(metadata.mime.length > 128, {status: 400, message: "mime type too long"})
-                    .set(
-                        uploadId.match(id_check_regex)?.[0] != uploadId
-                        || uploadId.length > this.config.maxUploadIdLength,
-                        { status: 400, message: "invalid file ID" }
+        
+        let validation = this.validateUpload(
+            {...metadata, uploadId}
+        )
+        if (validation) return validation
+
+        let buf = new StreamHelpers.StreamBuffer(this.api, metadata.size)
+        let fs_obj = this
+
+        return new Writable({
+            async write(data: Buffer) {
+                let positionInBuf = 0
+                while (positionInBuf < data.byteLength) {
+                    let ns = (await buf.getNextStream())
+                    if (!ns) {
+                        this.destroy()
+                        return
+                    }
+
+                    let bytesToPush = Math.min(
+                        data.byteLength, 
+                        fs_obj.config.maxDiscordFileSize-ns.uploaded
                     )
-                    .set(
-                        this.files[uploadId] &&
-                        (metadata.owner
-                            ? this.files[uploadId].owner != metadata.owner
-                            : true),
-                        { status: 403, message: "you don't own this file" }
-                    )
-                    .set(
-                        this.files[uploadId]?.reserved,
-                        {
-                            status: 400,
-                            message: "already uploading this file. if your file is stuck in this state, contact an administrator"
-                        }
-                    )
-            )
 
-        })
+                    ns.stream.push(data.subarray(positionInBuf, positionInBuf + bytesToPush))
+                    ns.uploaded += bytesToPush
+                    buf.filled += bytesToPush
+                    positionInBuf += bytesToPush
 
-        return {
-            stream: new Writable({
-                write(data: any) {
-
-
-
+                    if (ns.uploaded == fs_obj.config.maxDiscordFileSize) 
+                        buf.buffer.splice(0, 1)
+                    
+                    if (buf.filled == buf.targetSize) {
+                        this.destroy()
+                        return
+                    }
                 }
-            }),
-            processor
-        }
+            }
+        })
 
     }
 
