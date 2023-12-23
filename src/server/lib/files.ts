@@ -80,7 +80,7 @@ export interface StatusCodeError {
 }
 
 /**
- * @description This function does not respect backpressure and should be worked out of the codebase. Superseded by startPushingWebStream()
+ * @deprecated This function does not respect backpressure and should be worked out of the codebase. Superseded by startPushingWebStream()
  */
 
 async function pushWebStream(stream: Readable, webStream: ReadableStream) {
