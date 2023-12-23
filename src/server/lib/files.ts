@@ -106,9 +106,8 @@ async function startPushingWebStream(stream: Readable, webStream: ReadableStream
 
         return reader.read().then(result => {
             if (result.value)
-                stream.push(result.value)
-            pushing = false
-            return result.done
+                pushing = false
+            return {readyForMore: result.value ? stream.push(result.value) : false, streamDone: result.done }
         })
     }
 }
@@ -544,7 +543,7 @@ export default class Files {
                 let d = await fetch(scanning_chunk.url, {headers})
                     .catch((e: Error) => {
                         console.error(e)
-                        return {body: "__ERR"}
+                        return {body: e}
                     })
 
                 position++
@@ -552,35 +551,50 @@ export default class Files {
                 return d.body
             }
 
-            let ord: number[] = []
-            // hopefully this regulates it?
-            let lastChunkSent = true
+            let currentPusher : (() => Promise<{readyForMore: boolean, streamDone: boolean }> | undefined) | undefined
+            let busy = false
+
+            let pushWS : (stream: Readable) => Promise<boolean | undefined> = async (stream: Readable) => {
+
+                // uh oh, we don't have a currentPusher
+                // let's make one then
+                if (!currentPusher) {
+                    let next = await getNextChunk()
+                    if (next && !(next instanceof Error))
+                        // okay, so we have a new chunk
+                        // let's generate a new currentPusher
+                        currentPusher = await startPushingWebStream(stream, next)
+                    else {
+                        // oops, look like there's an error
+                        // or the stream has ended.
+                        // let's destroy the stream
+                        stream.destroy(next || undefined)
+                        return
+                    }
+                }
+
+                let result = await currentPusher()
+
+                if (result?.streamDone) currentPusher = undefined;
+                return result?.readyForMore
+
+            }
 
             let dataStream = new Readable({
-                read() {
-                    if (!lastChunkSent) return
-                    lastChunkSent = false
-                    getNextChunk().then(async (nextChunk) => {
-                        if (typeof nextChunk == "string") {
-                            this.destroy(new Error("file read error"))
-                            return
-                        }
+                async read() {
 
-                        if (!nextChunk) return // EOF
+                    if (busy) return
+                    busy = true
+                    let readyForMore = true
 
-                        let response = await pushWebStream(this, nextChunk)
-
-
-                        while (response) {
-                            let nextChunk = await getNextChunk()
-                            // idk why this line was below but i moved it on top
-                            // hopefully it wasn't for some other weird reason
-                            if (!nextChunk || typeof nextChunk == "string") return
-                            response = await pushWebStream(this, nextChunk)
-                        }
-                        lastChunkSent = true
-                    })
-                },
+                    while (readyForMore) {
+                        let result = await pushWS(this)
+                        if (result === undefined) return // stream has been destroyed. nothing left to do...
+                        readyForMore = result
+                    }
+                    busy = false
+                    
+                }
             })
 
             return dataStream
