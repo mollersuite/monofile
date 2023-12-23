@@ -79,22 +79,6 @@ export interface StatusCodeError {
     message: string
 }
 
-/**
- * @deprecated This function does not respect backpressure and should be worked out of the codebase. Superseded by startPushingWebStream()
- */
-
-async function pushWebStream(stream: Readable, webStream: ReadableStream) {
-    const reader = await webStream.getReader()
-    let result: Awaited<ReturnType<typeof reader.read>> = { done: false, value: undefined }
-    let last = true
-
-    while ( !result.done ) {
-        result = await reader.read()
-        last = stream.push(result.value)
-    }
-    return last
-}
-
 async function startPushingWebStream(stream: Readable, webStream: ReadableStream) {
     const reader = await webStream.getReader()
     let pushing = false // acts as a debounce just in case
