@@ -79,13 +79,13 @@ export interface StatusCodeError {
     message: string
 }
 
-// this is probably really stupid. I'm sorry!
-
-type ResolveType<T extends Promise<any>> = T extends Promise<infer U> ? U: never;
+/**
+ * @description This function does not respect backpressure and should be worked out of the codebase. Superseded by startPushingWebStream()
+ */
 
 async function pushWebStream(stream: Readable, webStream: ReadableStream) {
     const reader = await webStream.getReader()
-    let result: ResolveType<ReturnType<typeof reader.read>> = { done: false, value: undefined }
+    let result: Awaited<ReturnType<typeof reader.read>> = { done: false, value: undefined }
     let last = true
 
     while ( !result.done ) {
@@ -93,6 +93,24 @@ async function pushWebStream(stream: Readable, webStream: ReadableStream) {
         last = stream.push(result.value)
     }
     return last
+}
+
+async function startPushingWebStream(stream: Readable, webStream: ReadableStream) {
+    const reader = await webStream.getReader()
+    let pushing = false // acts as a debounce just in case
+                          // (words of a girl paranoid from writing readfilestream)
+
+    return function() {
+        if (pushing) return
+        pushing = true
+
+        return reader.read().then(result => {
+            if (result.value)
+                stream.push(result.value)
+            pushing = false
+            return result.done
+        })
+    }
 }
 
 namespace StreamHelpers {
