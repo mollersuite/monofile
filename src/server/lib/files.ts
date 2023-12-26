@@ -114,9 +114,11 @@ namespace StreamHelpers {
         private newmessage_debounce : boolean = true
 
         api: API
+        files: Files
 
-        constructor( api: API, targetSize: number ) {
-            this.api = api
+        constructor( files: Files, targetSize: number ) {
+            this.files = files
+            this.api = files.api
             this.targetSize = targetSize
         }
 
@@ -152,7 +154,11 @@ namespace StreamHelpers {
             if (this.buffer[0]) return this.buffer[0]
             else {
                 // startmessage.... idk
-                await this.startMessage(0);
+                await this.startMessage(
+                    this.messages.length < Math.ceil(this.targetSize/this.files.config.maxDiscordFileSize/10) 
+                    ? 10 
+                    : Math.ceil(this.targetSize/this.files.config.maxDiscordFileSize) - this.messages.length*10
+                );
                 return this.buffer[0]
             }
         }
@@ -165,12 +171,13 @@ export default class Files {
     config: Configuration
     api: API
     files: { [key: string]: FilePointer } = {}
+    data_directory: string = `${process.cwd()}/.data`
 
     constructor(config: Configuration) {
         this.config = config
         this.api = new API(process.env.TOKEN!, config.targetChannel)
 
-        readFile(process.cwd() + "/.data/files.json")
+        readFile(this.data_directory+ "/files.json")
             .then((buf) => {
                 this.files = JSON.parse(buf.toString() || "{}")
             })
@@ -215,7 +222,7 @@ export default class Files {
         )
         if (validation) return validation
 
-        let buf = new StreamHelpers.StreamBuffer(this.api, metadata.size)
+        let buf = new StreamHelpers.StreamBuffer(this, metadata.size)
         let fs_obj = this
 
         let wt = new Writable({
@@ -398,7 +405,7 @@ export default class Files {
      */
     async write(): Promise<void> {
         await writeFile(
-            process.cwd() + "/.data/files.json",
+            this.data_directory + "/files.json",
             JSON.stringify(
                 this.files,
                 null,

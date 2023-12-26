@@ -1,4 +1,19 @@
-import fetch, { type RequestInit, type Response, Headers } from "node-fetch"
+import { type RequestInfo, type RequestInit, type Response, Headers } from "node-fetch"
+
+// I jerk off to skibidi toilet. His smile is so fucking hot, oh my god, oh. 
+// The voices are getting louder, help me. Oh god, i want to put it inside that toilet and make him beg. 
+// Whenever i see skibidi toilet cum comes out like a waterfall. 
+// Whenever my classmates say anything about toilets the entire school gets flooded with cum everywhere. 
+// Dafuqboom is truly the best artist of all time.
+
+let ftch_dft: (url: URL | RequestInfo, init?:RequestInit) => Promise<Response>
+const fetch = async (url: URL | RequestInfo, init?:RequestInit) => {
+    if (ftch_dft) return ftch_dft(url, init)
+    else {
+        ftch_dft = (await import("node-fetch")).default;
+        return ftch_dft(url, init)
+    }
+}
 
 const base = "https://discord.com/api/v10"
 const buckets = new Map<string, DiscordAPIBucket>()
@@ -64,14 +79,14 @@ class DiscordAPIBucket {
         let rd = extractRatelimitData(base)
 
         this.parent    = rest
-        this.name      = rd.bucket_name
+        this.name      = rd.bucket_name || Math.random().toString()
         this.limit     = rd.limit
         this.remaining = rd.remaining
         this.expires   = rd.expires
 
         this.expirationHold = 
             setTimeout(
-                this.destroy, 
+                this.destroy.bind(this), 
                 parseFloat(base.get("x-ratelimit-reset-after")!)
             )
         
@@ -81,7 +96,6 @@ class DiscordAPIBucket {
      * @description Renders this bucket invalid
      */
     destroy() {
-
         buckets.delete(this.name)
         this.dead = true        
         this.linked_routes.forEach((v) => routeConnections.delete(v))

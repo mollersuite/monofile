@@ -79,9 +79,12 @@ export class Client {
 
 		let returned = await this.rest.fetch(`/channels/${this.targetChannel}/messages`, {
 			method: "POST",
-			body: fd
+			body: fd,
+			headers: fd.getHeaders()
 		})
 
-		return (await returned.json() as APIMessage)
+		let response = (await returned.json() as APIMessage)
+		console.log(JSON.stringify(response, null, 4))
+		return response
 	}
 }
