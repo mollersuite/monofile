@@ -109,6 +109,7 @@ namespace StreamHelpers {
         filled: number = 0
         buffer: UploadStream[] = []
         messages: string[] = []
+        writable?: Writable
         
         private newmessage_debounce : boolean = true
 
@@ -125,12 +126,17 @@ namespace StreamHelpers {
             this.newmessage_debounce = false
         
             let streams = []
+            let sbuf = this
     
             // can't think of a better way to do
             for (let i = 0; i < streamCount; i++) {
                 streams.push({
                     uploaded: 0,
-                    stream: new Readable({})
+                    stream: new Readable({
+                        read() {
+                            sbuf.writable!.emit("drain");
+                        }
+                    })
                 })
             }
     
@@ -146,6 +152,8 @@ namespace StreamHelpers {
             if (this.buffer[0]) return this.buffer[0]
             else {
                 // startmessage.... idk
+                await this.startMessage(0);
+                return this.buffer[0]
             }
         }
 
@@ -210,14 +218,14 @@ export default class Files {
         let buf = new StreamHelpers.StreamBuffer(this.api, metadata.size)
         let fs_obj = this
 
-        return new Writable({
+        let wt = new Writable({
             async write(data: Buffer) {
                 let positionInBuf = 0
                 while (positionInBuf < data.byteLength) {
                     let ns = (await buf.getNextStream().catch(e => {
 
                         return e
-                    }))
+                    })) as Error | undefined | StreamHelpers.UploadStream
                     if (!ns || ns instanceof Error) {
                         this.destroy(ns)
                         return
@@ -241,8 +249,13 @@ export default class Files {
                         return
                     }
                 }
+                return false
             }
         })
+
+        buf.writable = wt;
+
+        return wt
 
     }
 
