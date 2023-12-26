@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
 import { Hono } from "hono"
 import fs from "fs"
+import { readFile } from "fs/promises"
 import Files from "./lib/files"
 import { getAccount } from "./lib/middleware"
 import APIRouter from "./routes/api"
@@ -27,6 +28,17 @@ app.get(
         },
     })
 )
+
+// respond to the MOLLER method
+// get it?
+// haha...
+
+app.on(["MOLLER"], "*", async (ctx) => {
+
+    ctx.header("Content-Type", "image/webp")
+    return ctx.body( await readFile("./assets/moller.png") )
+    
+})
 
 //app.use(bodyParser.text({limit:(config.maxDiscordFileSize*config.maxDiscordFiles)+1048576,type:["application/json","text/plain"]}))
 
