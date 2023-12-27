@@ -76,7 +76,7 @@ export class Client {
 		chunks.forEach((v,x) => {
 			fd.append(`files[${x}]`, v, { filename: Math.random().toString().slice(2) })
 		})
-
+		
 		let returned = await this.rest.fetch(`/channels/${this.targetChannel}/messages`, {
 			method: "POST",
 			body: fd,

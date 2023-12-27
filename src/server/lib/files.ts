@@ -124,6 +124,8 @@ namespace StreamHelpers {
 
         private async startMessage(streamCount: number): Promise<UploadStream[] | undefined> {
 
+            console.log(`Starting a message with ${streamCount} stream(s)`)
+
             if (!this.newmessage_debounce) return
             this.newmessage_debounce = false
         
@@ -136,6 +138,7 @@ namespace StreamHelpers {
                     uploaded: 0,
                     stream: new Readable({
                         read() {
+                            console.log('FD is reading stream. Emitting drain...')
                             sbuf.writable!.emit("drain");
                         }
                     })
@@ -151,6 +154,7 @@ namespace StreamHelpers {
         }
 
         async getNextStream() {
+            console.log("Getting next stream...")
             if (this.buffer[0]) return this.buffer[0]
             else {
                 // startmessage.... idk
@@ -227,6 +231,7 @@ export default class Files {
 
         let wt = new Writable({
             async write(data: Buffer) {
+                console.log("Write to stream attempted")
                 let positionInBuf = 0
                 while (positionInBuf < data.byteLength) {
                     let ns = (await buf.getNextStream().catch(e => {
@@ -249,7 +254,7 @@ export default class Files {
                     positionInBuf += bytesToPush
 
                     if (ns.uploaded == fs_obj.config.maxDiscordFileSize) 
-                        buf.buffer.splice(0, 1)[0]?.stream.destroy()
+                        buf.buffer.splice(0, 1)[0]?.stream.push(null)
                     
                     if (buf.filled == buf.targetSize) {
                         this.destroy()

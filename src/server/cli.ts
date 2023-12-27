@@ -75,24 +75,32 @@ program.command("upload")
         if (!(writable instanceof Writable))
             throw JSON.stringify(writable, null, 3)
 
-        ;(await fs.createReadStream(file)).pipe(
-            writable
-        )
-
         console.log(`started: ${file}`)
 
         writable.on("drain", () => {
-            console.log("Drain")
+            console.log("Drained")
         })
 
         writable.on("finish", () => {
             console.log("Finished!")
         })
 
+        writable.on("pipe", () => {
+            console.log("Piped")
+        })
+
         writable.on("error", (e) => {
             console.error(e)
         })
 
+        writable.on("close", () => {
+            console.log("Closed.")
+        })
+    
+
+        ;(await fs.createReadStream(file)).pipe(
+            writable
+        )
     })
 
 
