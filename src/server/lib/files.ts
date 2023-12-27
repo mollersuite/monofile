@@ -107,7 +107,7 @@ namespace StreamHelpers {
 
         readonly targetSize: number
         filled: number = 0
-        buffer: UploadStream[] = []
+        current?: Readable
         messages: string[] = []
         writable?: Writable
         
@@ -122,48 +122,40 @@ namespace StreamHelpers {
             this.targetSize = targetSize
         }
 
-        private async startMessage(streamCount: number): Promise<UploadStream[] | undefined> {
+        private async startMessage(): Promise<Readable | undefined> {
 
-            console.log(`Starting a message with ${streamCount} stream(s)`)
 
             if (!this.newmessage_debounce) return
             this.newmessage_debounce = false
         
-            let streams = []
             let sbuf = this
+            let stream = new Readable({
+                read() {
+                    console.log("Read called. Emitting drain")
+                    sbuf.writable!.emit("drain")
+                }
+            })
+            stream.pause()
+            
+            console.log(`Starting a message`)
+            this.api.send(stream).then(message => {
+                this.messages.push(message.id)
+                console.log(`Sent: ${message.id}`)
+                this.newmessage_debounce = true
+            })
     
-            // can't think of a better way to do
-            for (let i = 0; i < streamCount; i++) {
-                streams.push({
-                    uploaded: 0,
-                    stream: new Readable({
-                        read() {
-                            console.log('FD is reading stream. Emitting drain...')
-                            sbuf.writable!.emit("drain");
-                        }
-                    })
-                })
-            }
-    
-            let message = await this.api.send(streams.map(e => e.stream));
-            this.messages.push(message.id)
-            this.newmessage_debounce = true
-    
-            return streams
+            return stream
             
         }
 
         async getNextStream() {
-            console.log("Getting next stream...")
-            if (this.buffer[0]) return this.buffer[0]
+            console.log("Getting stream...")
+            if (this.current) return this.current
             else {
                 // startmessage.... idk
-                await this.startMessage(
-                    this.messages.length < Math.ceil(this.targetSize/this.files.config.maxDiscordFileSize/10) 
-                    ? 10 
-                    : Math.ceil(this.targetSize/this.files.config.maxDiscordFileSize) - this.messages.length*10
-                );
-                return this.buffer[0]
+                this.current = await this.startMessage();
+                console.log("current:" + (this.current ? "yes" : "no"))
+                return this.current
             }
         }
 
@@ -179,7 +171,7 @@ export default class Files {
 
     constructor(config: Configuration) {
         this.config = config
-        this.api = new API(process.env.TOKEN!, config.targetChannel)
+        this.api = new API(process.env.TOKEN!, config)
 
         readFile(this.data_directory+ "/files.json")
             .then((buf) => {
@@ -230,176 +222,20 @@ export default class Files {
         let fs_obj = this
 
         let wt = new Writable({
-            async write(data: Buffer) {
+            write(data: Buffer, encoding, callback) {
                 console.log("Write to stream attempted")
-                let positionInBuf = 0
-                while (positionInBuf < data.byteLength) {
-                    let ns = (await buf.getNextStream().catch(e => {
-
-                        return e
-                    })) as Error | undefined | StreamHelpers.UploadStream
-                    if (!ns || ns instanceof Error) {
-                        this.destroy(ns)
-                        return
-                    }
-
-                    let bytesToPush = Math.min(
-                        data.byteLength, 
-                        fs_obj.config.maxDiscordFileSize-ns.uploaded
-                    )
-
-                    ns.stream.push(data.subarray(positionInBuf, positionInBuf + bytesToPush))
-                    ns.uploaded += bytesToPush
-                    buf.filled += bytesToPush
-                    positionInBuf += bytesToPush
-
-                    if (ns.uploaded == fs_obj.config.maxDiscordFileSize) 
-                        buf.buffer.splice(0, 1)[0]?.stream.push(null)
-                    
-                    if (buf.filled == buf.targetSize) {
-                        this.destroy()
-                        return
-                    }
-                }
-                return false
-            }
+                buf.getNextStream().then(ns => {
+                    if (ns) {ns.push(data); callback()} else this.end(); 
+                    console.log(`pushed... ${ns ? "ns exists" : "ns doesn't exist"}... ${data.byteLength} byte chunk`); 
+                    return
+                })
+            },
         })
 
         buf.writable = wt;
 
         return wt
 
-    }
-
-    /**
-     * @description Uploads a new file
-     * @param metadata Settings for your new upload
-     * @param buffer Buffer containing file content
-     * @returns Promise which resolves to the ID of the new file
-     */
-    async uploadFile(
-        metadata: FileUploadSettings,
-        buffer: Buffer
-    ): Promise<string | StatusCodeError> {
-
-        if (!metadata.filename || !metadata.mime)
-            throw { status: 400, message: "missing filename/mime" }
-
-        let uploadId = (metadata.uploadId || generateFileId()).toString()
-
-        if (
-            (uploadId.match(id_check_regex) || [])[0] != uploadId ||
-            uploadId.length > this.config.maxUploadIdLength
-        )
-            throw { status: 400, message: "invalid id" }
-
-        if (
-            this.files[uploadId] &&
-            (metadata.owner
-                ? this.files[uploadId].owner != metadata.owner
-                : true)
-        )
-            throw {
-                status: 400,
-                message: "you are not the owner of this file id",
-            }
-
-        if (this.files[uploadId] && this.files[uploadId].reserved)
-            throw {
-                status: 400,
-                message:
-                    "already uploading this file. if your file is stuck in this state, contact an administrator",
-            }
-
-        if (metadata.filename.length > 128)
-            throw { status: 400, message: "name too long" }
-
-        if (metadata.mime.length > 128)
-            throw { status: 400, message: "mime too long" }
-
-        // reserve file, hopefully should prevent
-        // large files breaking
-
-        let existingFile = this.files[uploadId]
-
-        // save
-
-        if (metadata.owner) {
-            await files.index(metadata.owner, uploadId)
-        }
-
-        // get buffer
-        if (
-            buffer.byteLength >=
-            this.config.maxDiscordFileSize * this.config.maxDiscordFiles
-        )
-            throw { status: 400, message: "file too large" }
-
-        // generate buffers to upload
-        let toUpload = []
-        for (
-            let i = 0;
-            i < Math.ceil(buffer.byteLength / this.config.maxDiscordFileSize);
-            i++
-        ) {
-            toUpload.push(
-                buffer.subarray(
-                    i * this.config.maxDiscordFileSize,
-                    Math.min(
-                        buffer.byteLength,
-                        (i + 1) * this.config.maxDiscordFileSize
-                    )
-                )
-            )
-        }
-
-        // begin uploading
-        let uploadGroups = []
-
-        for (let i = 0; i < Math.ceil(toUpload.length / 10); i++) {
-            uploadGroups.push(toUpload.slice(i * 10, (i + 1) * 10))
-        }
-
-        let msgIds = []
-
-        for (const uploadGroup of uploadGroups) {
-            let message = await this.api.send(uploadGroup)
-
-            if (message) {
-                msgIds.push(message.id)
-            } else {
-                if (!existingFile) delete this.files[uploadId]
-                else this.files[uploadId] = existingFile
-                throw { status: 500, message: "please try again" }
-            }
-        }
-
-        if (existingFile) this.api.deleteMessages(existingFile.messageids)
-
-        const { filename, mime, owner } = metadata
-
-        this.files[uploadId] = {
-            filename,
-            messageids: msgIds,
-            mime,
-            owner,
-            sizeInBytes: buffer.byteLength,
-
-            visibility: existingFile
-                ? existingFile.visibility
-                : metadata.owner
-                ? Accounts.getFromId(metadata.owner)?.defaultFileVisibility
-                : undefined,
-            // so that json.stringify doesnt include tag:undefined
-            ...((existingFile || {}).tag ? { tag: existingFile.tag } : {}),
-
-            chunkSize: this.config.maxDiscordFileSize,
-        }
-
-        return this.write().then(_ => uploadId).catch(_ => {
-            delete this.files[uploadId]
-            throw { status: 500, message: "failed to save database" }
-        })
     }
 
     // fs

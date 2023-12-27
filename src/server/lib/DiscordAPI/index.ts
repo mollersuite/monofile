@@ -2,6 +2,7 @@ import { REST } from "./DiscordRequests"
 import type { APIMessage } from "discord-api-types/v10"
 import FormData from "form-data"
 import { Readable } from "node:stream"
+import { Configuration } from "../files"
 
 const EXPIRE_AFTER = 20 * 60 * 1000
 const DISCORD_EPOCH = 1420070400000
@@ -22,12 +23,14 @@ export class Client {
 	private readonly token         : string
 	private readonly rest          : REST
 	private readonly targetChannel : string
+	private readonly config        : Configuration
 	private messageCache           : Map<string, MessageCacheObject> = new Map()
 
-	constructor(token: string, targetChannel: string) {
+	constructor(token: string, config: Configuration) {
 		this.token = token
 		this.rest = new REST(token)
-		this.targetChannel = targetChannel
+		this.targetChannel = config.targetChannel
+		this.config = config
 	}
 
 	async fetchMessage(id: string, cache: boolean = true) {
@@ -70,21 +73,56 @@ export class Client {
 
     }
 	
-	async send(chunks: (Readable|Buffer)[]) {
-		// make formdata
-		let fd = new FormData()
-		chunks.forEach((v,x) => {
-			fd.append(`files[${x}]`, v, { filename: Math.random().toString().slice(2) })
+	async send(stream: Readable) {
+		
+		let bytes_sent = 0
+		let file_number = 0
+		let boundary = "-".repeat(20) + Math.random().toString().slice(2)
+
+		let pushBoundary = (stream: Readable) =>
+			stream.push(`--${boundary}\r\nContent-Disposition: form-data, name="files[${file_number}]"; filename="${Math.random().toString().slice(2)}\r\nContent-Type: application/octet-stream\r\n\r\n"`)
+		let boundPush = (stream: Readable, chunk: Buffer) => {
+			
+			let position = 0
+			while (position < chunk.length) {
+				let capture = Math.min(
+					this.config.maxDiscordFileSize - (bytes_sent % this.config.maxDiscordFileSize), 
+					chunk.length
+				) + 1
+				stream.push( chunk.subarray(position, capture) )
+				position += capture, bytes_sent += capture-1
+
+				console.log("Chunk progress:", bytes_sent % this.config.maxDiscordFileSize, "B")
+
+				if (bytes_sent % this.config.maxDiscordFileSize == 0) {
+					console.log("Progress is 0. Pushing boundary")
+					pushBoundary(stream)
+				}
+			}
+
+			
+		}
+
+		let transformed = new Readable({
+			read(size) {
+				let result = stream.read(size)
+				if (result) boundPush(this, result)
+			}
 		})
 		
+		pushBoundary(transformed)
+
 		let returned = await this.rest.fetch(`/channels/${this.targetChannel}/messages`, {
 			method: "POST",
-			body: fd,
-			headers: fd.getHeaders()
+			body: transformed,
+			headers: {
+				"Content-Type": `multipart/form-data; boundary=${boundary}`
+			}
 		})
 
 		let response = (await returned.json() as APIMessage)
 		console.log(JSON.stringify(response, null, 4))
 		return response
+
 	}
 }

@@ -78,7 +78,7 @@ program.command("upload")
         console.log(`started: ${file}`)
 
         writable.on("drain", () => {
-            console.log("Drained")
+            console.log("Drained");
         })
 
         writable.on("finish", () => {
@@ -95,37 +95,11 @@ program.command("upload")
 
         writable.on("close", () => {
             console.log("Closed.")
-        })
-    
+        });
 
         ;(await fs.createReadStream(file)).pipe(
             writable
         )
     })
-
-
-program.command("memup")
-    .description("Upload a file to the instance (no stream)")
-    .argument("<file>", "Path to the file you'd like to upload")
-    .option("-id, --fileid <id>", 'Custom file ID to use')
-    .action(async (file, options) => {
-
-        await (new Promise<void>(resolve => setTimeout(() => resolve(), 1000)))
-        
-        if (!(fs.existsSync(file) && (await stat(file)).isFile()))
-            throw `${file} is not a file`
-
-        let buf = fs.readFileSync(file)
-    
-        let id = files.uploadFile({
-            filename: basename(file),
-            mime: "application/octet-stream",
-            uploadId: options.fileid
-        }, buf)
-
-        console.log(`uploaded: ${await id}`)
-
-    })
-
 
 program.parse()
