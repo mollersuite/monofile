@@ -135,7 +135,7 @@ namespace StreamHelpers {
                     sbuf.writable!.emit("drain")
                 }
             })
-            stream.pause()
+            //stream.pause()
             
             console.log(`Starting a message`)
             this.api.send(stream).then(message => {
