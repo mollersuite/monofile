@@ -79,8 +79,8 @@ export class Client {
 		let file_number = 0
 		let boundary = "-".repeat(20) + Math.random().toString().slice(2)
 
-		let pushBoundary = (stream: Readable) =>
-			stream.push(`${file_number == 0 ? "" : "\r\n"}--${boundary}\r\nContent-Disposition: form-data; name="files[${file_number}]"; filename="${Math.random().toString().slice(2)}\r\nContent-Type: application/octet-stream\r\n\r\n"`)
+		let pushBoundary = (stream: Readable) => 
+			stream.push(`${(file_number++) == 0 ? "" : "\n"}--${boundary}\nContent-Disposition: form-data; name="files[${file_number}]"; filename="${Math.random().toString().slice(2)}\nContent-Type: application/octet-stream\n\n`)
 		let boundPush = (stream: Readable, chunk: Buffer) => {
 			let position = 0
 			console.log(`Chunk length ${chunk.byteLength}`)
@@ -88,14 +88,14 @@ export class Client {
 				let capture = Math.min(
 					this.config.maxDiscordFileSize - (bytes_sent % this.config.maxDiscordFileSize), 
 					chunk.byteLength
-				) + 1
-				console.log(`Capturing ${capture} bytes`)
+				)
+				console.log(`Capturing ${capture} bytes, ${chunk.subarray(position, capture).byteLength}`)
 				stream.push( chunk.subarray(position, capture) )
 				position += capture, bytes_sent += capture
 
 				console.log("Chunk progress:", bytes_sent % this.config.maxDiscordFileSize, "B")
 
-				if (bytes_sent % this.config.maxDiscordFileSize == 0) {
+				if ((bytes_sent % this.config.maxDiscordFileSize) == 0) {
 					console.log("Progress is 0. Pushing boundary")
 					pushBoundary(stream)
 				}
@@ -105,12 +105,12 @@ export class Client {
 		}
 
 		let transformed = new Readable({
-			read(size) {
-				let result = stream.read(size)
+			read() {
+				let result = stream.read()
 				if (result) boundPush(this, result)
 				if (result === null) {
 					console.log("Ending")
-					this.push(`\r\n--${boundary}--`)
+					this.push(`\n--${boundary}--`)
 					this.push(null)
 				}
 			}
