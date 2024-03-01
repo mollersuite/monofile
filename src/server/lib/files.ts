@@ -136,14 +136,18 @@ export class UploadStream extends Writable {
 
         while (progress < data.byteLength) {
             let capture = Math.min(
-                this.config.maxDiscordFileSize - (this.filled % this.config.maxDiscordFileSize), 
+                (this.config.maxDiscordFileSize*10) - (this.filled % (this.config.maxDiscordFileSize*10)) + 1, 
                 chunk.byteLength
             )
-            console.log(`Capturing ${capture} bytes, ${chunk.subarray(position, capture).byteLength}`)
+            console.log(`Capturing ${capture} bytes, ${chunk.subarray(position, position + capture).byteLength}`)
             let nextStream = await this.getNextStream()
-            nextStream.push( chunk.subarray(position, capture) )
+            nextStream.push( chunk.subarray(position, position+capture) )
             console.log(`pushed ${data.byteLength} byte chunk`);
             progress += capture, this.filled += capture
+
+            // message is full, so tell the next run to get a new message
+            if (this.filled % (this.config.maxDiscordFileSize*10) == 0)
+                this.current = undefined
         }
 
         callback()

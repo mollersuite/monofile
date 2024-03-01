@@ -86,11 +86,11 @@ export class Client {
 			console.log(`Chunk length ${chunk.byteLength}`)
 			while (position < chunk.byteLength) {
 				let capture = Math.min(
-					this.config.maxDiscordFileSize - (bytes_sent % this.config.maxDiscordFileSize), 
+					this.config.maxDiscordFileSize - (bytes_sent % this.config.maxDiscordFileSize) + 1, 
 					chunk.byteLength
 				)
-				console.log(`Capturing ${capture} bytes, ${chunk.subarray(position, capture).byteLength}`)
-				stream.push( chunk.subarray(position, capture) )
+				console.log(`Capturing ${capture} bytes, ${chunk.subarray(position, position+capture).byteLength}`)
+				stream.push( chunk.subarray(position, position + capture) )
 				position += capture, bytes_sent += capture
 
 				console.log("Chunk progress:", bytes_sent % this.config.maxDiscordFileSize, "B")
