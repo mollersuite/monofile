@@ -184,7 +184,25 @@ export class UploadStream extends Writable {
         if (!this.name) throw new WebError(400, "no filename provided")
         if (!this.uploadId) this.setUploadId(generateFileId())
         
-        // commit to db here...
+        let ogf = this.files.files[this.uploadId]
+
+        this.files.files[this.uploadId] = {
+            filename: this.name,
+            mime: this.mime,
+            messageids: this.messages,
+            owner: this.owner,
+            sizeInBytes: this.filled,
+            visibility: ogf ? ogf.visibility
+            : (
+                this.owner 
+                ? Accounts.getFromId(this.owner)?.defaultFileVisibility 
+                : undefined
+            ),
+            // so that json.stringify doesnt include tag:undefined
+            ...((ogf||{}).tag ? {tag:ogf.tag} : {}),
+
+            chunkSize: this.files.config.maxDiscordFileSize
+        }
     }
 
     // exposed methods
@@ -214,9 +232,13 @@ export class UploadStream extends Writable {
             || id.length > this.files.config.maxUploadIdLength)
             return this.destroy( new WebError(400, "invalid file ID") )
 
-        // There's more stuff to check here!
-        // Make sure to check if the upload ID is locked
-        // and if the user owns this file...
+        if (this.files.files[id] && this.files.files[id].owner != this.owner)
+            return this.destroy( new WebError(403, "you don't own this file") )
+
+        if (false /* check if locked here */)
+            return this.destroy( new WebError(409, "a file with this ID is already being uploaded") )
+
+        /* lock the id */
 
         this.uploadId = id
         return this
@@ -231,7 +253,6 @@ export class UploadStream extends Writable {
     private newmessage_debounce : boolean = true
     
     private async startMessage(): Promise<Readable | undefined> {
-
 
         if (!this.newmessage_debounce) return
         this.newmessage_debounce = false
