@@ -1,12 +1,12 @@
 import { Hono } from "hono"
-import * as Accounts from "../../../lib/accounts"
+import * as Accounts from "../../../lib/accounts.js"
 import { writeFile } from "fs/promises"
-import Files from "../../../lib/files"
+import Files from "../../../lib/files.js"
 import {
     getAccount,
     requiresAccount,
     requiresPermissions,
-} from "../../../lib/middleware"
+} from "../../../lib/middleware.js"
 
 export let fileApiRoutes = new Hono<{
     Variables: {

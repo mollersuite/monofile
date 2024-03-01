@@ -3,10 +3,10 @@ import { serveStatic } from "@hono/node-server/serve-static"
 import { Hono } from "hono"
 import fs from "fs"
 import { readFile } from "fs/promises"
-import Files from "./lib/files"
-import { getAccount } from "./lib/middleware"
-import APIRouter from "./routes/api"
-import preview from "./routes/preview"
+import Files from "./lib/files.js"
+import { getAccount } from "./lib/middleware.js"
+import APIRouter from "./routes/api.js"
+import preview from "./routes/preview.js"
 
 const pkg = require(`${process.cwd()}/package.json`)
 const app = new Hono()
@@ -117,4 +117,4 @@ serve(
     }
 )
 
-export = app
+export default app

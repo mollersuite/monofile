@@ -1,8 +1,8 @@
-import { REST } from "./DiscordRequests"
+import { REST } from "./DiscordRequests.js"
 import type { APIMessage } from "discord-api-types/v10"
 import FormData from "form-data"
 import { Readable } from "node:stream"
-import { Configuration } from "../files"
+import { Configuration } from "../files.js"
 
 const EXPIRE_AFTER = 20 * 60 * 1000
 const DISCORD_EPOCH = 1420070400000

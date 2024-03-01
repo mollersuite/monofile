@@ -1,5 +1,5 @@
 import type { Handler } from "hono"
-import ServeError from "./errors"
+import ServeError from "./errors.js"
 
 interface RatelimitSettings {
     requests: number

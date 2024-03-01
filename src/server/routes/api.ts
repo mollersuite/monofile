@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { readFile, readdir } from "fs/promises"
-import Files from "../lib/files"
+import Files from "../lib/files.js"
 
 const APIDirectory = __dirname + "/api"
 

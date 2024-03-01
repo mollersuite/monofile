@@ -1,3 +1,4 @@
+// working around typescript cause i can't think of anything better :upside_down:
 import { type RequestInfo, type RequestInit, type Response, Headers } from "node-fetch"
 
 // I jerk off to skibidi toilet. His smile is so fucking hot, oh my god, oh. 

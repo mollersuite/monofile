@@ -1,15 +1,15 @@
 import { Hono } from "hono"
-import * as Accounts from "../../../lib/accounts"
-import * as auth from "../../../lib/auth"
+import * as Accounts from "../../../lib/accounts.js"
+import * as auth from "../../../lib/auth.js"
 import { writeFile } from "fs/promises"
-import { sendMail } from "../../../lib/mail"
+import { sendMail } from "../../../lib/mail.js"
 import {
     getAccount,
     requiresAccount,
     requiresAdmin,
     requiresPermissions,
-} from "../../../lib/middleware"
-import Files from "../../../lib/files"
+} from "../../../lib/middleware.js"
+import Files from "../../../lib/files.js"
 
 export let adminRoutes = new Hono<{
     Variables: {

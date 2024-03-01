@@ -1,11 +1,11 @@
 import fs from "fs/promises"
 import bytes from "bytes"
-import ServeError from "../lib/errors"
-import * as Accounts from "../lib/accounts"
+import ServeError from "../lib/errors.js"
+import * as Accounts from "../lib/accounts.js"
 import type { Handler } from "hono"
-import type Files from "../lib/files"
+import type Files from "../lib/files.js"
 const pkg = require(`${process.cwd()}/package.json`)
-export = (files: Files): Handler =>
+export default (files: Files): Handler =>
     async (ctx) => {
         let acc = ctx.get("account") as Accounts.Account
         const fileId = ctx.req.param("fileId")

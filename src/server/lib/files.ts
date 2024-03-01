@@ -1,18 +1,17 @@
 import { readFile, writeFile } from "node:fs/promises"
 import { Readable, Writable } from "node:stream"
 import crypto from "node:crypto"
-import { files } from "./accounts"
-import { Client as API } from "./DiscordAPI"
+import { files } from "./accounts.js"
+import { Client as API } from "./DiscordAPI/index.js"
 import type {APIAttachment} from "discord-api-types/v10"
+import "dotenv"
 
-import * as Accounts from "./accounts"
+import * as Accounts from "./accounts.js"
 
 export let id_check_regex = /[A-Za-z0-9_\-\.\!\=\:\&\$\,\+\;\@\~\*\(\)\']+/
 export let alphanum = Array.from(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 )
-
-require("dotenv").config()
 
 // bad solution but whatever
 
@@ -96,71 +95,157 @@ async function startPushingWebStream(stream: Readable, webStream: ReadableStream
     }
 }
 
-namespace StreamHelpers {
+export class WebError extends Error {
 
-    export interface UploadStream {
-        uploaded: number // number of bytes uploaded
-        stream  : Readable
-    }
-
-    export class StreamBuffer {
-
-        readonly targetSize: number
-        filled: number = 0
-        current?: Readable
-        messages: string[] = []
-        writable?: Writable
-        
-        private newmessage_debounce : boolean = true
-
-        api: API
-        files: Files
-
-        constructor( files: Files, targetSize: number ) {
-            this.files = files
-            this.api = files.api
-            this.targetSize = targetSize
-        }
-
-        private async startMessage(): Promise<Readable | undefined> {
-
-
-            if (!this.newmessage_debounce) return
-            this.newmessage_debounce = false
-        
-            let sbuf = this
-            let stream = new Readable({
-                read() {
-                    console.log("Read called. Emitting drain")
-                    sbuf.writable!.emit("drain")
-                }
-            })
-            stream.pause()
-            
-            console.log(`Starting a message`)
-            this.api.send(stream).then(message => {
-                this.messages.push(message.id)
-                console.log(`Sent: ${message.id}`)
-                this.newmessage_debounce = true
-            })
+    readonly statusCode: number = 500
     
-            return stream
-            
-        }
-
-        async getNextStream() {
-            console.log("Getting stream...")
-            if (this.current) return this.current
-            else {
-                // startmessage.... idk
-                this.current = await this.startMessage();
-                console.log("current:" + (this.current ? "yes" : "no"))
-                return this.current
-            }
-        }
-
+    constructor(status: number, message: string) {
+        super(message)
+        this.statusCode = status
     }
 
+}
+
+export class UploadStream extends Writable {
+
+    uploadId?: string
+    name?: string
+    mime?: string
+    owner?: string
+
+    files: Files
+
+    error?: Error
+
+    constructor(files: Files, owner?: string) {
+        super()
+        this.owner = owner
+        this.files = files
+    }
+
+    // implementing some stuff
+
+    _write(data: Buffer, encoding: string, callback: () => void) {
+        console.log("Write to stream attempted")
+        this.getNextStream().then(ns => {
+            if (ns) {ns.push(data); callback()} else this.end(); 
+            console.log(`pushed... ${ns ? "ns exists" : "ns doesn't exist"}... ${data.byteLength} byte chunk`); 
+            return
+        })
+    }
+
+    _destroy(error: Error | null) {
+        this.error = error || undefined
+
+        if (error instanceof WebError) return // destroyed by self
+        if (error) this.abort() // destroyed externally...
+    }
+
+    /** 
+     * @description Cancel & unlock the file. When destroy() is called with a non-WebError, this is automatically called
+    */
+    async abort() {
+        if (!this.destroyed) this.destroy()
+        await this.files.api.deleteMessages(this.messages)
+    }
+
+    /**
+     * @description Commit the file to the database
+     * @returns The file's ID
+     */
+    async commit() {
+        if (this.errored) throw this.error
+        if (!this.closed) {
+            let err = Error("attempted to commit file without closing the stream")
+            this.destroy(err); throw err
+        }
+
+        // Perform checks
+        if (!this.mime) throw new WebError(400, "no mime provided")
+        if (!this.name) throw new WebError(400, "no filename provided")
+        if (!this.uploadId) this.setUploadId(generateFileId())
+        
+        // commit to db here...
+    }
+
+    // exposed methods
+
+    setName(name: string) {
+        if (this.name)
+            return this.destroy( new WebError(400, "duplicate attempt to set filename") )
+        if (name.length > 512)
+            return this.destroy( new WebError(400, "filename can be a maximum of 512 characters") )
+        
+        this.name = name;
+    }
+
+    setType(type: string) { 
+        if (this.mime)
+            return this.destroy( new WebError(400, "duplicate attempt to set mime type") )
+        if (type.length > 256)
+            return this.destroy( new WebError(400, "mime type can be a maximum of 256 characters") )
+        
+        this.mime = type;
+    }
+
+    setUploadId(id: string) {
+        if (this.uploadId)
+            return this.destroy( new WebError(400, "duplicate attempt to set upload ID") )
+        if (id.match(id_check_regex)?.[0] != id
+            || id.length > this.files.config.maxUploadIdLength)
+            return this.destroy( new WebError(400, "invalid file ID") )
+
+        // There's more stuff to check here!
+        // Make sure to check if the upload ID is locked
+        // and if the user owns this file...
+
+        this.uploadId = id
+        return this
+    } 
+
+    // merged StreamBuffer helper
+    
+    filled: number = 0
+    current?: Readable
+    messages: string[] = []
+    
+    private newmessage_debounce : boolean = true
+    
+    private async startMessage(): Promise<Readable | undefined> {
+
+
+        if (!this.newmessage_debounce) return
+        this.newmessage_debounce = false
+
+        let stream = new Readable({
+            read() {
+                console.log("Read called. Emitting drain")
+                this.emit("drain")
+            }
+        })
+        stream.pause()
+        
+        console.log(`Starting a message`)
+        this.files.api.send(stream).then(message => {
+            this.messages.push(message.id)
+            console.log(`Sent: ${message.id}`)
+            this.newmessage_debounce = true
+        })
+
+        return stream
+        
+    }
+
+    private async getNextStream() {
+        console.log("Getting stream...")
+        if (this.current) return this.current
+        else {
+            // startmessage.... idk
+            this.current = await this.startMessage();
+            console.log("current:" + (this.current ? "yes" : "no"))
+            return this.current
+        }
+    }
 }
 
 export default class Files {
@@ -209,33 +294,8 @@ export default class Files {
         )
     }
 
-    writeFileStream(metadata: FileUploadSettings & { size: number }) {
-
-        let uploadId = (metadata.uploadId || generateFileId()).toString()
-        
-        let validation = this.validateUpload(
-            {...metadata, uploadId}
-        )
-        if (validation) return validation
-
-        let buf = new StreamHelpers.StreamBuffer(this, metadata.size)
-        let fs_obj = this
-
-        let wt = new Writable({
-            write(data: Buffer, encoding, callback) {
-                console.log("Write to stream attempted")
-                buf.getNextStream().then(ns => {
-                    if (ns) {ns.push(data); callback()} else this.end(); 
-                    console.log(`pushed... ${ns ? "ns exists" : "ns doesn't exist"}... ${data.byteLength} byte chunk`); 
-                    return
-                })
-            },
-        })
-
-        buf.writable = wt;
-
-        return wt
-
+    createWriteStream(owner?: string) {
+        return new UploadStream(this, owner)
     }
 
     // fs

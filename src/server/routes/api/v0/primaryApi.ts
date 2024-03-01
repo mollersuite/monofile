@@ -1,15 +1,15 @@
 import bodyParser from "body-parser"
 import { Hono } from "hono"
 
-import * as Accounts from "../../../lib/accounts"
-import * as auth from "../../../lib/auth"
+import * as Accounts from "../../../lib/accounts.js"
+import * as auth from "../../../lib/auth.js"
 import axios, { AxiosResponse } from "axios"
 import { type Range } from "range-parser"
 import multer, { memoryStorage } from "multer"
 import { Readable } from "stream"
-import ServeError from "../../../lib/errors"
-import Files from "../../../lib/files"
-import { getAccount, requiresPermissions } from "../../../lib/middleware"
+import ServeError from "../../../lib/errors.js"
+import Files from "../../../lib/files.js"
+import { getAccount, requiresPermissions } from "../../../lib/middleware.js"
 
 let parser = bodyParser.json({
     type: ["text/plain", "application/json"],
@@ -27,7 +27,7 @@ let config = require(`${process.cwd()}/config.json`)
 
 primaryApi.use(getAccount)
 
-module.exports = function (files: Files) {
+module.exports = function (files: Files) {/*
     primaryApi.get(
         ["/file/:fileId", "/cpt/:fileId/*", "/:fileId"],
         async (ctx) => {
@@ -114,7 +114,7 @@ module.exports = function (files: Files) {
                 return ServeError(ctx, 404, "file not found")
             }
         }
-    )
+    )*/
 
     // primaryApi.head(
     //     ["/file/:fileId", "/cpt/:fileId/*", "/:fileId"],

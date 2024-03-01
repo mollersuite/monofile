@@ -1,7 +1,7 @@
 import crypto from "crypto"
-import * as auth from "./auth";
+import * as auth from "./auth.js";
 import { readFile, writeFile } from "fs/promises"
-import { FileVisibility } from "./files";
+import { FileVisibility } from "./files.js";
 
 // this is probably horrible
 // but i don't even care anymore

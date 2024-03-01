@@ -1,14 +1,17 @@
 import fs from "fs"
 import { stat } from "fs/promises"
-import Files from "./lib/files"
+import Files from "./lib/files.js"
 import { program } from "commander"
 import { basename } from "path"
 import { Writable } from "node:stream"
-const pkg = require(`${process.cwd()}/package.json`)
-let config = require(`${process.cwd()}/config.json`)
+import pkg from "../../package.json" assert { type: "json" }
+import config from "../../config.json" assert { type: "json" }
+import { fileURLToPath } from "url"
+import { dirname } from "path"
 
 // init data
 
+const __dirname = dirname(fileURLToPath(import.meta.url))
 if (!fs.existsSync(__dirname + "/../../.data/"))
     fs.mkdirSync(__dirname + "/../../.data/")
 
@@ -65,12 +68,12 @@ program.command("upload")
         if (!(fs.existsSync(file) && (await stat(file)).isFile()))
             throw `${file} is not a file`
     
-        let writable = files.writeFileStream({
-            filename: basename(file),
-            mime: "application/octet-stream",
-            size: (await stat(file)).size,
-            uploadId: options.fileid
-        })
+        let writable = files.createWriteStream()
+
+        writable
+            .setName(file)
+            ?.setType("application/octet-stream")
+            ?.setUploadId(options.fileId)
 
         if (!(writable instanceof Writable))
             throw JSON.stringify(writable, null, 3)

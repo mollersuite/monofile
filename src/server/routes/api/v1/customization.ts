@@ -1,12 +1,12 @@
 import { Hono } from "hono"
-import Files, { id_check_regex } from "../../../lib/files"
-import * as Accounts from "../../../lib/accounts"
+import Files, { id_check_regex } from "../../../lib/files.js"
+import * as Accounts from "../../../lib/accounts.js"
 import {
     getAccount,
     requiresAccount,
     requiresPermissions,
-} from "../../../lib/middleware"
-import ServeError from "../../../lib/errors"
+} from "../../../lib/middleware.js"
+import ServeError from "../../../lib/errors.js"
 
 const Configuration = require(`${process.cwd()}/config.json`)
 

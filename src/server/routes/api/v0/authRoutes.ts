@@ -1,22 +1,22 @@
 import { Hono, Handler } from "hono"
 import { getCookie, setCookie } from "hono/cookie"
-import * as Accounts from "../../../lib/accounts"
-import * as auth from "../../../lib/auth"
-import { sendMail } from "../../../lib/mail"
+import * as Accounts from "../../../lib/accounts.js"
+import * as auth from "../../../lib/auth.js"
+import { sendMail } from "../../../lib/mail.js"
 import {
     getAccount,
     noAPIAccess,
     requiresAccount,
     requiresPermissions,
-} from "../../../lib/middleware"
-import { accountRatelimit } from "../../../lib/ratelimit"
+} from "../../../lib/middleware.js"
+import { accountRatelimit } from "../../../lib/ratelimit.js"
 
-import ServeError from "../../../lib/errors"
+import ServeError from "../../../lib/errors.js"
 import Files, {
     FileVisibility,
     generateFileId,
     id_check_regex,
-} from "../../../lib/files"
+} from "../../../lib/files.js"
 
 import { writeFile } from "fs/promises"
 

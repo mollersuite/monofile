@@ -5,17 +5,17 @@ import { Hono } from "hono"
 
 // Libs
 
-import Files, { id_check_regex } from "../../../lib/files"
-import * as Accounts from "../../../lib/accounts"
-import * as Authentication from "../../../lib/auth"
+import Files, { id_check_regex } from "../../../lib/files.js"
+import * as Accounts from "../../../lib/accounts.js"
+import * as Authentication from "../../../lib/auth.js"
 import {
     getAccount,
     noAPIAccess,
     requiresAccount,
     requiresAdmin,
-} from "../../../lib/middleware"
-import ServeError from "../../../lib/errors"
-import { sendMail } from "../../../lib/mail"
+} from "../../../lib/middleware.js"
+import ServeError from "../../../lib/errors.js"
+import { sendMail } from "../../../lib/mail.js"
 
 const Configuration = require(`${process.cwd()}/config.json`)
 

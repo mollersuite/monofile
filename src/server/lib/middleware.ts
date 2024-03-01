@@ -1,7 +1,7 @@
-import * as Accounts from "./accounts"
+import * as Accounts from "./accounts.js"
 import { Handler as RequestHandler } from "hono"
-import ServeError from "../lib/errors"
-import * as auth from "./auth"
+import ServeError from "../lib/errors.js"
+import * as auth from "./auth.js"
 
 /**
  * @description Middleware which adds an account, if any, to ctx.get("account")

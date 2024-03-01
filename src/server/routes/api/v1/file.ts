@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import Files from "../../../lib/files";
+import Files from "../../../lib/files.js";
 
 const router = new Hono()
 
