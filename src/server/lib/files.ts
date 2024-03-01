@@ -125,13 +125,28 @@ export class UploadStream extends Writable {
 
     // implementing some stuff
 
-    _write(data: Buffer, encoding: string, callback: () => void) {
+    async _write(data: Buffer, encoding: string, callback: () => void) {
         console.log("Write to stream attempted")
-        this.getNextStream().then(ns => {
-            if (ns) {ns.push(data); callback()} else this.end(); 
-            console.log(`pushed... ${ns ? "ns exists" : "ns doesn't exist"}... ${data.byteLength} byte chunk`); 
-            return
-        })
+        if (filled + data.byteLength > (this.files.config.maxDiscordFileSize*this.files.config.maxDiscordFiles))
+            return this.destroy(new WebError(413, "maximum file size exceeded"))
+
+        // cut up the buffer into message sized chunks
+
+        let progress = 0
+
+        while (progress < data.byteLength) {
+            let capture = Math.min(
+                this.config.maxDiscordFileSize - (this.filled % this.config.maxDiscordFileSize), 
+                chunk.byteLength
+            )
+            console.log(`Capturing ${capture} bytes, ${chunk.subarray(position, capture).byteLength}`)
+            let nextStream = await this.getNextStream()
+            nextStream.push( chunk.subarray(position, capture) )
+            console.log(`pushed ${data.byteLength} byte chunk`);
+            progress += capture, this.filled += capture
+        }
+
+        callback()
     }
 
     _destroy(error: Error | null) {
@@ -217,10 +232,12 @@ export class UploadStream extends Writable {
         if (!this.newmessage_debounce) return
         this.newmessage_debounce = false
 
+        let wrt = this
+
         let stream = new Readable({
             read() {
                 console.log("Read called. Emitting drain")
-                this.emit("drain")
+                wrt.emit("drain")
             }
         })
         stream.pause()
