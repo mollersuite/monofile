@@ -1,7 +1,7 @@
 import { REST } from "./DiscordRequests.js"
 import type { APIMessage } from "discord-api-types/v10"
 import FormData from "form-data"
-import { Readable } from "node:stream"
+import { Transform, type Readable } from "node:stream"
 import { Configuration } from "../files.js"
 
 const EXPIRE_AFTER = 20 * 60 * 1000
@@ -84,7 +84,13 @@ export class Client {
 		let boundPush = (stream: Readable, chunk: Buffer) => {
 			let position = 0
 			console.log(`Chunk length ${chunk.byteLength}`)
+
 			while (position < chunk.byteLength) {
+				if ((bytes_sent % this.config.maxDiscordFileSize) == 0) {
+					console.log("Progress is 0. Pushing boundary")
+					pushBoundary(stream)
+				}
+
 				let capture = Math.min(
 					this.config.maxDiscordFileSize - (bytes_sent % this.config.maxDiscordFileSize) + 1, 
 					chunk.byteLength
@@ -94,29 +100,24 @@ export class Client {
 				position += capture, bytes_sent += capture
 
 				console.log("Chunk progress:", bytes_sent % this.config.maxDiscordFileSize, "B")
-
-				if ((bytes_sent % this.config.maxDiscordFileSize) == 0) {
-					console.log("Progress is 0. Pushing boundary")
-					pushBoundary(stream)
-				}
 			}
 
 			
 		}
 
-		let transformed = new Readable({
-			read() {
-				let result = stream.read()
-				if (result) boundPush(this, result)
-				if (result === null) {
-					console.log("Ending")
-					this.push(`\n--${boundary}--`)
-					this.push(null)
-				}
+		let transformed = new Transform({
+			transform(chunk, encoding, callback) {
+				boundPush(this, chunk)
+				callback()
+			},
+			flush(callback) {
+				this.push(`\n--${boundary}--`)
+				callback()
 			}
 		})
-		
-		pushBoundary(transformed)
+
+		//pushBoundary(transformed)
+		stream.pipe(transformed)
 
 		let returned = await this.rest.fetch(`/channels/${this.targetChannel}/messages`, {
 			method: "POST",

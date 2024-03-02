@@ -50,7 +50,15 @@ program.command("download")
         if (fs.existsSync(out) && (await stat(out)).isDirectory())
             out = `${out.replace(/\/+$/, "")}/${fp.filename}`
 
-        ;(await files.readFileStream(id)).pipe(
+        let filestream = await files.readFileStream(id)
+
+        let prog=0
+        filestream.on("data", dt => {
+            prog+=dt.byteLength
+            console.log(`Downloading ${fp.filename}: ${Math.floor(prog/(fp.sizeInBytes??0)*10000)/100}% (${Math.floor(prog/(1024*1024))}MiB/${Math.floor((fp.sizeInBytes??0)/(1024*1024))}MiB)`)
+        })
+
+        filestream.pipe(
             fs.createWriteStream(out)
         )
     })
@@ -71,9 +79,10 @@ program.command("upload")
         let writable = files.createWriteStream()
 
         writable
-            .setName(file)
+            .setName(basename(file))
             ?.setType("application/octet-stream")
-            ?.setUploadId(options.fileId)
+            
+        if (options.id) writable.setUploadId(options.id)
 
         if (!(writable instanceof Writable))
             throw JSON.stringify(writable, null, 3)
@@ -84,8 +93,9 @@ program.command("upload")
             console.log("Drained");
         })
 
-        writable.on("finish", () => {
+        writable.on("finish", async () => {
             console.log("Finished!")
+            console.log(`ID: ${await writable.commit()}`)
         })
 
         writable.on("pipe", () => {

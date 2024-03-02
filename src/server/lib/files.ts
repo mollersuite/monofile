@@ -4,7 +4,7 @@ import crypto from "node:crypto"
 import { files } from "./accounts.js"
 import { Client as API } from "./DiscordAPI/index.js"
 import type {APIAttachment} from "discord-api-types/v10"
-import "dotenv"
+import "dotenv/config"
 
 import * as Accounts from "./accounts.js"
 
@@ -127,29 +127,46 @@ export class UploadStream extends Writable {
 
     async _write(data: Buffer, encoding: string, callback: () => void) {
         console.log("Write to stream attempted")
-        if (filled + data.byteLength > (this.files.config.maxDiscordFileSize*this.files.config.maxDiscordFiles))
+        if (this.filled + data.byteLength > (this.files.config.maxDiscordFileSize*this.files.config.maxDiscordFiles))
             return this.destroy(new WebError(413, "maximum file size exceeded"))
 
         // cut up the buffer into message sized chunks
 
-        let progress = 0
+        let position = 0
+        let readyForMore = false
 
-        while (progress < data.byteLength) {
+        while (position < data.byteLength) {
             let capture = Math.min(
-                (this.config.maxDiscordFileSize*10) - (this.filled % (this.config.maxDiscordFileSize*10)) + 1, 
-                chunk.byteLength
+                (this.files.config.maxDiscordFileSize*10) - (this.filled % (this.files.config.maxDiscordFileSize*10)) + 1, 
+                data.byteLength
             )
-            console.log(`Capturing ${capture} bytes, ${chunk.subarray(position, position + capture).byteLength}`)
-            let nextStream = await this.getNextStream()
-            nextStream.push( chunk.subarray(position, position+capture) )
+            console.log(`Capturing ${capture} bytes from fl, ${data.subarray(position, position + capture).byteLength}`)
+            if (!this.current) await this.getNextStream()
+            if (!this.current) {
+                this.destroy(new Error("getNextStream called during debounce")); return
+            }
+
+            readyForMore = this.current.push( data.subarray(position, position+capture) )
             console.log(`pushed ${data.byteLength} byte chunk`);
-            progress += capture, this.filled += capture
+            position += capture, this.filled += capture
 
             // message is full, so tell the next run to get a new message
-            if (this.filled % (this.config.maxDiscordFileSize*10) == 0)
+            if (this.filled % (this.files.config.maxDiscordFileSize*10) == 0) {
+                this.current!.push(null)
                 this.current = undefined
+            }
         }
 
+        if (readyForMore || !this.current) callback()
+        else this.once("exec-callback", callback)
+    }
+
+   async  _final(callback: (error?: Error | null | undefined) => void) {
+        if (this.current) {
+            this.current.push(null);
+            // i probably dnt need this but whateverrr :3
+            await new Promise((res,rej) => this.once("debounceReleased", res))
+        }
         callback()
     }
 
@@ -174,8 +191,8 @@ export class UploadStream extends Writable {
      */
     async commit() {
         if (this.errored) throw this.error
-        if (!this.closed) {
-            let err = Error("attempted to commit file without closing the stream")
+        if (!this.writableFinished) {
+            let err = Error("attempted to commit file when the stream was still unfinished")
             this.destroy(err); throw err
         }
 
@@ -184,9 +201,9 @@ export class UploadStream extends Writable {
         if (!this.name) throw new WebError(400, "no filename provided")
         if (!this.uploadId) this.setUploadId(generateFileId())
         
-        let ogf = this.files.files[this.uploadId]
+        let ogf = this.files.files[this.uploadId!]
 
-        this.files.files[this.uploadId] = {
+        this.files.files[this.uploadId!] = {
             filename: this.name,
             mime: this.mime,
             messageids: this.messages,
@@ -203,6 +220,9 @@ export class UploadStream extends Writable {
 
             chunkSize: this.files.config.maxDiscordFileSize
         }
+
+        await this.files.write()
+        return this.uploadId
     }
 
     // exposed methods
@@ -214,6 +234,7 @@ export class UploadStream extends Writable {
             return this.destroy( new WebError(400, "filename can be a maximum of 512 characters") )
         
         this.name = name;
+        return this
     }
 
     setType(type: string) { 
@@ -223,6 +244,7 @@ export class UploadStream extends Writable {
             return this.destroy( new WebError(400, "mime type can be a maximum of 256 characters") )
         
         this.mime = type;
+        return this
     }
 
     setUploadId(id: string) {
@@ -261,8 +283,9 @@ export class UploadStream extends Writable {
 
         let stream = new Readable({
             read() {
-                console.log("Read called. Emitting drain")
-                wrt.emit("drain")
+                // this is stupid but it should work
+                console.log("Read called; calling on server to execute callback")
+                wrt.emit("exec-callback")
             }
         })
         stream.pause()
@@ -272,6 +295,7 @@ export class UploadStream extends Writable {
             this.messages.push(message.id)
             console.log(`Sent: ${message.id}`)
             this.newmessage_debounce = true
+            this.emit("debounceReleased")
         })
 
         return stream
@@ -280,12 +304,17 @@ export class UploadStream extends Writable {
 
     private async getNextStream() {
         console.log("Getting stream...")
+        console.log("current:" + (this.current ? "yes" : "no"))
         if (this.current) return this.current
-        else {
+        else if (this.newmessage_debounce) {
             // startmessage.... idk
             this.current = await this.startMessage();
-            console.log("current:" + (this.current ? "yes" : "no"))
             return this.current
+        } else {
+            return new Promise((resolve, reject) => {
+                console.log("Waiting for debounce to be released...")
+                this.once("debounceReleased", async () => resolve(await this.getNextStream()))
+            })
         }
     }
 }
@@ -523,7 +552,7 @@ export default class Files {
                 let result = await currentPusher()
 
                 if (result?.streamDone) currentPusher = undefined;
-                return result?.readyForMore
+                return result?.streamDone || result?.readyForMore
 
             }
 
