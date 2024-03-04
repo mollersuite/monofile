@@ -60,7 +60,12 @@ export default function (files: Files) {
             assign token
         */
 
-        setCookie(ctx, "auth", auth.create(acc.id, 3 * 24 * 60 * 60 * 1000))
+        setCookie(ctx, "auth", auth.create(acc.id, 3 * 24 * 60 * 60 * 1000), {
+            path: "/",
+            sameSite: "Strict",
+            secure: true,
+            httpOnly: true
+        })
         return ctx.text("")
     })
 
