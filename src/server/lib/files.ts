@@ -137,10 +137,10 @@ export class UploadStream extends Writable {
 
         while (position < data.byteLength) {
             let capture = Math.min(
-                (this.files.config.maxDiscordFileSize*10) - (this.filled % (this.files.config.maxDiscordFileSize*10)) + 1, 
-                data.byteLength
+                ((this.files.config.maxDiscordFileSize*10) - (this.filled % (this.files.config.maxDiscordFileSize*10))) + 1, 
+                data.byteLength-position
             )
-            console.log(`Capturing ${capture} bytes from fl, ${data.subarray(position, position + capture).byteLength}`)
+            console.log(`Capturing ${capture} bytes for megachunk, ${data.subarray(position, position + capture).byteLength}`)
             if (!this.current) await this.getNextStream()
             if (!this.current) {
                 this.destroy(new Error("getNextStream called during debounce")); return
@@ -161,7 +161,7 @@ export class UploadStream extends Writable {
         else this.once("exec-callback", callback)
     }
 
-   async  _final(callback: (error?: Error | null | undefined) => void) {
+    async _final(callback: (error?: Error | null | undefined) => void) {
         if (this.current) {
             this.current.push(null);
             // i probably dnt need this but whateverrr :3
@@ -490,6 +490,8 @@ export default class Files {
                 if (!scanning_chunk) {
                     return null
                 }
+
+                console.log(msgIdx,position,scanning_chunk.size)
 
                 let headers: HeadersInit =
                     useRanges

@@ -80,7 +80,7 @@ export class Client {
 		let boundary = "-".repeat(20) + Math.random().toString().slice(2)
 
 		let pushBoundary = (stream: Readable) => 
-			stream.push(`${(file_number++) == 0 ? "" : "\n"}--${boundary}\nContent-Disposition: form-data; name="files[${file_number}]"; filename="${Math.random().toString().slice(2)}\nContent-Type: application/octet-stream\n\n`)
+			stream.push(`${(file_number++) == 0 ? "" : "\r\n"}--${boundary}\r\nContent-Disposition: form-data; name="files[${file_number}]"; filename="${Math.random().toString().slice(2)}\r\nContent-Type: application/octet-stream\r\n\r\n`)
 		let boundPush = (stream: Readable, chunk: Buffer) => {
 			let position = 0
 			console.log(`Chunk length ${chunk.byteLength}`)
@@ -92,8 +92,8 @@ export class Client {
 				}
 
 				let capture = Math.min(
-					this.config.maxDiscordFileSize - (bytes_sent % this.config.maxDiscordFileSize) + 1, 
-					chunk.byteLength
+					(this.config.maxDiscordFileSize - (bytes_sent % this.config.maxDiscordFileSize)) + 1, 
+					chunk.byteLength-position
 				)
 				console.log(`Capturing ${capture} bytes, ${chunk.subarray(position, position+capture).byteLength}`)
 				stream.push( chunk.subarray(position, position + capture) )
@@ -111,7 +111,7 @@ export class Client {
 				callback()
 			},
 			flush(callback) {
-				this.push(`\n--${boundary}--`)
+				this.push(`\r\n--${boundary}--`)
 				callback()
 			}
 		})
@@ -126,6 +126,11 @@ export class Client {
 				"Content-Type": `multipart/form-data; boundary=${boundary}`
 			}
 		})
+
+
+		if (!returned.ok) {
+			throw new Error(`[Message creation] ${returned.status} ${returned.statusText}`)
+		}
 
 		let response = (await returned.json() as APIMessage)
 		console.log(JSON.stringify(response, null, 4))
