@@ -256,7 +256,7 @@ export class UploadStream extends Writable {
     setUploadId(id: string) {
         if (this.uploadId)
             return this.destroy( new WebError(400, "duplicate attempt to set upload ID") )
-        if (id.match(id_check_regex)?.[0] != id
+        if (!id || id.match(id_check_regex)?.[0] != id
             || id.length > this.files.config.maxUploadIdLength)
             return this.destroy( new WebError(400, "invalid file ID") )
 

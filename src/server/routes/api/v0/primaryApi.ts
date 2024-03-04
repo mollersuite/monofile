@@ -7,7 +7,9 @@ import RangeParser, { type Range } from "range-parser"
 import ServeError from "../../../lib/errors.js"
 import Files, { WebError } from "../../../lib/files.js"
 import { getAccount, requiresPermissions } from "../../../lib/middleware.js"
+import FormDataParser, { Field } from "../../../lib/formdata.js"
 import {Readable} from "node:stream"
+import {ReadableStream as StreamWebReadable} from "node:stream/web"
 export let primaryApi = new Hono<{
     Variables: {
         account: Accounts.Account
@@ -95,19 +97,45 @@ export default function (files: Files) {
     primaryApi.post(
         "/upload",
         requiresPermissions("upload"),
-        async (ctx) => {
+        (ctx) => { return new Promise((resolve,reject) => {
             let acc = ctx.get("account") as Accounts.Account
 
             if (!ctx.req.header("Content-Type")?.startsWith("multipart/form-data")) {
                 ctx.status(400)
-                return ctx.body("[err] must be multipart/form-data")
+                resolve(ctx.body("[err] must be multipart/form-data"))
             }
 
             if (!ctx.req.raw.body) {
                 ctx.status(400)
-                return ctx.body("[err] body must be supplied")
+                resolve(ctx.body("[err] body must be supplied"))
             }
-        }
+
+            let file = files.createWriteStream(acc.id)
+            let formDataParser = new FormDataParser('')
+            
+            Readable.fromWeb(ctx.req.raw.body as StreamWebReadable)
+                .pipe(formDataParser)
+                .on("data", async (field: Field) => {
+                    if (field.headers["content-disposition"]?.filename) {
+                        field.pipe(file)
+                    } else {
+                        switch(field.headers["content-disposition"]?.name) {
+                            case "uploadId":
+                                file.setUploadId((await field.collect(65536).catch(e => {formDataParser.destroy(new WebError(413, e.message))}))?.toString() || "")
+                        }
+                    }
+                })
+                .on("end", async () => {
+                    if (!file.writableEnded) await new Promise((res, rej) => {file.once("finish", res); file.once("error", res)})
+                    if (file.errored || !(await file.commit().catch(e => file.error = e))) {
+                        ctx.status(file.error instanceof WebError ? file.error.statusCode : 500)
+                        resolve(`[err] ${file.error instanceof WebError ? file.error.message : file.error?.toString()}`)
+                        return
+                    }
+                    
+                    resolve(ctx.body(file.uploadId!))
+                })
+        })}
     )
 /*
     primaryApi.post(
