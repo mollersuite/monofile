@@ -5,8 +5,8 @@ import * as Accounts from "../../../lib/accounts.js"
 import * as auth from "../../../lib/auth.js"
 import RangeParser, { type Range } from "range-parser"
 import ServeError from "../../../lib/errors.js"
-import Files from "../../../lib/files.js"
-import { getAccount } from "../../../lib/middleware.js"
+import Files, { WebError } from "../../../lib/files.js"
+import { getAccount, requiresPermissions } from "../../../lib/middleware.js"
 import {Readable} from "node:stream"
 export let primaryApi = new Hono<{
     Variables: {
@@ -27,8 +27,7 @@ export default function (files: Files) {
             let file = files.files[fileId]
             ctx.header("Access-Control-Allow-Origin", "*")
             ctx.header("Content-Security-Policy", "sandbox allow-scripts")
-            if (ctx.req.query("attachment") == "1")
-                ctx.header("Content-Disposition", "attachment")
+            ctx.header("Content-Disposition", `${ctx.req.query("attachment") == "1" ? "attachment" : "inline"}; filename="${file.filename.replaceAll("\n","\\n")}"`)
 
             if (file) {
                 if (file.visibility == "private") {
@@ -91,89 +90,26 @@ export default function (files: Files) {
             }
         }
     )
-
-    // primaryApi.head(
-    //     ["/file/:fileId", "/cpt/:fileId/*", "/:fileId"],
-    //     async (ctx) => {
-    //         let file = files.files[req.params.fileId]
-
-    //         if (
-    //             file.visibility == "private" &&
-    //             (ctx.get("account")?.id != file.owner ||
-    //                 (auth.getType(auth.tokenFor(ctx)!) == "App" &&
-    //                     auth
-    //                         .getPermissions(auth.tokenFor(ctx)!)
-    //                         ?.includes("private")))
-    //         ) {
-    //             return ctx.status(403)
-    //         }
-
-    //         ctx.header("Content-Security-Policy", "sandbox allow-scripts")
-
-    //         if (ctx.req.query("attachment") == "1")
-    //             ctx.header("Content-Disposition", "attachment")
-
-    //         if (!file) {
-    //             res.status(404)
-    //             res.send()
-    //         } else {
-    //             ctx.header("Content-Type", file.mime)
-    //             if (file.sizeInBytes) {
-    //                 ctx.header("Content-Length", file.sizeInBytes)
-    //             }
-    //             if (file.chunkSize) {
-    //                 ctx.header("Accept-Ranges", "bytes")
-    //             }
-    //             res.send()
-    //         }
-    //     }
-    // )
-
     // upload handlers
 
-    /*
     primaryApi.post(
         "/upload",
         requiresPermissions("upload"),
-        multerSetup.single("file"),
         async (ctx) => {
             let acc = ctx.get("account") as Accounts.Account
 
-            if (req.file) {
-                try {
-                    let prm = req.header("monofile-params")
-                    let params: { [key: string]: any } = {}
-                    if (prm) {
-                        params = JSON.parse(prm)
-                    }
+            if (!ctx.req.header("Content-Type")?.startsWith("multipart/form-data")) {
+                ctx.status(400)
+                return ctx.body("[err] must be multipart/form-data")
+            }
 
-                    files
-                        .uploadFile(
-                            {
-                                owner: acc?.id,
-
-                                uploadId: params.uploadId,
-                                filename: req.file.originalname,
-                                mime: req.file.mimetype,
-                            },
-                            req.file.buffer
-                        )
-                        .then((uID) => res.send(uID))
-                        .catch((stat) => {
-                            res.status(stat.status)
-                            res.send(`[err] ${stat.message}`)
-                        })
-                } catch {
-                    res.status(400)
-                    res.send("[err] bad request")
-                }
-            } else {
-                res.status(400)
-                res.send("[err] bad request")
+            if (!ctx.req.raw.body) {
+                ctx.status(400)
+                return ctx.body("[err] body must be supplied")
             }
         }
     )
-
+/*
     primaryApi.post(
         "/clone",
         requiresPermissions("upload"),
@@ -212,6 +148,6 @@ export default function (files: Files) {
             }
         }
     )
-        */
+    */
     return primaryApi
 }

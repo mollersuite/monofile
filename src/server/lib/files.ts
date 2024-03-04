@@ -172,9 +172,10 @@ export class UploadStream extends Writable {
 
     _destroy(error: Error | null) {
         this.error = error || undefined
-
+        this.abort()
+        /*
         if (error instanceof WebError) return // destroyed by self
-        if (error) this.abort() // destroyed externally...
+        if (error) return // destroyed externally...*/
     }
 
     /** 
@@ -182,7 +183,11 @@ export class UploadStream extends Writable {
     */
     async abort() {
         if (!this.destroyed) this.destroy()
+        if (this.current) this.current.destroy(this.error)
         await this.files.api.deleteMessages(this.messages)
+        if (this.uploadId) {
+            delete this.files.locks[this.uploadId]
+        }
     }
 
     /**
@@ -222,6 +227,7 @@ export class UploadStream extends Writable {
         }
 
         await this.files.write()
+        delete this.files.locks[this.uploadId!]
         return this.uploadId
     }
 
@@ -257,11 +263,10 @@ export class UploadStream extends Writable {
         if (this.files.files[id] && this.files.files[id].owner != this.owner)
             return this.destroy( new WebError(403, "you don't own this file") )
 
-        if (false /* check if locked here */)
+        if (this.files.locks[id])
             return this.destroy( new WebError(409, "a file with this ID is already being uploaded") )
 
-        /* lock the id */
-
+        this.files.locks[id] = true
         this.uploadId = id
         return this
     } 
@@ -324,6 +329,8 @@ export default class Files {
     api: API
     files: { [key: string]: FilePointer } = {}
     data_directory: string = `${process.cwd()}/.data`
+
+    locks: Record<string, boolean> = {} // I'll, like, do something more proper later 
 
     constructor(config: Configuration) {
         this.config = config
