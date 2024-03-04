@@ -1,8 +1,10 @@
 import { Hono } from "hono"
 import { readFile, readdir } from "fs/promises"
 import Files from "../lib/files.js"
+import {fileURLToPath} from "url"
+import {dirname} from "path"
 
-const APIDirectory = __dirname + "/api"
+const APIDirectory = dirname(fileURLToPath(import.meta.url)) + "/api"
 
 interface APIMount {
     file: string
@@ -25,18 +27,21 @@ class APIVersion {
     readonly definition: APIDefinition
     readonly apiPath: string
     readonly root: Hono = new Hono()
+    readonly files: Files
 
     constructor(definition: APIDefinition, files: Files) {
         this.definition = definition
         this.apiPath = APIDirectory + "/" + definition.name
+        this.files = files
+    }
 
-        for (let _mount of definition.mount) {
-            let mount = resolveMount(_mount)
+    async load() {
+        for (let _mount of this.definition.mount) {
+            let mount = resolveMount(_mount);
             // no idea if there's a better way to do this but this is all i can think of
-            let route = require(`${this.apiPath}/${mount.file}.js`) as (
-                files: Files
-            ) => Hono
-            this.root.route(mount.to, route(files))
+            let { default: route } = await import(`${this.apiPath}/${mount.file}.js`) as { default: (files: Files) => Hono }
+            
+            this.root.route(mount.to, route(this.files))
         }
     }
 }
@@ -54,12 +59,15 @@ export default class APIRouter {
      * @param definition Definition to mount.
      */
 
-    private mount(definition: APIDefinition) {
+    private async mount(definition: APIDefinition) {
         console.log(`mounting APIDefinition ${definition.name}`)
+
+        let def = new APIVersion(definition, this.files)
+        await def.load()
 
         this.root.route(
             definition.baseURL,
-            new APIVersion(definition, this.files).root
+            def.root
         )
     }
 
@@ -74,7 +82,7 @@ export default class APIRouter {
                     )
                 ).toString()
             ) as APIDefinition
-            this.mount(def)
+            await this.mount(def)
         }
     }
 }

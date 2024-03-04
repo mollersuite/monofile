@@ -7,10 +7,12 @@ import Files from "./lib/files.js"
 import { getAccount } from "./lib/middleware.js"
 import APIRouter from "./routes/api.js"
 import preview from "./routes/preview.js"
+import {fileURLToPath} from "url"
+import {dirname} from "path"
+import pkg from "../../package.json" assert {type:"json"}
+import config from "../../config.json" assert {type:"json"}
 
-const pkg = require(`${process.cwd()}/package.json`)
 const app = new Hono()
-let config = require(`${process.cwd()}/config.json`)
 
 app.get(
     "/static/assets/*",
@@ -72,6 +74,7 @@ app.get("/server", (ctx) =>
 
 // init data
 
+const __dirname = dirname(fileURLToPath(import.meta.url))
 if (!fs.existsSync(__dirname + "/../.data/"))
     fs.mkdirSync(__dirname + "/../.data/")
 

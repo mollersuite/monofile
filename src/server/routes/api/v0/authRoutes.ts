@@ -26,12 +26,11 @@ export let authRoutes = new Hono<{
     }
 }>()
 
-let config = require(`${process.cwd()}/config.json`)
+import config from "../../../../../config.json" assert {type:"json"}
 authRoutes.all("*", getAccount)
 
-module.exports = function (files: Files) {
+export default function (files: Files) {
     authRoutes.post("/login", async (ctx) => {
-        console.log(ctx)
         const body = await ctx.req.json()
         if (
             typeof body.username != "string" ||

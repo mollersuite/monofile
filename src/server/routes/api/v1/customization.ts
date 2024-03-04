@@ -7,8 +7,7 @@ import {
     requiresPermissions,
 } from "../../../lib/middleware.js"
 import ServeError from "../../../lib/errors.js"
-
-const Configuration = require(`${process.cwd()}/config.json`)
+import Configuration from "../../../../../config.json" assert {type:"json"}
 
 const router = new Hono<{
     Variables: {
@@ -18,7 +17,7 @@ const router = new Hono<{
 
 router.use(getAccount)
 
-module.exports = function (files: Files) {
+export default function (files: Files) {
     router.put(
         "/css",
         requiresAccount,

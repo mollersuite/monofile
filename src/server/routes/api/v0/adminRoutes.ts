@@ -22,9 +22,7 @@ adminRoutes
     .use(requiresAdmin)
     .use(requiresPermissions("admin"))
 
-let config = require(`${process.cwd()}/config.json`)
-
-module.exports = function (files: Files) {
+export default function (files: Files) {
     adminRoutes.post("/reset", async (ctx) => {
         let acc = ctx.get("account") as Accounts.Account
         const body = await ctx.req.json()

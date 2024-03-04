@@ -92,7 +92,7 @@ export class Client {
 				}
 
 				let capture = Math.min(
-					(this.config.maxDiscordFileSize - (bytes_sent % this.config.maxDiscordFileSize)) + 1, 
+					(this.config.maxDiscordFileSize - (bytes_sent % this.config.maxDiscordFileSize)), 
 					chunk.byteLength-position
 				)
 				console.log(`Capturing ${capture} bytes, ${chunk.subarray(position, position+capture).byteLength}`)

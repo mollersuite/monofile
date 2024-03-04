@@ -3,36 +3,24 @@ import { Hono } from "hono"
 
 import * as Accounts from "../../../lib/accounts.js"
 import * as auth from "../../../lib/auth.js"
-import axios, { AxiosResponse } from "axios"
-import { type Range } from "range-parser"
-import multer, { memoryStorage } from "multer"
-import { Readable } from "stream"
+import RangeParser, { type Range } from "range-parser"
 import ServeError from "../../../lib/errors.js"
 import Files from "../../../lib/files.js"
-import { getAccount, requiresPermissions } from "../../../lib/middleware.js"
-
-let parser = bodyParser.json({
-    type: ["text/plain", "application/json"],
-})
-
+import { getAccount } from "../../../lib/middleware.js"
+import {Readable} from "node:stream"
 export let primaryApi = new Hono<{
     Variables: {
         account: Accounts.Account
     }
 }>()
 
-const multerSetup = multer({ storage: memoryStorage() })
-
-let config = require(`${process.cwd()}/config.json`)
-
 primaryApi.use(getAccount)
 
-module.exports = function (files: Files) {/*
+export default function (files: Files) {
     primaryApi.get(
-        ["/file/:fileId", "/cpt/:fileId/*", "/:fileId"],
-        async (ctx) => {
+        "/file/:fileId",
+        async (ctx): Promise<Response> => {
             const fileId = (ctx.req.param() as {fileId: string}).fileId
-            const reqRange 
 
             let acc = ctx.get("account") as Accounts.Account
 
@@ -54,8 +42,7 @@ module.exports = function (files: Files) {/*
                             .getPermissions(auth.tokenFor(ctx)!)
                             ?.includes("private")
                     ) {
-                        ServeError(ctx, 403, "insufficient permissions")
-                        return
+                        return ServeError(ctx, 403, "insufficient permissions")
                     }
                 }
 
@@ -65,28 +52,17 @@ module.exports = function (files: Files) {/*
                 if (file.sizeInBytes) {
                     ctx.header("Content-Length", file.sizeInBytes.toString())
 
-                    if (file.chunkSize) {
-                        let range = ctx.range(file.sizeInBytes)
-                        if (range) {
-                            // error handling
-                            if (typeof range == "number") {
-                                return ctx.status(range == -1 ? 416 : 400)
-                            }
-                            if (range.type != "bytes") {
-                                return ctx.status(400)
-                            }
+                    if (file.chunkSize && ctx.req.header("Range")) {
+                        let ranges = RangeParser(file.sizeInBytes, ctx.req.header("Range") || "")
 
-                            // set ranges var
-                            let rngs = Array.from(range)
-                            if (rngs.length != 1) {
-                                return ctx.status(400)
-                            }
-                            range = rngs[0]
+                        if (ranges) {
+                            if (typeof ranges == "number")
+                                return ServeError(ctx, ranges == -1 ? 416 : 400, ranges == -1 ? "unsatisfiable ranges" : "invalid ranges")
+                            if (ranges.length > 1) return ServeError(ctx, 400, "multiple ranges not supported")
+                            range = ranges[0]
                         }
                     }
                 }
-
-                // supports ranges
 
                 return files
                     .readFileStream(fileId, range)
@@ -103,8 +79,8 @@ module.exports = function (files: Files) {/*
                             )
                         }
 
-                        return ctx.stream((stre) => {
-                            // Somehow return a stream?
+                        return ctx.req.method == "HEAD" ? ctx.body(null) : ctx.stream(async (webStream) => {
+                            webStream.pipe(Readable.toWeb(stream) as ReadableStream)
                         })
                     })
                     .catch((err) => {
@@ -114,7 +90,7 @@ module.exports = function (files: Files) {/*
                 return ServeError(ctx, 404, "file not found")
             }
         }
-    )*/
+    )
 
     // primaryApi.head(
     //     ["/file/:fileId", "/cpt/:fileId/*", "/:fileId"],

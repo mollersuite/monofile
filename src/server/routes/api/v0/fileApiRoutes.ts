@@ -14,7 +14,6 @@ export let fileApiRoutes = new Hono<{
     }
 }>()
 
-let config = require(`${process.cwd()}/config.json`)
 fileApiRoutes.use("*", getAccount) // :warning: /list somehow crashes Hono with an internal error!
 /*
 
@@ -27,7 +26,7 @@ TypeError: Cannot read properties of undefined (reading 'get')
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
 */
 
-module.exports = function (files: Files) {
+export default function (files: Files) {
     fileApiRoutes.get(
         "/list",
         requiresAccount,

@@ -17,8 +17,6 @@ import {
 import ServeError from "../../../lib/errors.js"
 import { sendMail } from "../../../lib/mail.js"
 
-const Configuration = require(`${process.cwd()}/config.json`)
-
 const router = new Hono<{
     Variables: {
         account?: Accounts.Account
@@ -27,7 +25,7 @@ const router = new Hono<{
 
 router.use(getAccount, requiresAccount, requiresAdmin)
 
-module.exports = function (files: Files) {
+export default function (files: Files) {
     router.patch("/account/:username/password", async (ctx) => {
         const Account = ctx.get("account") as Accounts.Account
         const body = await ctx.req.json()

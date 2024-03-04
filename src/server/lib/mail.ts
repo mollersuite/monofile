@@ -1,9 +1,8 @@
 import { createTransport } from "nodemailer"
+import "dotenv/config"
+import config from "../../../config.json" assert {type:"json"}
 
-// required i guess
-require("dotenv").config()
-
-let mailConfig = require(process.cwd() + "/config.json").mail,
+let mailConfig = config.mail,
     transport = createTransport({
         ...mailConfig.transport,
         auth: {

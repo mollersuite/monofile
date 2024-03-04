@@ -4,7 +4,8 @@ import ServeError from "../lib/errors.js"
 import * as Accounts from "../lib/accounts.js"
 import type { Handler } from "hono"
 import type Files from "../lib/files.js"
-const pkg = require(`${process.cwd()}/package.json`)
+import pkg from "../../../package.json" assert {type:"json"}
+
 export default (files: Files): Handler =>
     async (ctx) => {
         let acc = ctx.get("account") as Accounts.Account

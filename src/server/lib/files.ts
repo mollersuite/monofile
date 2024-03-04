@@ -137,7 +137,7 @@ export class UploadStream extends Writable {
 
         while (position < data.byteLength) {
             let capture = Math.min(
-                ((this.files.config.maxDiscordFileSize*10) - (this.filled % (this.files.config.maxDiscordFileSize*10))) + 1, 
+                ((this.files.config.maxDiscordFileSize*10) - (this.filled % (this.files.config.maxDiscordFileSize*10))), 
                 data.byteLength-position
             )
             console.log(`Capturing ${capture} bytes for megachunk, ${data.subarray(position, position + capture).byteLength}`)

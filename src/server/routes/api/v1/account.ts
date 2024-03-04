@@ -19,7 +19,7 @@ import {
 import ServeError from "../../../lib/errors.js"
 import { sendMail } from "../../../lib/mail.js"
 
-const Configuration = require(`${process.cwd()}/config.json`)
+import Configuration from "../../../../../config.json" assert {type:"json"}
 
 const router = new Hono<{
     Variables: {
@@ -29,7 +29,7 @@ const router = new Hono<{
 
 router.use(getAccount)
 
-module.exports = function (files: Files) {
+export default function (files: Files) {
     router.post("/login", async (ctx, res) => {
         const body = await ctx.req.json()
         if (
