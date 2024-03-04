@@ -80,7 +80,7 @@ export default function (files: Files) {
                         }
 
                         return ctx.req.method == "HEAD" ? ctx.body(null) : ctx.stream(async (webStream) => {
-                            webStream.pipe(Readable.toWeb(stream) as ReadableStream)
+                            webStream.pipe(Readable.toWeb(stream) as ReadableStream).catch(e => {}) // emits an AbortError for some reason so this catches that
                         })
                     })
                     .catch((err) => {
