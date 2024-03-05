@@ -7,7 +7,6 @@ import RangeParser, { type Range } from "range-parser"
 import ServeError from "../../../lib/errors.js"
 import Files, { WebError } from "../../../lib/files.js"
 import { getAccount, requiresPermissions } from "../../../lib/middleware.js"
-import FormDataParser, { Field } from "../../../lib/formdata.js"
 import {Readable} from "node:stream"
 import {ReadableStream as StreamWebReadable} from "node:stream/web"
 import formidable from "formidable"
@@ -102,7 +101,20 @@ export default function (files: Files) {
         requiresPermissions("upload"),
         (ctx) => { return new Promise((resolve,reject) => {
             ctx.env.incoming.removeAllListeners("data") // remove hono's buffering
-            console.log('awawa')
+
+            let errEscalated = false
+            function escalate(err:Error) {
+                if (errEscalated) return
+                errEscalated = true
+                
+                if ("httpCode" in err)
+                    ctx.status(err.httpCode as number)
+                else if (err instanceof WebError) 
+                    ctx.status(err.statusCode)
+                else ctx.status(400)
+                resolve(ctx.body(err.message))
+            }
+
             let acc = ctx.get("account") as Accounts.Account | undefined
 
             if (!ctx.req.header("Content-Type")?.startsWith("multipart/form-data")) {
@@ -116,7 +128,6 @@ export default function (files: Files) {
                 resolve(ctx.body("[err] body must be supplied"))
                 return
             }
-            console.log('awawawawa')
 
             let file = files.createWriteStream(acc?.id)
             let parser = formidable({
@@ -126,50 +137,44 @@ export default function (files: Files) {
             })
 
             parser.onPart = function(part) {
-                console.log(part)
-                if (part.originalFilename == "" || !part.mimetype) {
-                    parser._handlePart(part); return
+                if (!part.originalFilename || !part.mimetype) {
+                    parser._handlePart(part)
+                    return
                 }
                 // lol
                 if (part.name == "file") {
-                    file.on("drain", () => {
-                        ctx.env.incoming.resume()
-                    })
-                    part.addListener("data", (data: Buffer) => {
+                    file.setName(part.originalFilename || "")
+                    file.setType(part.mimetype || "")
+
+                    file.on("drain", () => ctx.env.incoming.resume())
+                    file.on("error", (err) => part.emit("error", err))
+
+                    part.on("data", (data: Buffer) => {
                         if (!file.write(data))
                             ctx.env.incoming.pause()
                     })
+                    part.on("end", () => file.end())
                 }
             }
 
             parser.on("field", (k,v) => {
-                console.log(k,v)
                 if (k == "uploadId")
                     file.setUploadId(v)
             })
 
-            parser.parse(ctx.env.incoming).catch(e => console.log(e))
-            console.log("Parsing")
+            parser.parse(ctx.env.incoming).catch(e => console.error(e))
 
             parser.on('error', (err) => {
-                if ("httpCode" in err)
-                    ctx.status(err.httpCode)
-                else ctx.status(400)
-                resolve(ctx.body(err.message))
+                escalate(err)
+                if (!file.destroyed) file.destroy(err)
             })
+            file.on("error", escalate)
 
-            file.on("error", (err) => {
-                if (err instanceof WebError)
-                    ctx.status(err.statusCode)
-                resolve(ctx.body(err?.message))
-            })
-
-            file.on("finish", () => {
-                file.commit().then(id => resolve(ctx.body(id!))).catch((err) => {
-                    if (err instanceof WebError)
-                        ctx.status(err.statusCode)
-                    resolve(ctx.body(err?.message))
-                })
+            file.on("finish", async () => {
+                if (!ctx.env.incoming.readableEnded) await new Promise(res => ctx.env.incoming.once("end", res))
+                file.commit()
+                    .then(id => resolve(ctx.body(id!)))
+                    .catch(escalate)
             })
 
         })}

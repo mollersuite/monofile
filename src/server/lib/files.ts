@@ -170,18 +170,17 @@ export class UploadStream extends Writable {
         callback()
     }
 
-    _destroy(error: Error | null) {
+    _destroy(error: Error | null, callback: (err?: Error|null) => void) {
         this.error = error || undefined
-        this.abort()
-        /*
-        if (error instanceof WebError) return // destroyed by self
-        if (error) return // destroyed externally...*/
+        if (error) this.abort()
+        callback()
     }
 
     /** 
      * @description Cancel & unlock the file. When destroy() is called with a non-WebError, this is automatically called
     */
     async abort() {
+        console.log("Aborting")
         if (!this.destroyed) this.destroy()
         if (this.current) this.current.destroy(this.error)
         await this.files.api.deleteMessages(this.messages)
@@ -202,8 +201,15 @@ export class UploadStream extends Writable {
         }
 
         // Perform checks
-        if (!this.mime) throw new WebError(400, "no mime provided")
-        if (!this.name) throw new WebError(400, "no filename provided")
+        if (!this.mime) {
+            this.abort()
+            throw new WebError(400, "no mime provided")
+        }
+        if (!this.name) {
+            this.abort()
+            throw new WebError(400, "no filename provided")
+        }
+
         if (!this.uploadId) this.setUploadId(generateFileId())
         
         let ogf = this.files.files[this.uploadId!]
@@ -301,6 +307,8 @@ export class UploadStream extends Writable {
             console.log(`Sent: ${message.id}`)
             this.newmessage_debounce = true
             this.emit("debounceReleased")
+        }).catch(e => {
+            if (!this.errored) this.destroy(e)
         })
 
         return stream

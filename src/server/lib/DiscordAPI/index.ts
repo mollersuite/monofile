@@ -59,7 +59,10 @@ export class Client {
 		// Remove bulk deletable messages
 
 		let bulkDeletable = ids.filter(e => convertSnowflakeToDate(e).valueOf() < 2 * 7 * 24 * 60 * 60 * 1000)
-        await this.rest.fetch(`/channels/${this.targetChannel}/messages/bulk-delete`, {method: "POST",body: JSON.stringify({messages: bulkDeletable})})
+        await this.rest.fetch(`/channels/${this.targetChannel}/messages/bulk-delete`, {
+			method: "POST",
+			body: JSON.stringify({messages: bulkDeletable})
+		})
         bulkDeletable.forEach(Map.prototype.delete.bind(this.messageCache))
 
 		// everything else, we can do manually...
@@ -116,6 +119,9 @@ export class Client {
 			}
 		})
 
+		let controller = new AbortController()
+		stream.on("error", _ => controller.abort())
+
 		//pushBoundary(transformed)
 		stream.pipe(transformed)
 
@@ -124,7 +130,8 @@ export class Client {
 			body: transformed,
 			headers: {
 				"Content-Type": `multipart/form-data; boundary=${boundary}`
-			}
+			},
+			signal: controller.signal
 		})
 
 

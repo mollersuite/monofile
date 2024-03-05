@@ -60,7 +60,7 @@
     let handle_fetch_promise = (x,prom) => {
         return prom.then(async (res) => {
             let txt = await res.text()
-            if (txt.startsWith("[err]")) uploads[x].uploadStatus.error = txt;
+            if (!res.ok) uploads[x].uploadStatus.error = txt;
             else {
                 uploads[x].uploadStatus.fileId = txt;
                 
@@ -84,12 +84,10 @@
                 switch(v.type) {
                     case "upload":
                         let fd = new FormData()
+                        if (v.params.uploadId) fd.append("uploadId", v.params.uploadId)
                         fd.append("file",v.file)
 
                         return handle_fetch_promise(x,fetch("/upload",{
-                            headers: {
-                                "monofile-params": JSON.stringify(v.params)
-                            },
                             method: "POST",
                             body: fd
                         }))
