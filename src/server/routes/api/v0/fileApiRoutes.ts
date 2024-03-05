@@ -14,17 +14,7 @@ export let fileApiRoutes = new Hono<{
     }
 }>()
 
-fileApiRoutes.use("*", getAccount) // :warning: /list somehow crashes Hono with an internal error!
-/*
-
-/home/jack/Code/Web/monofile/node_modules/.pnpm/@hono+node-server@1.2.0/node_modules/@hono/node-server/dist/listener.js:55
-    const contentType = res.headers.get("content-type") || "";
-                                    ^
-
-TypeError: Cannot read properties of undefined (reading 'get')
-    at Server.<anonymous> (/home/jack/Code/Web/monofile/node_modules/.pnpm/@hono+node-server@1.2.0/node_modules/@hono/node-server/dist/listener.js:55:37)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-*/
+fileApiRoutes.use("*", getAccount)
 
 export default function (files: Files) {
     fileApiRoutes.get(
@@ -37,7 +27,7 @@ export default function (files: Files) {
             if (!acc) return
             let accId = acc.id
 
-            ctx.json(
+            return ctx.json(
                 acc.files
                     .map((e) => {
                         let fp = files.files[e]

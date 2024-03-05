@@ -32,7 +32,7 @@ export default function (files: Files) {
             let file = files.files[fileId]
             ctx.header("Access-Control-Allow-Origin", "*")
             ctx.header("Content-Security-Policy", "sandbox allow-scripts")
-            ctx.header("Content-Disposition", `${ctx.req.query("attachment") == "1" ? "attachment" : "inline"}; filename="${file.filename.replaceAll("\n","\\n")}"`)
+            ctx.header("Content-Disposition", `${ctx.req.query("attachment") == "1" ? "attachment" : "inline"}; filename="${encodeURI(file.filename.replaceAll("\n","\\n"))}"`)
 
             if (file) {
                 if (file.visibility == "private") {
@@ -68,6 +68,8 @@ export default function (files: Files) {
                     }
                 }
 
+                console.log(range)
+
                 return files
                     .readFileStream(fileId, range)
                     .then(async (stream) => {
@@ -84,7 +86,7 @@ export default function (files: Files) {
                         }
 
                         return ctx.req.method == "HEAD" ? ctx.body(null) : ctx.stream(async (webStream) => {
-                            webStream.pipe(Readable.toWeb(stream) as ReadableStream).catch(e => {}) // emits an AbortError for some reason so this catches that
+                            webStream.pipe(Readable.toWeb(stream.on("error", e => {})) as ReadableStream).catch(e => {})
                         })
                     })
                     .catch((err) => {
