@@ -27,7 +27,6 @@ Invite your bot to a server, and create a new `config.json` in the project root:
 {
     "maxDiscordFiles": 20,
     "maxDiscordFileSize": 26214400,
-    "targetGuild": "1024080490677936248",
     "targetChannel": "1024080525993971913",
     "requestTimeout":120000,
     "maxUploadIdLength":30,

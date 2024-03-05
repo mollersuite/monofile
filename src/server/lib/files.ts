@@ -47,7 +47,6 @@ export type FileUploadSettings = Partial<Pick<FilePointer, "mime" | "owner">> &
 export interface Configuration {
     maxDiscordFiles: number
     maxDiscordFileSize: number
-    targetGuild: string
     targetChannel: string
     requestTimeout: number
     maxUploadIdLength: number
