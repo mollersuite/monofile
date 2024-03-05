@@ -11,6 +11,7 @@ import {Readable} from "node:stream"
 import {ReadableStream as StreamWebReadable} from "node:stream/web"
 import formidable from "formidable"
 import { HttpBindings } from "@hono/node-server"
+import pkg from "../../../../../package.json" assert {type: "json"}
 export let primaryApi = new Hono<{
     Variables: {
         account: Accounts.Account
@@ -117,17 +118,11 @@ export default function (files: Files) {
 
             let acc = ctx.get("account") as Accounts.Account | undefined
 
-            if (!ctx.req.header("Content-Type")?.startsWith("multipart/form-data")) {
-                ctx.status(400)
-                resolve(ctx.body("[err] must be multipart/form-data"))
-                return
-            }
+            if (!ctx.req.header("Content-Type")?.startsWith("multipart/form-data"))
+                return resolve(ctx.body("must be multipart/form-data", 400))
 
-            if (!ctx.req.raw.body) {
-                ctx.status(400)
-                resolve(ctx.body("[err] body must be supplied"))
-                return
-            }
+            if (!ctx.req.raw.body)
+                return resolve(ctx.body("body must be supplied", 400))
 
             let file = files.createWriteStream(acc?.id)
             let parser = formidable({
@@ -179,45 +174,57 @@ export default function (files: Files) {
 
         })}
     )
-/*
+
     primaryApi.post(
         "/clone",
         requiresPermissions("upload"),
-        async ctx => {
+        ctx => new Promise(async resolve => {
+
             let acc = ctx.get("account") as Accounts.Account
 
+            let requestParameters
             try {
-                return axios
-                    .get(req.body.url, { responseType: "arraybuffer" })
-                    .then((data: AxiosResponse) => {
-                        files
-                            .uploadFile(
-                                {
-                                    owner: acc?.id,
-                                    filename:
-                                        req.body.url.split("/")[
-                                            req.body.url.split("/").length - 1
-                                        ] || "generic",
-                                    mime: data.headers["content-type"],
-                                    uploadId: req.body.uploadId,
-                                },
-                                Buffer.from(data.data)
-                            )
-                            .then((uID) => res.send(uID))
-                            .catch((stat) => {
-                                res.status(stat.status)
-                                res.send(`[err] ${stat.message}`)
-                            })
-                    })
-                    .catch((err) => {
-                        console.log(err)
-                        return res.text(`[err] failed to fetch data`, 400)
-                    })
-            } catch {
-                return ctx.text("[err] an error occured", 500)
-            }
-        }
+                requestParameters = await ctx.req.json()
+            } catch (err: any) {return ctx.text(err.toString(), 400)}
+            
+            let res = await fetch(requestParameters.url, {
+                headers: {
+                    "user-agent": `monofile ${pkg.version} (+https://${ctx.req.header("Host")})`
+                }
+            })
+            if (!res.ok) return ctx.text(`got ${res.status} ${res.statusText}`, 500)
+            if (!res.body) return ctx.text(`Internal Server Error`, 500)
+            if (
+                res.headers.has("Content-Length")
+                && !Number.isNaN(parseInt(res.headers.get("Content-Length")!,10))
+                && parseInt(res.headers.get("Content-Length")!,10) > files.config.maxDiscordFileSize*files.config.maxDiscordFiles
+            ) 
+                return ctx.text(`file reports to be too large`, 413)
+
+            let file = files.createWriteStream(acc?.id)
+            
+            Readable.fromWeb(res.body as StreamWebReadable)
+                .pipe(file)
+                .on("error", (err) => resolve(ctx.text(err.message, err instanceof WebError ? err.statusCode : 500)))
+
+            file
+                .setName(
+                    requestParameters.url.split("/")[
+                        requestParameters.url.split("/").length - 1
+                    ] || "generic"
+                )
+            
+            if (res.headers.has("content-type")) file.setType(res.headers.get("content-type")!)
+            if (requestParameters.uploadId) file.setUploadId(requestParameters.uploadId)
+
+            file.once("finish", () => {
+                file.commit()
+                    .then(id => resolve(ctx.text(id!)))
+                    .catch((err) => resolve(ctx.text(err.message, err instanceof WebError ? err.statusCode : 500)))
+            })
+
+        })
     )
-    */
+    
     return primaryApi
 }
