@@ -114,6 +114,10 @@ serve(
     {
         fetch: app.fetch,
         port: Number(process.env.MONOFILE_PORT || 3000),
+        serverOptions: {
+            //@ts-ignore
+            requestTimeout: config.requestTimeout
+        }
     },
     (info) => {
         console.log("Web OK!", info.port, info.address)
