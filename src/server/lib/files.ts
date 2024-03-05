@@ -198,7 +198,7 @@ export class UploadStream extends Writable {
         if (this.errored) throw this.error
         if (!this.writableFinished) {
             let err = Error("attempted to commit file when the stream was still unfinished")
-            this.destroy(err); throw err
+            if (!this.destroyed) {this.destroy(err)}; throw err
         }
 
         // Perform checks

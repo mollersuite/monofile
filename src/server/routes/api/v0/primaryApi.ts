@@ -10,13 +10,16 @@ import { getAccount, requiresPermissions } from "../../../lib/middleware.js"
 import FormDataParser, { Field } from "../../../lib/formdata.js"
 import {Readable} from "node:stream"
 import {ReadableStream as StreamWebReadable} from "node:stream/web"
+import formidable from "formidable"
+import { HttpBindings } from "@hono/node-server"
 export let primaryApi = new Hono<{
     Variables: {
         account: Accounts.Account
-    }
+    },
+    Bindings: HttpBindings
 }>()
 
-primaryApi.use(getAccount)
+primaryApi.all("*", getAccount)
 
 export default function (files: Files) {
     primaryApi.get(
@@ -98,43 +101,77 @@ export default function (files: Files) {
         "/upload",
         requiresPermissions("upload"),
         (ctx) => { return new Promise((resolve,reject) => {
-            let acc = ctx.get("account") as Accounts.Account
+            ctx.env.incoming.removeAllListeners("data") // remove hono's buffering
+            console.log('awawa')
+            let acc = ctx.get("account") as Accounts.Account | undefined
 
             if (!ctx.req.header("Content-Type")?.startsWith("multipart/form-data")) {
                 ctx.status(400)
                 resolve(ctx.body("[err] must be multipart/form-data"))
+                return
             }
 
             if (!ctx.req.raw.body) {
                 ctx.status(400)
                 resolve(ctx.body("[err] body must be supplied"))
+                return
+            }
+            console.log('awawawawa')
+
+            let file = files.createWriteStream(acc?.id)
+            let parser = formidable({
+                maxFieldsSize: 65536,
+                maxFileSize: files.config.maxDiscordFileSize*files.config.maxDiscordFiles,
+                maxFiles: 1
+            })
+
+            parser.onPart = function(part) {
+                console.log(part)
+                if (part.originalFilename == "" || !part.mimetype) {
+                    parser._handlePart(part); return
+                }
+                // lol
+                if (part.name == "file") {
+                    file.on("drain", () => {
+                        ctx.env.incoming.resume()
+                    })
+                    part.addListener("data", (data: Buffer) => {
+                        if (!file.write(data))
+                            ctx.env.incoming.pause()
+                    })
+                }
             }
 
-            let file = files.createWriteStream(acc.id)
-            let formDataParser = new FormDataParser('')
-            
-            Readable.fromWeb(ctx.req.raw.body as StreamWebReadable)
-                .pipe(formDataParser)
-                .on("data", async (field: Field) => {
-                    if (field.headers["content-disposition"]?.filename) {
-                        field.pipe(file)
-                    } else {
-                        switch(field.headers["content-disposition"]?.name) {
-                            case "uploadId":
-                                file.setUploadId((await field.collect(65536).catch(e => {formDataParser.destroy(new WebError(413, e.message))}))?.toString() || "")
-                        }
-                    }
+            parser.on("field", (k,v) => {
+                console.log(k,v)
+                if (k == "uploadId")
+                    file.setUploadId(v)
+            })
+
+            parser.parse(ctx.env.incoming).catch(e => console.log(e))
+            console.log("Parsing")
+
+            parser.on('error', (err) => {
+                if ("httpCode" in err)
+                    ctx.status(err.httpCode)
+                else ctx.status(400)
+                resolve(ctx.body(err.message))
+            })
+
+            file.on("error", (err) => {
+                if (err instanceof WebError)
+                    ctx.status(err.statusCode)
+                resolve(ctx.body(err?.message))
+            })
+
+            file.on("finish", () => {
+                file.commit().then(id => resolve(ctx.body(id!))).catch((err) => {
+                    if (err instanceof WebError)
+                        ctx.status(err.statusCode)
+                    resolve(ctx.body(err?.message))
                 })
-                .on("end", async () => {
-                    if (!file.writableEnded) await new Promise((res, rej) => {file.once("finish", res); file.once("error", res)})
-                    if (file.errored || !(await file.commit().catch(e => file.error = e))) {
-                        ctx.status(file.error instanceof WebError ? file.error.statusCode : 500)
-                        resolve(`[err] ${file.error instanceof WebError ? file.error.message : file.error?.toString()}`)
-                        return
-                    }
-                    
-                    resolve(ctx.body(file.uploadId!))
-                })
+            })
+
         })}
     )
 /*
