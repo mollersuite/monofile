@@ -449,11 +449,11 @@ export default class Files {
 
             // todo: figure out how to get typesccript to accept useRanges
             // i'm too tired to look it up or write whatever it wnats me to do
-            if (range && file.chunkSize && file.sizeInBytes) {
+            if (useRanges) {
                 // Calculate where to start file scans...
 
-                scan_files_begin = Math.floor(range.start / file.chunkSize)
-                scan_files_end = Math.ceil(range.end / file.chunkSize) - 1
+                scan_files_begin = Math.floor(range!.start / file.chunkSize!)
+                scan_files_end = Math.ceil(range!.end / file.chunkSize!) - 1
 
                 scan_msg_begin = Math.floor(scan_files_begin / 10)
                 scan_msg_end = Math.ceil(scan_files_end / 10)
@@ -469,7 +469,7 @@ export default class Files {
                 if (ret) return ret
 
                 // oh, there's none left. let's fetch a new message, then.
-                if (!file.messageids[msgIdx]) return null
+                if (!file.messageids[msgIdx] || msgIdx >= scan_msg_end) return null
                 let msg = await this.api
                     .fetchMessage(file.messageids[msgIdx])
                     .catch(() => {
@@ -478,20 +478,14 @@ export default class Files {
 
                 if (msg?.attachments) {
                     let attach = Array.from(msg.attachments.values())
-                    for (
-                        let i =
-                        
-                            useRanges && msgIdx == scan_msg_begin
+                    attachments = useRanges ? attach.slice(
+                        msgIdx == scan_msg_begin
                                 ? scan_files_begin - msgIdx * 10
-                                : 0;
-                        i <
-                        (useRanges && msgIdx == scan_msg_end
+                                : 0,
+                        msgIdx == scan_msg_end
                             ? scan_files_end - msgIdx * 10 + 1
-                            : attach.length);
-                        i++
-                    ) {
-                        attachments.push(attach[i])
-                    }
+                            : attach.length
+                    ) : attach
                 }
 
                 msgIdx++
@@ -502,46 +496,32 @@ export default class Files {
 
             let getNextChunk = async () => {
                 let scanning_chunk = await getNextAttachment()
-                if (!scanning_chunk) {
-                    return null
-                }
-
-                console.log(msgIdx,position,scanning_chunk.size)
+                if (!scanning_chunk) return null
 
                 let headers: HeadersInit =
                     useRanges
                         ? {
                             Range: `bytes=${
-                                // If this is the first chunk of the file (position == 0)
-                                // and both 'range' and 'file.chunkSize' are defined,
-                                // calculate the start of the range.
-                                // Otherwise, default to "0".
-                                position == 0 && range 
-                                && file.chunkSize
-                                    ? range.start - scan_files_begin * file.chunkSize
+                                position == 0
+                                    ? range!.start - scan_files_begin * file.chunkSize!
                                     : "0"
                             }-${
-                                // If this is the last chunk of the file (position == attachments.length - 1)
-                                // and both 'range' and 'file.chunkSize' are defined,
-                                // calculate the end of the range.
-                                // Otherwise, default to an empty string.
-                                position == attachments.length - 1 && range 
-                                && file.chunkSize
-                                    ? range.end - scan_files_end * file.chunkSize
+                                position == attachments.length - 1
+                                    ? range!.end - scan_files_end * file.chunkSize!
                                     : ""
                             }`,
                           }
                         : {}
 
-                let d = await fetch(scanning_chunk.url, {headers})
+                let response = await fetch(scanning_chunk.url, {headers})
                     .catch((e: Error) => {
                         console.error(e)
                         return {body: e}
                     })
 
                 position++
-
-                return d.body
+                
+                return response.body
             }
 
             let currentPusher : (() => Promise<{readyForMore: boolean, streamDone: boolean }> | undefined) | undefined
