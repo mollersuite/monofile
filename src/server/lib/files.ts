@@ -234,6 +234,7 @@ export class UploadStream extends Writable {
 
         await this.files.write()
         delete this.files.locks[this.uploadId!]
+        if (this.owner) Accounts.files.index(this.owner, this.uploadId!)
         return this.uploadId
     }
 
@@ -469,7 +470,7 @@ export default class Files {
                 if (ret) return ret
 
                 // oh, there's none left. let's fetch a new message, then.
-                if (!file.messageids[msgIdx] || msgIdx >= scan_msg_end) return null
+                if (!file.messageids[msgIdx] || msgIdx > scan_msg_end) return null
                 let msg = await this.api
                     .fetchMessage(file.messageids[msgIdx])
                     .catch(() => {
@@ -478,14 +479,16 @@ export default class Files {
 
                 if (msg?.attachments) {
                     let attach = Array.from(msg.attachments.values())
+
                     attachments = useRanges ? attach.slice(
                         msgIdx == scan_msg_begin
-                                ? scan_files_begin - msgIdx * 10
+                                ? scan_files_begin - scan_msg_begin * 10
                                 : 0,
                         msgIdx == scan_msg_end
-                            ? scan_files_end - msgIdx * 10 + 1
+                            ? scan_files_end - scan_msg_end * 10 + 1
                             : attach.length
                     ) : attach
+                    console.log(attachments)
                 }
 
                 msgIdx++
@@ -541,7 +544,7 @@ export default class Files {
                         // oops, look like there's an error
                         // or the stream has ended.
                         // let's destroy the stream
-                        stream.destroy(next || undefined)
+                        if (next) stream.destroy(next); else stream.push(null)
                         return
                     }
                 }
