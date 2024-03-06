@@ -58,7 +58,7 @@ export class Client {
         
 		// Remove bulk deletable messages
 
-		let bulkDeletable = ids.filter(e => convertSnowflakeToDate(e).valueOf() < 2 * 7 * 24 * 60 * 60 * 1000)
+		let bulkDeletable = ids.filter(e => Date.now()-convertSnowflakeToDate(e).valueOf() < 2 * 7 * 24 * 60 * 60 * 1000)
         await this.rest.fetch(`/channels/${this.targetChannel}/messages/bulk-delete`, {
 			method: "POST",
 			body: JSON.stringify({messages: bulkDeletable})
@@ -69,7 +69,7 @@ export class Client {
 		// there's probably a better way to do this @Jack5079
 		// fix for me if possible
 		await Promise.all(ids.map(async e => {
-			if (convertSnowflakeToDate(e).valueOf() >= 2 * 7 * 24 * 60 * 60 * 1000) {
+			if (Date.now()-convertSnowflakeToDate(e).valueOf() >= 2 * 7 * 24 * 60 * 60 * 1000) {
 				return await this.deleteMessage(e)
 			}
 		}).filter(Boolean)) // filter based on whether or not it's undefined
