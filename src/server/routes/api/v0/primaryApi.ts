@@ -1,6 +1,6 @@
 import bodyParser from "body-parser"
 import { Hono } from "hono"
-
+import {stream as startHonoStream} from "hono/streaming"
 import * as Accounts from "../../../lib/accounts.js"
 import * as auth from "../../../lib/auth.js"
 import RangeParser, { type Range } from "range-parser"
@@ -12,6 +12,7 @@ import {ReadableStream as StreamWebReadable} from "node:stream/web"
 import formidable from "formidable"
 import { HttpBindings } from "@hono/node-server"
 import pkg from "../../../../../package.json" assert {type: "json"}
+import { type StatusCode } from "hono/utils/http-status"
 export let primaryApi = new Hono<{
     Variables: {
         account: Accounts.Account
@@ -68,8 +69,6 @@ export default function (files: Files) {
                     }
                 }
 
-                console.log(range)
-
                 return files
                     .readFileStream(fileId, range)
                     .then(async (stream) => {
@@ -85,8 +84,11 @@ export default function (files: Files) {
                             )
                         }
 
-                        return ctx.req.method == "HEAD" ? ctx.body(null) : ctx.stream(async (webStream) => {
-                            webStream.pipe(Readable.toWeb(stream.on("error", e => {})) as ReadableStream).catch(e => {})
+                        return ctx.req.method == "HEAD" ? ctx.body(null) : startHonoStream(ctx, async (webStream) => {
+                            await webStream.pipe(Readable.toWeb(stream) as ReadableStream)
+                        }, async (err, webStream) => {
+                            console.error(err)
+                            await webStream.close()
                         })
                     })
                     .catch((err) => {
@@ -111,9 +113,9 @@ export default function (files: Files) {
                 errEscalated = true
                 
                 if ("httpCode" in err)
-                    ctx.status(err.httpCode as number)
+                    ctx.status(err.httpCode as StatusCode)
                 else if (err instanceof WebError) 
-                    ctx.status(err.statusCode)
+                    ctx.status(err.statusCode as StatusCode)
                 else ctx.status(400)
                 resolve(ctx.body(err.message))
             }
@@ -207,7 +209,7 @@ export default function (files: Files) {
             
             Readable.fromWeb(res.body as StreamWebReadable)
                 .pipe(file)
-                .on("error", (err) => resolve(ctx.text(err.message, err instanceof WebError ? err.statusCode : 500)))
+                .on("error", (err) => resolve(ctx.text(err.message, err instanceof WebError ? err.statusCode as StatusCode : 500)))
 
             file
                 .setName(
@@ -222,7 +224,7 @@ export default function (files: Files) {
             file.once("finish", () => {
                 file.commit()
                     .then(id => resolve(ctx.text(id!)))
-                    .catch((err) => resolve(ctx.text(err.message, err instanceof WebError ? err.statusCode : 500)))
+                    .catch((err) => resolve(ctx.text(err.message, err instanceof WebError ? err.statusCode as StatusCode : 500)))
             })
 
         })

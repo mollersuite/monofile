@@ -77,23 +77,6 @@ export interface StatusCodeError {
     message: string
 }
 
-async function startPushingWebStream(stream: Readable, webStream: ReadableStream) {
-    const reader = await webStream.getReader()
-    let pushing = false // acts as a debounce just in case
-                          // (words of a girl paranoid from writing readfilestream)
-
-    return function() {
-        if (pushing) return
-        pushing = true
-
-        return reader.read().then(result => {
-            if (result.value)
-                pushing = false
-            return {readyForMore: result.value ? stream.push(result.value) : false, streamDone: result.done }
-        })
-    }
-}
-
 export class WebError extends Error {
 
     readonly statusCode: number = 500
@@ -103,6 +86,198 @@ export class WebError extends Error {
         this.statusCode = status
     }
 
+}
+
+export class ReadStream extends Readable {
+
+    files: Files
+    pointer: FilePointer
+
+    attachmentBuffer: APIAttachment[] = []
+    msgIdx: number = 0
+    position: number = 0
+
+    ranges: {
+        useRanges: boolean,
+        byteStart: number,
+        byteEnd: number
+        scan_msg_begin: number,
+        scan_msg_end: number,
+        scan_files_begin: number,
+        scan_files_end: number
+    }
+
+    id: number = Math.random()
+
+    constructor(files: Files, pointer: FilePointer, range?: {start: number, end: number}) {
+        super()
+        console.log(this.id, range)
+        this.files = files
+        this.pointer = pointer
+
+        let useRanges = 
+            Boolean(range && pointer.chunkSize && pointer.sizeInBytes)
+        
+        this.ranges = {
+            useRanges,
+            scan_msg_begin: 0,
+            scan_msg_end: pointer.messageids.length - 1,
+            scan_files_begin: 
+                useRanges
+                ? Math.floor(range!.start / pointer.chunkSize!)
+                : 0,
+            scan_files_end: 
+                useRanges
+                ? Math.ceil(range!.end / pointer.chunkSize!) - 1
+                : -1,
+            byteStart: range?.start || 0,
+            byteEnd: range?.end || 0
+        }
+
+        if (useRanges)
+            this.ranges.scan_msg_begin = Math.floor(this.ranges.scan_files_begin / 10),
+            this.ranges.scan_msg_end = Math.ceil(this.ranges.scan_files_end / 10)-1,
+            this.msgIdx = this.ranges.scan_msg_begin
+    }
+
+    async _read() {
+        if (this.busy) return
+        this.busy = true
+        let readyForMore = true
+
+        while (readyForMore) {
+            let result = await this.pushData()
+            if (result === undefined) return // stream has been destroyed. nothing left to do...
+            readyForMore = result
+        }
+        this.busy = false
+    }
+
+    async getNextAttachment() {
+        // return first in our attachment buffer
+        let ret = this.attachmentBuffer.splice(0,1)[0]
+        if (ret) return ret
+
+        console.log(this.id, this.msgIdx, this.ranges.scan_msg_end, this.pointer.messageids[this.msgIdx])
+
+        // oh, there's none left. let's fetch a new message, then.
+        if (
+            !this.pointer.messageids[this.msgIdx] 
+            || this.msgIdx > this.ranges.scan_msg_end
+        ) return null
+
+        console.log('passing')
+
+        let msg = await this.files.api
+            .fetchMessage(this.pointer.messageids[this.msgIdx])
+            .catch(() => {
+                return null
+            })
+
+        if (msg?.attachments) {
+            let attach = Array.from(msg.attachments.values())
+
+            this.attachmentBuffer = this.ranges.useRanges ? attach.slice(
+                this.msgIdx == this.ranges.scan_msg_begin
+                        ? this.ranges.scan_files_begin - this.ranges.scan_msg_begin * 10
+                    : 0,
+                this.msgIdx == this.ranges.scan_msg_end
+                    ? this.ranges.scan_files_end - this.ranges.scan_msg_end * 10 + 1
+                    : attach.length
+            ) : attach
+        }
+
+        this.msgIdx++
+        return this.attachmentBuffer.splice(0,1)[0]
+    }
+
+    async getPusherForWebStream(webStream: ReadableStream) {
+        const reader = await webStream.getReader()
+        let pushing = false // acts as a debounce just in case
+                            // (words of a girl paranoid from writing readfilestream)
+
+        let pushToStream = this.push.bind(this)
+        
+        return function() {
+            //if (pushing) return
+            pushing = true
+
+            return reader.read().then(result => {
+                let pushed
+                if (!result.done) {
+                    pushing = false
+                    pushed = pushToStream(result.value) 
+                }
+                return {readyForMore: pushed || false, streamDone: result.done }
+            })
+        }
+    }
+
+    async getNextChunk() {
+        let scanning_chunk = await this.getNextAttachment()
+        if (!scanning_chunk) return null
+
+        let {
+            byteStart, byteEnd, scan_files_begin, scan_files_end, scan_msg_begin, scan_msg_end
+        } = this.ranges
+
+        let headers: HeadersInit =
+            this.ranges.useRanges
+                ? {
+                    Range: `bytes=${
+                        this.position == 0
+                            ? byteStart - scan_files_begin * this.pointer.chunkSize!
+                            : "0"
+                    }-${
+                        this.attachmentBuffer.length == 0 && this.msgIdx == scan_files_end
+                            ? byteEnd - scan_files_end * this.pointer.chunkSize!
+                            : ""
+                    }`,
+                  }
+                : {}
+
+        let response = await fetch(scanning_chunk.url, {headers})
+            .catch((e: Error) => {
+                console.error(e)
+                return {body: e}
+            })
+
+        this.position++
+        
+        return response.body
+    }
+
+    currentPusher?: (() => Promise<{readyForMore: boolean, streamDone: boolean }> | undefined)
+    busy: boolean = false
+
+    async pushData(): Promise<boolean | undefined> {
+
+        // uh oh, we don't have a currentPusher
+        // let's make one then
+        if (!this.currentPusher) {
+            let next = await this.getNextChunk()
+            if (next && !(next instanceof Error))
+                // okay, so we have a new chunk
+                // let's generate a new currentPusher
+                this.currentPusher = await this.getPusherForWebStream(next)
+            else {
+                // oops, look like there's an error
+                // or the stream has ended.
+                // let's destroy the stream
+                console.log(this.id, "Ending", next)
+                if (next) this.destroy(next); else this.push(null)
+                return
+            }
+        }
+
+        let result = await this.currentPusher()
+
+        if (result?.streamDone) {
+            this.currentPusher = undefined
+            return this.pushData()
+        } else return result?.readyForMore
+
+    }
 }
 
 export class UploadStream extends Writable {
@@ -351,35 +526,6 @@ export default class Files {
             .catch(console.error)
     }
 
-    validateUpload(metadata: FileUploadSettings & { size : number, uploadId: string }) {
-        return multiAssert(
-            new Map()
-                .set(!metadata.filename, {status: 400, message: "missing filename"})
-                .set(metadata.filename.length > 128, {status: 400, message: "filename too long"})
-                .set(!metadata.mime, {status: 400, message: "missing mime type"})
-                .set(metadata.mime.length > 128, {status: 400, message: "mime type too long"})
-                .set(
-                    metadata.uploadId.match(id_check_regex)?.[0] != metadata.uploadId
-                    || metadata.uploadId.length > this.config.maxUploadIdLength,
-                    { status: 400, message: "invalid file ID" }
-                )
-                .set(
-                    this.files[metadata.uploadId] &&
-                    (metadata.owner
-                        ? this.files[metadata.uploadId].owner != metadata.owner
-                        : true),
-                    { status: 403, message: "you don't own this file" }
-                )
-                .set(
-                    this.files[metadata.uploadId]?.reserved,
-                    {
-                        status: 400,
-                        message: "already uploading this file. if your file is stuck in this state, contact an administrator"
-                    }
-                )
-        )
-    }
-
     createWriteStream(owner?: string) {
         return new UploadStream(this, owner)
     }
@@ -435,144 +581,11 @@ export default class Files {
     async readFileStream(
         uploadId: string,
         range?: { start: number; end: number }
-    ): Promise<Readable> {
+    ): Promise<ReadStream> {
         if (this.files[uploadId]) {
             let file = this.files[uploadId]
             if (!file.sizeInBytes || !file.chunkSize) await this.update(uploadId)
-
-            let scan_msg_begin = 0,
-                scan_msg_end = file.messageids.length - 1,
-                scan_files_begin = 0,
-                scan_files_end = -1
-
-            let useRanges = range && file.chunkSize && file.sizeInBytes
-
-            // todo: figure out how to get typesccript to accept useRanges
-            // i'm too tired to look it up or write whatever it wnats me to do
-            if (useRanges) {
-                // Calculate where to start file scans...
-
-                scan_files_begin = Math.floor(range!.start / file.chunkSize!)
-                scan_files_end = Math.ceil(range!.end / file.chunkSize!) - 1
-
-                scan_msg_begin = Math.floor(scan_files_begin / 10)
-                scan_msg_end = Math.ceil(scan_files_end / 10)
-            }
-
-            let attachments: APIAttachment[] = []
-
-            let msgIdx = scan_msg_begin
-
-            let getNextAttachment = async () => {
-                // return first in our attachment buffer
-                let ret = attachments.splice(0,1)[0]
-                if (ret) return ret
-
-                // oh, there's none left. let's fetch a new message, then.
-                if (!file.messageids[msgIdx] || msgIdx > scan_msg_end) return null
-                let msg = await this.api
-                    .fetchMessage(file.messageids[msgIdx])
-                    .catch(() => {
-                        return null
-                    })
-
-                if (msg?.attachments) {
-                    let attach = Array.from(msg.attachments.values())
-
-                    attachments = useRanges ? attach.slice(
-                        msgIdx == scan_msg_begin
-                                ? scan_files_begin - scan_msg_begin * 10
-                                : 0,
-                        msgIdx == scan_msg_end
-                            ? scan_files_end - scan_msg_end * 10 + 1
-                            : attach.length
-                    ) : attach
-                    console.log(attachments)
-                }
-
-                msgIdx++
-                return attachments.splice(0,1)[0]
-            }
-
-            let position = 0
-
-            let getNextChunk = async () => {
-                let scanning_chunk = await getNextAttachment()
-                if (!scanning_chunk) return null
-
-                let headers: HeadersInit =
-                    useRanges
-                        ? {
-                            Range: `bytes=${
-                                position == 0
-                                    ? range!.start - scan_files_begin * file.chunkSize!
-                                    : "0"
-                            }-${
-                                position == attachments.length - 1
-                                    ? range!.end - scan_files_end * file.chunkSize!
-                                    : ""
-                            }`,
-                          }
-                        : {}
-
-                let response = await fetch(scanning_chunk.url, {headers})
-                    .catch((e: Error) => {
-                        console.error(e)
-                        return {body: e}
-                    })
-
-                position++
-                
-                return response.body
-            }
-
-            let currentPusher : (() => Promise<{readyForMore: boolean, streamDone: boolean }> | undefined) | undefined
-            let busy = false
-
-            let pushWS : (stream: Readable) => Promise<boolean | undefined> = async (stream: Readable) => {
-
-                // uh oh, we don't have a currentPusher
-                // let's make one then
-                if (!currentPusher) {
-                    let next = await getNextChunk()
-                    if (next && !(next instanceof Error))
-                        // okay, so we have a new chunk
-                        // let's generate a new currentPusher
-                        currentPusher = await startPushingWebStream(stream, next)
-                    else {
-                        // oops, look like there's an error
-                        // or the stream has ended.
-                        // let's destroy the stream
-                        if (next) stream.destroy(next); else stream.push(null)
-                        return
-                    }
-                }
-
-                let result = await currentPusher()
-
-                if (result?.streamDone) currentPusher = undefined;
-                return result?.streamDone || result?.readyForMore
-
-            }
-
-            let dataStream = new Readable({
-                async read() {
-
-                    if (busy) return
-                    busy = true
-                    let readyForMore = true
-
-                    while (readyForMore) {
-                        let result = await pushWS(this)
-                        if (result === undefined) return // stream has been destroyed. nothing left to do...
-                        readyForMore = result
-                    }
-                    busy = false
-                    
-                }
-            })
-
-            return dataStream
+            return new ReadStream(this, file, range)
         } else {
             throw { status: 404, message: "not found" }
         }

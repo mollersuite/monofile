@@ -1,5 +1,6 @@
 import { readFile } from "fs/promises"
 import type { Context } from "hono"
+import type { StatusCode } from "hono/utils/http-status"
 
 let errorPage: string
 
@@ -27,7 +28,7 @@ export default async function ServeError(
         errorPage
             .replaceAll("$code", code.toString())
             .replaceAll("$text", reason),
-        code,
+        code as StatusCode,
         {
             "x-backup-status-message": reason, // glitch default nginx configuration
         }
