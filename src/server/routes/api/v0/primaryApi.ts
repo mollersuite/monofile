@@ -69,27 +69,25 @@ export default function (files: Files) {
                     }
                 }
 
+                if (range) {
+                    ctx.status(206)
+                    ctx.header(
+                        "Content-Length",
+                        (range.end - range.start + 1).toString()
+                    )
+                    ctx.header(
+                        "Content-Range",
+                        `bytes ${range.start}-${range.end}/${file.sizeInBytes}`
+                    )
+                }
+
+                if (ctx.req.method == "HEAD")
+                    return ctx.body(null)
+
                 return files
                     .readFileStream(fileId, range)
                     .then(async (stream) => {
-                        if (range) {
-                            ctx.status(206)
-                            ctx.header(
-                                "Content-Length",
-                                (range.end - range.start + 1).toString()
-                            )
-                            ctx.header(
-                                "Content-Range",
-                                `bytes ${range.start}-${range.end}/${file.sizeInBytes}`
-                            )
-                        }
-
-                        return ctx.req.method == "HEAD" ? ctx.body(null) : startHonoStream(ctx, async (webStream) => {
-                            await webStream.pipe(Readable.toWeb(stream) as ReadableStream)
-                        }, async (err, webStream) => {
-                            console.error(err)
-                            await webStream.close()
-                        })
+                        return new Response(Readable.toWeb(stream) as ReadableStream, ctx.res)
                     })
                     .catch((err) => {
                         return ServeError(ctx, err.status, err.message)
