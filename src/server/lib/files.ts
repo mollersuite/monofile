@@ -177,12 +177,14 @@ export class ReadStream extends Readable {
 
         let msg = await this.files.api
             .fetchMessage(this.pointer.messageids[this.msgIdx])
-            .catch(() => {
+            .catch((e) => {
+                console.error(e)
                 return null
             })
 
         if (msg?.attachments) {
             let attach = msg.attachments
+            console.log(attach)
 
             this.attachmentBuffer = this.ranges.useRanges ? attach.slice(
                 this.msgIdx == this.ranges.scan_msg_begin
@@ -192,6 +194,8 @@ export class ReadStream extends Readable {
                     ? this.ranges.scan_files_end - this.ranges.scan_msg_end * 10 + 1
                     : attach.length
             ) : attach
+
+            console.log(this.attachmentBuffer)
         }
 
         this.msgIdx++
@@ -230,12 +234,12 @@ export class ReadStream extends Readable {
     }
 
     async getNextChunk() {
-        console.log("Next chunk requested")
         let scanning_chunk = await this.getNextAttachment()
+        console.log(this.id, "Next chunk requested; got attachment", scanning_chunk)
         if (!scanning_chunk) return null
 
         let {
-            byteStart, byteEnd, scan_files_begin, scan_files_end, scan_msg_begin, scan_msg_end
+            byteStart, byteEnd, scan_files_begin, scan_files_end
         } = this.ranges
 
         let headers: HeadersInit =

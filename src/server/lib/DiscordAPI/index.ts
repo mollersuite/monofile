@@ -16,7 +16,7 @@ function convertSnowflakeToDate(snowflake: string|number, epoch = DISCORD_EPOCH)
 
 interface MessageCacheObject {
 	expire: number,
-	object: APIMessage
+	object: string
 }
 
 export class Client {
@@ -37,13 +37,13 @@ export class Client {
 		if (cache && this.messageCache.has(id)) {
 			let cachedMessage = this.messageCache.get(id)!
 			if (cachedMessage.expire >= Date.now()) {
-				return cachedMessage.object
+				return JSON.parse(cachedMessage.object) as APIMessage
 			}
 		}
 
 		let message = await (this.rest.fetch(`/channels/${this.targetChannel}/messages/${id}`).then(res=>res.json()) as Promise<APIMessage>)
 
-		this.messageCache.set(id, { object: message, expire: EXPIRE_AFTER + Date.now() })
+		this.messageCache.set(id, { object: JSON.stringify(message) /* clone object so that removing ids from the array doesn't. yeah */, expire: EXPIRE_AFTER + Date.now() })
 		return message
 	}
 
