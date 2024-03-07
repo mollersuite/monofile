@@ -154,14 +154,14 @@ export default function (files: Files) {
         let acc = ctx.req.param("user") == "me" ? ctx.get("account") : Accounts.getFromId(ctx.req.param("user"))
         if (acc != ctx.get("account") && !ctx.get("account")?.admin) return ServeError(ctx, 403, "you are not an administrator")
         if (!acc) return ServeError(ctx, 404, "account does not exist")
-        const Account = ctx.get("account") as Accounts.Account
-        const accountId = Account.id
 
-        auth.AuthTokens.filter((e) => e.account == accountId).forEach(
+        auth.AuthTokens.filter((e) => e.account == acc?.id).forEach(
             (token) => {
                 auth.invalidate(token.token)
             }
         )
+
+        await Accounts.deleteAccount(acc.id)
 
         if (acc.email) {
             await sendMail(
@@ -173,8 +173,7 @@ export default function (files: Files) {
             ).catch()
             return ctx.text("OK")
         }
-
-        await Accounts.deleteAccount(accountId)
+        
         return ctx.text("account deleted")
     })
 
