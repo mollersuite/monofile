@@ -8,7 +8,7 @@ import { getCookie, setCookie } from "hono/cookie"
 
 import Files, { id_check_regex } from "../../../lib/files.js"
 import * as Accounts from "../../../lib/accounts.js"
-import * as Authentication from "../../../lib/auth.js"
+import * as auth from "../../../lib/auth.js"
 import {
     assertAPI,
     getAccount,
@@ -40,28 +40,23 @@ export default function (files: Files) {
             return
         }
 
-        if (Authentication.validate(getCookie(ctx, "auth")!)) {
+        if (auth.validate(getCookie(ctx, "auth")!)) {
             ServeError(ctx, 400, "you are already logged in")
             return
         }
 
-        const Account = Accounts.getFromUsername(body.username)
+        const account = Accounts.getFromUsername(body.username)
 
-        if (!Account || !Accounts.password.check(Account.id, body.password)) {
+        if (!account || !Accounts.password.check(account.id, body.password)) {
             ServeError(ctx, 400, "username or password incorrect")
             return
         }
-        setCookie(
-            ctx,
-            "auth",
-            Authentication.create(
-                Account.id, // account id
-                3 * 24 * 60 * 60 * 1000 // expiration time
-            ),
-            {
-                // expires:
-            }
-        )
+        setCookie(ctx, "auth", auth.create(account.id, 3 * 24 * 60 * 60 * 1000), {
+            path: "/",
+            sameSite: "Strict",
+            secure: true,
+            httpOnly: true
+        })
         ctx.status(200)
     })
 
@@ -71,7 +66,7 @@ export default function (files: Files) {
             return ServeError(ctx, 403, "account registration disabled")
         }
 
-        if (Authentication.validate(getCookie(ctx, "auth")!)) {
+        if (auth.validate(getCookie(ctx, "auth")!)) {
             return ServeError(ctx, 400, "you are already logged in")
         }
 
@@ -106,18 +101,13 @@ export default function (files: Files) {
         }
 
         return Accounts.create(body.username, body.password)
-            .then((Account) => {
-                setCookie(
-                    ctx,
-                    "auth",
-                    Authentication.create(
-                        Account, // account id
-                        3 * 24 * 60 * 60 * 1000 // expiration time
-                    ),
-                    {
-                        // expires:
-                    }
-                )
+            .then((account) => {
+                setCookie(ctx, "auth", auth.create(account, 3 * 24 * 60 * 60 * 1000), {
+                    path: "/",
+                    sameSite: "Strict",
+                    secure: true,
+                    httpOnly: true
+                })
                 return ctx.status(200)
             })
             .catch(() => {
@@ -126,15 +116,15 @@ export default function (files: Files) {
     })
 
     router.post("/logout", (ctx) => {
-        if (!Authentication.validate(getCookie(ctx, "auth")!)) {
+        if (!auth.validate(getCookie(ctx, "auth")!)) {
             return ServeError(ctx, 401, "not logged in")
         }
 
-        Authentication.invalidate(getCookie(ctx, "auth")!)
+        auth.invalidate(getCookie(ctx, "auth")!)
         return ctx.text("logged out")
     })
 
-    router.patch(
+    router.put(
         "/dfv",
         requiresAccount,
         requiresPermissions("manage"),
@@ -160,22 +150,80 @@ export default function (files: Files) {
         }
     )
 
-    router.delete("/me", requiresAccount, noAPIAccess, async (ctx) => {
+    router.delete("/:user", requiresAccount, noAPIAccess, async (ctx) => {
+        let acc = ctx.req.param("user") == "me" ? ctx.get("account") : Accounts.getFromId(ctx.req.param("user"))
+        if (acc != ctx.get("account") && !ctx.get("account")?.admin) return ServeError(ctx, 403, "you are not an administrator")
+        if (!acc) return ServeError(ctx, 404, "account does not exist")
         const Account = ctx.get("account") as Accounts.Account
         const accountId = Account.id
 
-        Authentication.AuthTokens.filter((e) => e.account == accountId).forEach(
+        auth.AuthTokens.filter((e) => e.account == accountId).forEach(
             (token) => {
-                Authentication.invalidate(token.token)
+                auth.invalidate(token.token)
             }
         )
+
+        if (acc.email) {
+            await sendMail(
+                acc.email,
+                "Notice of account deletion",
+                `Your account, <span username>${
+                    acc.username
+                }</span>, has been removed. Thank you for using monofile.`
+            ).catch()
+            return ctx.text("OK")
+        }
 
         await Accounts.deleteAccount(accountId)
         return ctx.text("account deleted")
     })
 
-    router.patch("/me/name", requiresAccount, noAPIAccess, async (ctx) => {
-        const Account = ctx.get("account") as Accounts.Account
+    router.put("/:user/password", requiresAccount, noAPIAccess, async (ctx) => {
+        let acc = ctx.req.param("user") == "me" ? ctx.get("account") : Accounts.getFromId(ctx.req.param("user"))
+        if (acc != ctx.get("account") && !ctx.get("account")?.admin) return ServeError(ctx, 403, "you are not an administrator")
+        if (!acc) return ServeError(ctx, 404, "account does not exist")
+        const body = await ctx.req.json()
+        const newPassword = body.newPassword
+
+        if (
+            typeof body.password != "string" ||
+            !Accounts.password.check(acc.id, body.password)
+        ) {
+            return ServeError(
+                ctx,
+                403,
+                "previous password not supplied"
+            )
+        }
+
+        if (
+            typeof newPassword != "string" ||
+            newPassword.length < 8
+        ) {
+            return ServeError(
+                ctx,
+                400,
+                "password must be 8 characters or longer"
+            )
+        }
+
+        Accounts.password.set(acc.id, newPassword)
+        Accounts.save()
+
+        if (acc.email) {
+            await sendMail(
+                acc.email,
+                `Your login details have been updated`,
+                `<b>Hello there!</b> Your password has been updated. Please update your saved login details accordingly.`
+            ).catch()
+            return ctx.text("OK")
+        }
+    })
+
+    router.put("/:user/username", requiresAccount, noAPIAccess, async (ctx) => {
+        let acc = ctx.req.param("user") == "me" ? ctx.get("account") : Accounts.getFromId(ctx.req.param("user"))
+        if (acc != ctx.get("account") && !ctx.get("account")?.admin) return ServeError(ctx, 403, "you are not an administrator")
+        if (!acc) return ServeError(ctx, 404, "account does not exist")
         const body = await ctx.req.json()
         const newUsername = body.username
 
@@ -206,14 +254,14 @@ export default function (files: Files) {
             return
         }
 
-        Account.username = newUsername
+        acc.username = newUsername
         Accounts.save()
 
-        if (Account.email) {
+        if (acc.email) {
             await sendMail(
-                Account.email,
+                acc.email,
                 `Your login details have been updated`,
-                `<b>Hello there!</b> Your username has been updated to <span username>${newUsername}</span>. Please update your devices accordingly. Thank you for using monofile.`
+                `<b>Hello there!</b> Your username has been updated to <span username>${newUsername}</span>. Please update your saved login details accordingly.`
             ).catch()
             return ctx.text("OK")
         }
