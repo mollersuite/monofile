@@ -13,6 +13,7 @@ import formidable from "formidable"
 import { HttpBindings } from "@hono/node-server"
 import pkg from "../../../../../package.json" assert {type: "json"}
 import { type StatusCode } from "hono/utils/http-status"
+import { EventEmitter } from "node:events"
 export let primaryApi = new Hono<{
     Variables: {
         account: Accounts.Account
@@ -87,7 +88,17 @@ export default function (files: Files) {
                 return files
                     .readFileStream(fileId, range)
                     .then(async (stream) => {
-                        return new Response(Readable.toWeb(stream) as ReadableStream, ctx.res)
+                        let rs = new ReadableStream({
+                            start(controller) {
+                                stream.once("end", () => controller.close())
+                                stream.once("error", (err) => controller.error(err))
+                            },
+                            cancel(reason) {
+                                stream.destroy(reason instanceof Error ? reason : new Error(reason))
+                            }
+                        })
+                        stream.pipe(ctx.env.outgoing)
+                        return new Response(rs, ctx.body(null))
                     })
                     .catch((err) => {
                         return ServeError(ctx, err.status, err.message)
