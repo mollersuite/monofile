@@ -30,37 +30,8 @@ const router = new Hono<{
 router.use(getAccount)
 
 export default function (files: Files) {
-    router.post("/login", async (ctx, res) => {
-        const body = await ctx.req.json()
-        if (
-            typeof body.username != "string" ||
-            typeof body.password != "string"
-        ) {
-            ServeError(ctx, 400, "please provide a username or password")
-            return
-        }
 
-        if (auth.validate(getCookie(ctx, "auth")!)) {
-            ServeError(ctx, 400, "you are already logged in")
-            return
-        }
-
-        const account = Accounts.getFromUsername(body.username)
-
-        if (!account || !Accounts.password.check(account.id, body.password)) {
-            ServeError(ctx, 400, "username or password incorrect")
-            return
-        }
-        setCookie(ctx, "auth", auth.create(account.id, 3 * 24 * 60 * 60 * 1000), {
-            path: "/",
-            sameSite: "Strict",
-            secure: true,
-            httpOnly: true
-        })
-        ctx.status(200)
-    })
-
-    router.post("/create", async (ctx) => {
+    router.post("/", async (ctx) => {
         const body = await ctx.req.json()
         if (!Configuration.accounts.registrationEnabled) {
             return ServeError(ctx, 403, "account registration disabled")
@@ -113,15 +84,6 @@ export default function (files: Files) {
             .catch(() => {
                 return ServeError(ctx, 500, "internal server error")
             })
-    })
-
-    router.post("/logout", (ctx) => {
-        if (!auth.validate(getCookie(ctx, "auth")!)) {
-            return ServeError(ctx, 401, "not logged in")
-        }
-
-        auth.invalidate(getCookie(ctx, "auth")!)
-        return ctx.text("logged out")
     })
 
     router.put(

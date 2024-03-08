@@ -6,6 +6,7 @@
         "admin",
         "public",
         "file",
+        "session",
         {
             "file": "customization",
             "to": "/account/customization"
