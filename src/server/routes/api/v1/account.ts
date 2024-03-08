@@ -23,11 +23,62 @@ import Configuration from "../../../../../config.json" assert {type:"json"}
 
 const router = new Hono<{
     Variables: {
-        account: Accounts.Account
+        account: Accounts.Account,
+        target: Accounts.Account
     }
 }>()
 
+type UserUpdateParameters = Partial<Accounts.Account & { password: string, newPassword?: string }>
+type Message = [200 | 400 | 401 | 403 | 501, string]
+
+// there's probably a less stupid way to do this than `K in keyof Pick<UserUpdateParameters, T>`
+// @Jack5079 make typings better if possible
+const validators: {
+    [T in keyof Partial<Accounts.Account>]: 
+        /**
+         * @param actor The account performing this action
+         * @param target The target account for this action
+         * @param params Changes being patched in by the user
+         */
+        (actor: Accounts.Account, target: Accounts.Account, params: UserUpdateParameters & {
+            [K in keyof Pick<UserUpdateParameters, T>]-? : UserUpdateParameters[K]
+        }) => Accounts.Account[T] | Message
+} = {
+    defaultFileVisibility(actor, target, params) {
+        if (["public", "private", "anonymous"].includes(params.defaultFileVisibility)) 
+            return params.defaultFileVisibility
+        else return [400, "invalid file visibility"]
+    },
+    email(actor, target, params) {
+        return [501, "not implemented"]
+    },
+    admin(actor, target, params) {
+        if (actor.admin && !target.admin) return params.admin
+        else if (!actor.admin) return [400, "cannot promote yourself"]
+        else return [400, "cannot demote an admin"]
+    }
+}
+
 router.use(getAccount)
+router.all("/:user", async (ctx, next) => {
+    let acc = 
+        ctx.req.param("user") == "me" 
+        ? ctx.get("account") 
+        : (
+            ctx.req.param("user").startsWith("@")
+            ? Accounts.getFromUsername(ctx.req.param("user").slice(1))
+            : Accounts.getFromId(ctx.req.param("user"))
+        )
+    if (
+        acc != ctx.get("account") 
+        && !ctx.get("account")?.admin
+    ) return ServeError(ctx, 403, "you cannot manage this user")
+    if (!acc) return ServeError(ctx, 404, "account does not exist")
+
+    ctx.set("target", acc)
+
+    return next()
+})
 
 export default function (files: Files) {
 
@@ -86,7 +137,43 @@ export default function (files: Files) {
             })
     })
 
-    router.put(
+    router.patch(
+        "/:user",
+        requiresAccount,
+        requiresPermissions("manage"),
+        async (ctx) => {
+            let body = await ctx.req.json() as UserUpdateParameters
+            
+        }
+    )
+
+    router.patch(
+        "/dfv",
+        requiresAccount,
+        requiresPermissions("manage"),
+        async (ctx) => {
+            const body = await ctx.req.json()
+            const Account = ctx.get("account")! as Accounts.Account
+
+            if (
+                ["public", "private", "anonymous"].includes(
+                    body.defaultFileVisibility
+                )
+            ) {
+                Account.defaultFileVisibility = body.defaultFileVisibility
+
+                Accounts.save()
+
+                return ctx.text(
+                    `dfv has been set to ${Account.defaultFileVisibility}`
+                )
+            } else {
+                return ServeError(ctx, 400, "invalid dfv")
+            }
+        }
+    )
+
+    router.patch(
         "/dfv",
         requiresAccount,
         requiresPermissions("manage"),
