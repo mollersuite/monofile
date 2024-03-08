@@ -64,7 +64,8 @@ export default function (files: Files) {
             path: "/",
             sameSite: "Strict",
             secure: true,
-            httpOnly: true
+            httpOnly: true,
+            maxAge: 3 * 24 * 60 * 60 * 1000,
         })
         return ctx.text("")
     })
