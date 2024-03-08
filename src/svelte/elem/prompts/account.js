@@ -266,12 +266,21 @@ export function embedColor(optPicker) {
         }
     ]).then((exp) => {
         if (exp && exp.selected) {
-            fetch(`/auth/embedcolor`,{method:"POST", body:JSON.stringify({
-                color:exp.color
-            })}).then((response) => {
-                
+            fetch(`/api/v1/account/customization/embed/color`, {
+                method: "POST",
+                body: JSON.stringify({
+                    color: exp.color,
+                }),
+            }).then((response) => {
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
+                    optPicker.picker(
+                        `${response.status} ${
+                            response.headers.get("x-backup-status-message") ||
+                            response.statusText ||
+                            ""
+                        }`,
+                        []
+                    )
                 }
 
                 fetchAccountData()
@@ -297,12 +306,21 @@ export function embedSize(optPicker) {
         }
     ]).then((exp) => {
         if (exp && exp.selected !== null) {
-            fetch(`/auth/embedsize`,{method:"POST", body:JSON.stringify({
-                largeImage:exp.selected
-            })}).then((response) => {
-                
+            fetch(`/api/v1/account/customization/embed/size`, {
+                method: "POST",
+                body: JSON.stringify({
+                    largeImage: exp.selected,
+                }),
+            }).then((response) => {
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
+                    optPicker.picker(
+                        `${response.status} ${
+                            response.headers.get("x-backup-status-message") ||
+                            response.statusText ||
+                            ""
+                        }`,
+                        []
+                    )
                 }
 
                 fetchAccountData()

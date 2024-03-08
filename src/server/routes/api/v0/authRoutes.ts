@@ -165,51 +165,6 @@ export default function (files: Files) {
     )
 
     authRoutes.post(
-        "/embedcolor",
-        requiresAccount,
-        requiresPermissions("customize"),
-        // Used body-parser
-        async (ctx) => {
-            let acc = ctx.get("account") as Accounts.Account
-            const body = await ctx.req.json()
-            if (typeof body.color != "string") body.color = undefined
-
-            if (
-                !body.color ||
-                (body.color.toLowerCase().match(/[a-f0-9]+/) ==
-                    body.color.toLowerCase() &&
-                    body.color.length == 6)
-            ) {
-                if (!acc.embed) acc.embed = {}
-                acc.embed.color = body.color || undefined
-                if (!body.color) delete acc.embed.color
-                Accounts.save()
-                return ctx.text(`custom embed color saved`)
-            } else {
-                return ctx.text("invalid hex code", 400)
-            }
-        }
-    )
-
-    authRoutes.post(
-        "/embedsize",
-        requiresAccount,
-        requiresPermissions("customize"),
-        // Used body-parser
-        async (ctx) => {
-            let acc = ctx.get("account") as Accounts.Account
-            const body = await ctx.req.json()
-            if (typeof body.largeImage != "boolean") body.color = false
-
-            if (!acc.embed) acc.embed = {}
-            acc.embed.largeImage = body.largeImage
-            if (!body.largeImage) delete acc.embed.largeImage
-            Accounts.save()
-            return ctx.text(`custom embed image size saved`)
-        }
-    )
-
-    authRoutes.post(
         "/delete_account",
         requiresAccount,
         noAPIAccess,
