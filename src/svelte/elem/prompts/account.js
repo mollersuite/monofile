@@ -225,16 +225,25 @@ export function customcss(optPicker) {
         }
     ]).then((exp) => {
         if (exp && exp.selected) {
-            fetch(`/auth/customcss`,{method:"POST", body:JSON.stringify({
-                fileId:exp.fileid
-            })}).then((response) => {
-                
+            fetch(`/api/v1/account/customization/css`, {
+                method: "PUT",
+                body: JSON.stringify({
+                    fileId: exp.fileid,
+                }),
+            }).then((response) => {
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
+                    optPicker.picker(
+                        `${response.status} ${
+                            response.headers.get("x-backup-status-message") ||
+                            response.statusText ||
+                            ""
+                        }`,
+                        []
+                    )
                 }
 
                 fetchAccountData()
-                refreshNeeded.set(true);
+                refreshNeeded.set(true)
             })
         }
     })

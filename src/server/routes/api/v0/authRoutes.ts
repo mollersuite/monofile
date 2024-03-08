@@ -165,32 +165,6 @@ export default function (files: Files) {
     )
 
     authRoutes.post(
-        "/customcss",
-        requiresAccount,
-        requiresPermissions("customize"),
-        // Used body-parser
-        async (ctx) => {
-            const body = await ctx.req.json()
-            let acc = ctx.get("account") as Accounts.Account
-
-            if (typeof body.fileId != "string") body.fileId = undefined
-
-            if (
-                !body.fileId ||
-                (body.fileId.match(id_check_regex) == body.fileId &&
-                    body.fileId.length <= config.maxUploadIdLength)
-            ) {
-                acc.customCSS = body.fileId || undefined
-                if (!body.fileId) delete acc.customCSS
-                Accounts.save()
-                return ctx.text(`custom css saved`)
-            } else {
-                return ctx.text("invalid fileid", 400)
-            }
-        }
-    )
-
-    authRoutes.post(
         "/embedcolor",
         requiresAccount,
         requiresPermissions("customize"),
@@ -626,10 +600,5 @@ export default function (files: Files) {
         }
     )
 
-    authRoutes.get("/customCSS", async (ctx) => {
-        let acc = ctx.get("account")
-        if (acc?.customCSS) return ctx.redirect(`/file/${acc.customCSS}`)
-        else return ctx.text("")
-    })
     return authRoutes
 }
