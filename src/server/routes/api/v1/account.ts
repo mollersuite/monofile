@@ -148,54 +148,21 @@ export default function (files: Files) {
     )
 
     router.patch(
-        "/dfv",
+        "/:user",
         requiresAccount,
         requiresPermissions("manage"),
         async (ctx) => {
-            const body = await ctx.req.json()
-            const Account = ctx.get("account")! as Accounts.Account
+            const body = await ctx.req.json() as UserUpdateParameters
+            const actor = ctx.get("account")! as Accounts.Account
+            const target = ctx.get("target")! as Accounts.Account
+            if (Array.isArray(body))
+                return ServeError(ctx, 400, "invalid body")
 
-            if (
-                ["public", "private", "anonymous"].includes(
-                    body.defaultFileVisibility
-                )
-            ) {
-                Account.defaultFileVisibility = body.defaultFileVisibility
-
-                Accounts.save()
-
-                return ctx.text(
-                    `dfv has been set to ${Account.defaultFileVisibility}`
-                )
-            } else {
-                return ServeError(ctx, 400, "invalid dfv")
-            }
-        }
-    )
-
-    router.patch(
-        "/dfv",
-        requiresAccount,
-        requiresPermissions("manage"),
-        async (ctx) => {
-            const body = await ctx.req.json()
-            const Account = ctx.get("account")! as Accounts.Account
-
-            if (
-                ["public", "private", "anonymous"].includes(
-                    body.defaultFileVisibility
-                )
-            ) {
-                Account.defaultFileVisibility = body.defaultFileVisibility
-
-                Accounts.save()
-
-                return ctx.text(
-                    `dfv has been set to ${Account.defaultFileVisibility}`
-                )
-            } else {
-                return ServeError(ctx, 400, "invalid dfv")
-            }
+            Object.entries(body).filter(e => e[1]).map(([x]) => {
+                if (x in validators) {
+                    validators[x](actor, target, body as any)
+                }
+            })
         }
     )
 
