@@ -5,6 +5,7 @@ import * as Accounts from "../../../lib/accounts.js"
 import type Files from "../../../lib/files.js"
 import pkg from "../../../../../package.json" assert {type:"json"}
 import { Hono } from "hono"
+import { getAccount } from "../../../lib/middleware.js"
 export let router = new Hono<{
     Variables: {
         account: Accounts.Account
@@ -12,7 +13,7 @@ export let router = new Hono<{
 }>()
 
 export default function (files: Files) {
-    router.get("/:fileId", async (ctx) => {
+    router.get("/:fileId", getAccount, async (ctx) => {
         let acc = ctx.get("account") as Accounts.Account
         const fileId = ctx.req.param("fileId")
         const host = ctx.req.header("Host")

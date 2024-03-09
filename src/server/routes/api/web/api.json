@@ -2,6 +2,7 @@
     "name": "web",
     "baseURL": "/",
     "mount": [
-        { "file": "preview", "to": "/download" }
+        { "file": "preview", "to": "/download" },
+        "go"
     ]
 }

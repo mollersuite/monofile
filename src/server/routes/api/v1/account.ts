@@ -1,7 +1,7 @@
 // Modules
 
 
-import { Hono } from "hono"
+import { type Context, Hono } from "hono"
 import { getCookie, setCookie } from "hono/cookie"
 
 // Libs
@@ -12,12 +12,13 @@ import * as auth from "../../../lib/auth.js"
 import {
     assertAPI,
     getAccount,
+    login,
     noAPIAccess,
     requiresAccount,
     requiresPermissions,
 } from "../../../lib/middleware.js"
 import ServeError from "../../../lib/errors.js"
-import { sendMail } from "../../../lib/mail.js"
+import { CodeMgr, sendMail } from "../../../lib/mail.js"
 
 import Configuration from "../../../../../config.json" assert {type:"json"}
 
@@ -29,7 +30,7 @@ const router = new Hono<{
 }>()
 
 type UserUpdateParameters = Partial<Omit<Accounts.Account, "password"> & { password: string, currentPassword?: string }>
-type Message = [200 | 400 | 401 | 403 | 501, string]
+type Message = [200 | 400 | 401 | 403 | 429 | 501, string]
 
 // there's probably a less stupid way to do this than `K in keyof Pick<UserUpdateParameters, T>`
 // @Jack5079 make typings better if possible
@@ -42,12 +43,15 @@ type Validator<T extends keyof Partial<Accounts.Account>, ValueNotNull extends b
      */
     (actor: Accounts.Account, target: Accounts.Account, params: UserUpdateParameters & (ValueNotNull extends true ? {
         [K in keyof Pick<UserUpdateParameters, T>]-? : UserUpdateParameters[K]
-    } : {})) => Accounts.Account[T] | Message
+    } : {}), ctx: Context) => Accounts.Account[T] | Message
 
 // this type is so stupid stg
-interface ValidatorWithSettings<T extends keyof Partial<Accounts.Account>> {
-    acceptsNull?: boolean,
-    validator: Validator<T, this["acceptsNull"] extends true ? true : false> // i give upp ill fix this later
+type ValidatorWithSettings<T extends keyof Partial<Accounts.Account>> = {
+    acceptsNull: true,
+    validator: Validator<T, false>
+} | {
+    acceptsNull?: false,
+    validator: Validator<T, true>
 }
 
 const validators: {
@@ -61,7 +65,7 @@ const validators: {
     },
     email: {
         acceptsNull: true,
-        validator: (actor, target, params) => {
+        validator: (actor, target, params, ctx) => {
             if (!params.currentPassword // actor on purpose here to allow admins
                 || (params.currentPassword && Accounts.password.check(actor.id, params.currentPassword))) 
                 return [401, "current password incorrect"]
@@ -76,6 +80,34 @@ const validators: {
                 }
                 return undefined
             }
+
+            if (typeof params.email !== "string") return [400, "email must be string"]
+            if (actor.admin)
+                return params.email
+
+            // send verification email
+
+            if ((CodeMgr.codes.verifyEmail.byUser.get(target.id)?.length || 0) >= 2) return [429, "you have too many active codes"]
+
+            let code = new CodeMgr.Code("verifyEmail", target.id, params.email)
+
+            sendMail(
+                params.email,
+                `Hey there, ${target.username} - let's connect your email`,
+                `<b>Hello there!</b> You are recieving this message because you decided to link your email, <span code>${
+                    params.email.split("@")[0]
+                }<span style="opacity:0.5">@${
+                    params.email.split("@")[1]
+                }</span></span>, to your account, <span username>${
+                    target.username
+                }</span>. If you would like to continue, please <a href="https://${ctx.req.header(
+                    "Host"
+                )}/go/verify/${code.id}"><span code>click here</span></a>, or go to https://${ctx.req.header(
+                    "Host"
+                )}/go/verify/${code.id}.`
+            )
+
+            return [200, "please check your inbox"]
         }
     },
     password(actor, target, params) {
@@ -144,6 +176,7 @@ const validators: {
         }
     },
     embed(actor, target, params) {
+        if (typeof params.embed !== "object") return [400, "must use an object for embed"]
         if (params.embed.color === undefined) {
             params.embed.color = target.embed?.color
         } else if (!((params.embed.color.toLowerCase().match(/[a-f0-9]+/)?.[0] ==
@@ -236,13 +269,8 @@ export default function (files: Files) {
 
         return Accounts.create(body.username, body.password)
             .then((account) => {
-                setCookie(ctx, "auth", auth.create(account, 3 * 24 * 60 * 60 * 1000), {
-                    path: "/",
-                    sameSite: "Strict",
-                    secure: true,
-                    httpOnly: true
-                })
-                return ctx.status(200)
+                login(ctx, account)
+                return ctx.text("logged in")
             })
             .catch(() => {
                 return ServeError(ctx, 500, "internal server error")
@@ -280,7 +308,7 @@ export default function (files: Files) {
 
                         return [
                             x, 
-                            validator.validator(actor, target, body)
+                            validator.validator(actor, target, body as any, ctx)
                         ] as [keyof Accounts.Account, Accounts.Account[keyof Accounts.Account]]
                     })
 

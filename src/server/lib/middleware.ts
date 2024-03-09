@@ -1,7 +1,8 @@
 import * as Accounts from "./accounts.js"
-import { Handler as RequestHandler } from "hono"
+import type { Context, Handler as RequestHandler } from "hono"
 import ServeError from "../lib/errors.js"
 import * as auth from "./auth.js"
+import { setCookie } from "hono/cookie"
 
 /**
  * @description Middleware which adds an account, if any, to ctx.get("account")
@@ -91,6 +92,15 @@ export const assertAPI = function (
         else return next()
     }
 }
+
+// Not really middleware but a utility
+
+export const login = (ctx: Context, account: string) => setCookie(ctx, "auth", auth.create(account, 3 * 24 * 60 * 60 * 1000), {
+    path: "/",
+    sameSite: "Strict",
+    secure: true,
+    httpOnly: true
+})
 
 type SchemeType = "array" | "object" | "string" | "number" | "boolean"
 

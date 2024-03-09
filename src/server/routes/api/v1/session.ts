@@ -11,6 +11,7 @@ import * as Accounts from "../../../lib/accounts.js"
 import * as auth from "../../../lib/auth.js"
 import {
     getAccount,
+    login,
     requiresAccount
 } from "../../../lib/middleware.js"
 import ServeError from "../../../lib/errors.js"
@@ -45,13 +46,9 @@ export default function (files: Files) {
             ServeError(ctx, 400, "username or password incorrect")
             return
         }
-        setCookie(ctx, "auth", auth.create(account.id, 3 * 24 * 60 * 60 * 1000), {
-            path: "/",
-            sameSite: "Strict",
-            secure: true,
-            httpOnly: true
-        })
-        ctx.status(200)
+
+        login(ctx, account.id)
+        return ctx.text("logged in")
     })
 
     router.get("/", requiresAccount, ctx => {
