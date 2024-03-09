@@ -15,7 +15,7 @@
   "author": "Etcetera (https://cetera.uk)",
   "license": "Unlicense",
   "engines": {
-    "node": ">=v20"
+    "node": ">=v21"
   },
   "dependencies": {
     "@hono/node-server": "^1.8.2",

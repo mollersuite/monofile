@@ -435,7 +435,7 @@ export class UploadStream extends Writable {
         }
 
         delete this.files.locks[this.uploadId!]
-        await this.files.api.deleteMessages(ogf.messageids)
+        if (ogf?.messageids) await this.files.api.deleteMessages(ogf.messageids)
         await this.files.write()
         if (this.owner) Accounts.files.index(this.owner, this.uploadId!)
         return this.uploadId
