@@ -105,7 +105,6 @@ export default function (files: Files) {
             }
         }
     )
-    // upload handlers
 
     primaryApi.post(
         "/upload",

@@ -11,6 +11,7 @@ import * as Accounts from "../../../lib/accounts.js"
 import * as auth from "../../../lib/auth.js"
 import {
     getAccount,
+    requiresAccount
 } from "../../../lib/middleware.js"
 import ServeError from "../../../lib/errors.js"
 
@@ -51,6 +52,15 @@ export default function (files: Files) {
             httpOnly: true
         })
         ctx.status(200)
+    })
+
+    router.get("/", requiresAccount, ctx => {
+        let sessionToken = auth.tokenFor(ctx)
+        return ctx.json({
+            expiry: auth.AuthTokens.find(
+                (e) => e.token == sessionToken
+            )?.expire,
+        })
     })
 
     router.delete("/", (ctx) => {

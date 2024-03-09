@@ -6,7 +6,7 @@ import { readFile } from "fs/promises"
 import Files from "./lib/files.js"
 import { getAccount } from "./lib/middleware.js"
 import APIRouter from "./routes/api.js"
-import preview from "./routes/preview.js"
+import preview from "./routes/api/web/preview.js"
 import {fileURLToPath} from "url"
 import {dirname} from "path"
 import pkg from "../../package.json" assert {type:"json"}
@@ -94,10 +94,6 @@ app.get("/", async (ctx) =>
         await fs.promises.readFile(process.cwd() + "/dist/index.html", "utf-8")
     )
 )
-
-// serve download page
-
-app.get("/download/:fileId", getAccount, preview(files))
 
 /*
     routes should be in this order:

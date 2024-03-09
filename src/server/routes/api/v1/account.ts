@@ -33,28 +33,54 @@ type Message = [200 | 400 | 401 | 403 | 501, string]
 
 // there's probably a less stupid way to do this than `K in keyof Pick<UserUpdateParameters, T>`
 // @Jack5079 make typings better if possible
+
+type Validator<T extends keyof Partial<Accounts.Account>, ValueNotNull extends boolean> = 
+    /**
+     * @param actor The account performing this action
+     * @param target The target account for this action
+     * @param params Changes being patched in by the user
+     */
+    (actor: Accounts.Account, target: Accounts.Account, params: UserUpdateParameters & (ValueNotNull extends true ? {
+        [K in keyof Pick<UserUpdateParameters, T>]-? : UserUpdateParameters[K]
+    } : {})) => Accounts.Account[T] | Message
+
+// this type is so stupid stg
+interface ValidatorWithSettings<T extends keyof Partial<Accounts.Account>> {
+    acceptsNull?: boolean,
+    validator: Validator<T, this["acceptsNull"] extends true ? true : false> // i give upp ill fix this later
+}
+
 const validators: {
     [T in keyof Partial<Accounts.Account>]: 
-        /**
-         * @param actor The account performing this action
-         * @param target The target account for this action
-         * @param params Changes being patched in by the user
-         */
-        (actor: Accounts.Account, target: Accounts.Account, params: UserUpdateParameters & {
-            [K in keyof Pick<UserUpdateParameters, T>]-? : UserUpdateParameters[K]
-        }) => Accounts.Account[T] | Message
+        Validator<T, true> | ValidatorWithSettings<T>
 } = {
     defaultFileVisibility(actor, target, params) {
         if (["public", "private", "anonymous"].includes(params.defaultFileVisibility)) 
             return params.defaultFileVisibility
         else return [400, "invalid file visibility"]
     },
-    email(actor, target, params) {
-        return [501, "not implemented"]
+    email: {
+        acceptsNull: true,
+        validator: (actor, target, params) => {
+            if (!params.currentPassword // actor on purpose here to allow admins
+                || (params.currentPassword && Accounts.password.check(actor.id, params.currentPassword))) 
+                return [401, "current password incorrect"]
+
+            if (!params.email) {
+                if (target.email) {
+                    sendMail(
+                        target.email,
+                        `Email disconnected`,
+                        `<b>Hello there!</b> Your email address (<span code>${target.email}</span>) has been disconnected from the monofile account <span username>${target.username}</span>. Thank you for using monofile.`
+                    ).catch()
+                }
+                return undefined
+            }
+        }
     },
     password(actor, target, params) {
         if (
-            !params.currentPassword
+            !params.currentPassword // actor on purpose here to allow admins
             || (params.currentPassword && Accounts.password.check(actor.id, params.currentPassword))
         ) return [401, "current password incorrect"]
 
@@ -77,7 +103,7 @@ const validators: {
 
     },
     username(actor, target, params) {
-        if (!params.currentPassword
+        if (!params.currentPassword // actor on purpose here to allow admins
             || (params.currentPassword && Accounts.password.check(actor.id, params.currentPassword))) 
             return [401, "current password incorrect"]
 
@@ -106,13 +132,30 @@ const validators: {
         return params.username
 
     },
-    customCSS(actor, target, params) {
-        if (
-            !params.customCSS ||
-            (params.customCSS.match(id_check_regex)?.[0] == params.customCSS &&
-                params.customCSS.length <= Configuration.maxUploadIdLength)
-        ) return params.customCSS
-        else return [400, "bad file id"]
+    customCSS: {
+        acceptsNull: true,
+        validator: (actor, target, params) => {
+            if (
+                !params.customCSS ||
+                (params.customCSS.match(id_check_regex)?.[0] == params.customCSS &&
+                    params.customCSS.length <= Configuration.maxUploadIdLength)
+            ) return params.customCSS
+            else return [400, "bad file id"]
+        }
+    },
+    embed(actor, target, params) {
+        if (params.embed.color === undefined) {
+            params.embed.color = target.embed?.color
+        } else if (!((params.embed.color.toLowerCase().match(/[a-f0-9]+/)?.[0] ==
+                params.embed.color.toLowerCase() &&
+                params.embed.color.length == 6) || params.embed.color == null)) return [400, "bad embed color"]
+
+
+        if (params.embed.largeImage === undefined) {
+            params.embed.largeImage = target.embed?.largeImage
+        } else params.embed.largeImage = Boolean(params.embed.largeImage)
+
+        return params.embed
     },
     admin(actor, target, params) {
         if (actor.admin && !target.admin) return params.admin
@@ -217,24 +260,41 @@ export default function (files: Files) {
             if (Array.isArray(body))
                 return ServeError(ctx, 400, "invalid body")
 
-            let results: [keyof Accounts.Account, Accounts.Account[keyof Accounts.Account]|Message][] = Object.entries(body).filter(e => e[1] && e[0] !== "currentPassword").map(([x]) =>
-                [
-                    x as keyof Accounts.Account, 
-                    x in validators
-                    ? validators[x as keyof Accounts.Account]!(actor, target, body as any)
-                    : [400, `the ${x} parameter cannot be set or is not a valid parameter`] as Message
-                ]
-            )
+            let results: ([keyof Accounts.Account, Accounts.Account[keyof Accounts.Account]]|Message)[] = 
+                (Object.entries(body)
+                    .filter(e => e[0] !== "currentPassword") as [keyof Accounts.Account, UserUpdateParameters[keyof Accounts.Account]][])
+                    .map(([x, v]) => {
+                        if (!validators[x])
+                            return [400, `the ${x} parameter cannot be set or is not a valid parameter`] as Message
 
-            let allMsgs = results.map(([x,v]) => {
+                        let validator = 
+                            (typeof validators[x] == "object"
+                            ? validators[x]
+                            : {
+                                validator: validators[x] as Validator<typeof x, false>,
+                                acceptsNull: false
+                            }) as ValidatorWithSettings<typeof x>
+
+                        if (!validator.acceptsNull && !v)
+                            return [400, `the ${x} validator does not accept null values`] as Message
+
+                        return [
+                            x, 
+                            validator.validator(actor, target, body)
+                        ] as [keyof Accounts.Account, Accounts.Account[keyof Accounts.Account]]
+                    })
+
+            let allMsgs = results.map((v) => {
                 if (isMessage(v))
                     return v
-                target[x] = v as never // lol
+                target[v[0]] = v[1] as never // lol
                 return [200, "OK"] as Message
             })
 
+            await Accounts.save()
+
             if (allMsgs.length == 1)
-                return ctx.body(...allMsgs[0]!.reverse() as [Message[1], Message[0]]) // im sorry
+                return ctx.text(...allMsgs[0]!.reverse() as [Message[1], Message[0]]) // im sorry
             else return ctx.json(allMsgs)
         }
     )
@@ -264,7 +324,33 @@ export default function (files: Files) {
         return ctx.text("account deleted")
     })
 
-    router.get("/:user")
+    router.get("/:user", requiresAccount, async (ctx) => {
+        let acc = ctx.get("target")
+        let sessionToken = auth.tokenFor(ctx)!
+        
+        return ctx.json({
+            ...acc,
+            password: undefined,
+            email:
+                auth.getType(sessionToken) == "User" ||
+                auth.getPermissions(sessionToken)?.includes("email")
+                    ? acc.email
+                    : undefined,
+                activeSessions: auth.AuthTokens.filter(
+                    (e) =>
+                        e.type != "App" &&
+                        e.account == acc.id &&
+                        (e.expire > Date.now() || !e.expire)
+                ).length,
+        })
+    })
+
+    router.get("/css", async (ctx) => {
+        let acc = ctx.get('account')
+        if (acc?.customCSS)
+            return ctx.redirect(`/file/${acc.customCSS}`)
+        else return ctx.text("")
+    })
 
     return router
 }

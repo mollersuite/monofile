@@ -11,8 +11,6 @@ let mailConfig = config.mail,
         },
     })
 
-// lazy but
-
 /**
  * @description Sends an email
  * @param to Target email address

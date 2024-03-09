@@ -1,13 +1,18 @@
 import fs from "fs/promises"
 import bytes from "bytes"
-import ServeError from "../lib/errors.js"
-import * as Accounts from "../lib/accounts.js"
-import type { Handler } from "hono"
-import type Files from "../lib/files.js"
-import pkg from "../../../package.json" assert {type:"json"}
+import ServeError from "../../../lib/errors.js"
+import * as Accounts from "../../../lib/accounts.js"
+import type Files from "../../../lib/files.js"
+import pkg from "../../../../../package.json" assert {type:"json"}
+import { Hono } from "hono"
+export let router = new Hono<{
+    Variables: {
+        account: Accounts.Account
+    }
+}>()
 
-export default (files: Files): Handler =>
-    async (ctx) => {
+export default function (files: Files) {
+    router.get("/:fileId", async (ctx) => {
         let acc = ctx.get("account") as Accounts.Account
         const fileId = ctx.req.param("fileId")
         const host = ctx.req.header("Host")
@@ -104,4 +109,7 @@ export default (files: Files): Handler =>
         } else {
             ServeError(ctx, 404, "file not found")
         }
-    }
+    })
+
+    return router
+}

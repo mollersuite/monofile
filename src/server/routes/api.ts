@@ -74,7 +74,6 @@ export default class APIRouter {
     async loadAPIMethods() {
         let files = await readdir(APIDirectory)
         for (let version of files) {
-            /// temporary (hopefully). need to figure out something else for this
             let def = JSON.parse(
                 (
                     await readFile(

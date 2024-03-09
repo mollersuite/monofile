@@ -31,12 +31,12 @@ export default function (files: Files) {
             typeof body.target !== "string" ||
             typeof body.password !== "string"
         ) {
-            return ctx.status(404)
+            return ctx.text("not found", 404)
         }
 
         let targetAccount = Accounts.getFromUsername(body.target)
         if (!targetAccount) {
-            return ctx.status(404)
+            return ctx.text("not found", 404)
         }
 
         Accounts.password.set(targetAccount.id, body.password)
@@ -53,7 +53,7 @@ export default function (files: Files) {
                 `<b>Hello there!</b> This email is to notify you of a password change that an administrator, <span username>${acc.username}</span>, has initiated. You have been logged out of your devices. Thank you for using monofile.`
             )
                 .then(() => ctx.text("OK"))
-                .catch(() => ctx.status(500))
+                .catch(() => ctx.text("err while sending email", 500))
         }
     })
 
@@ -62,12 +62,12 @@ export default function (files: Files) {
         let acc = ctx.get("account") as Accounts.Account
 
         if (typeof body.target !== "string") {
-            return ctx.status(404)
+            return ctx.text("not found", 404)
         }
 
         let targetAccount = Accounts.getFromUsername(body.target)
         if (!targetAccount) {
-            return ctx.status(404)
+            return ctx.text("not found", 404)
         }
 
         Accounts.save()
@@ -77,32 +77,31 @@ export default function (files: Files) {
     adminRoutes.post("/delete", async (ctx) => {
         const body = await ctx.req.json()
         if (typeof body.target !== "string") {
-            return ctx.status(404)
+            return ctx.text("not found", 404)
         }
 
         let targetFile = files.files[body.target]
 
         if (!targetFile) {
-            return ctx.status(404)
+            return ctx.text("not found", 404)
         }
 
         return files
             .unlink(body.target)
-            .then(() => ctx.status(200))
-            .catch(() => ctx.status(500))
-            .finally(() => ctx.status(200))
+            .then(() => ctx.text("ok", 200))
+            .catch(() => ctx.text("err", 500))
     })
 
     adminRoutes.post("/delete_account", async (ctx) => {
         let acc = ctx.get("account") as Accounts.Account
         const body = await ctx.req.json()
         if (typeof body.target !== "string") {
-            return ctx.status(404)
+            return ctx.text("not found", 404)
         }
 
         let targetAccount = Accounts.getFromUsername(body.target)
         if (!targetAccount) {
-            return ctx.status(404)
+            return ctx.text("not found", 404)
         }
 
         let accId = targetAccount.id
@@ -149,12 +148,12 @@ export default function (files: Files) {
     adminRoutes.post("/transfer", async (ctx) => {
         const body = await ctx.req.json()
         if (typeof body.target !== "string" || typeof body.owner !== "string") {
-            return ctx.status(404)
+            return ctx.text("not found", 404)
         }
 
         let targetFile = files.files[body.target]
         if (!targetFile) {
-            return ctx.status(404)
+            return ctx.text("not found", 404)
         }
 
         let newOwner = Accounts.getFromUsername(body.owner || "")
@@ -173,21 +172,21 @@ export default function (files: Files) {
         }
         targetFile.owner = newOwner ? newOwner.id : undefined
 
-        files
+        return files
             .write()
-            .then(() => ctx.status(200))
-            .catch(() => ctx.status(500))
+            .then(() => ctx.text("ok", 200))
+            .catch(() => ctx.text("error", 500))
     })
 
     adminRoutes.post("/idchange", async (ctx) => {
         const body = await ctx.req.json()
         if (typeof body.target !== "string" || typeof body.new !== "string") {
-            return ctx.status(400)
+            return ctx.text("inappropriate body", 400)
         }
 
         let targetFile = files.files[body.target]
         if (!targetFile) {
-            return ctx.status(404)
+            return ctx.text("not found", 404)
         }
 
         if (files.files[body.new]) {
