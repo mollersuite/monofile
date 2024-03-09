@@ -23,6 +23,20 @@
         font-size: 14px;
     }
 
+    h1 > button {
+        background-color: #0000 !important;
+        padding: 0;
+        margin-top: 5px;
+
+        img {
+            color: #666666;
+        }
+
+        &:hover {
+            img { color: #DDD; }
+        }
+    }
+
     a {
         color:#999;
     }

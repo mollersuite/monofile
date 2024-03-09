@@ -9,6 +9,7 @@
         "registrationEnabled": true,
         "requiredForUpload": false
     },
+
     "mail": {
         "transport": {
             "host": "smtp.fastmail.com",
