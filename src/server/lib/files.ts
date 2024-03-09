@@ -434,8 +434,9 @@ export class UploadStream extends Writable {
             chunkSize: this.files.config.maxDiscordFileSize
         }
 
-        await this.files.write()
         delete this.files.locks[this.uploadId!]
+        await this.files.api.deleteMessages(ogf.messageids)
+        await this.files.write()
         if (this.owner) Accounts.files.index(this.owner, this.uploadId!)
         return this.uploadId
     }
@@ -627,16 +628,16 @@ export default class Files {
     async unlink(uploadId: string, noWrite: boolean = false): Promise<void> {
         let target = this.files[uploadId]
         if (!target) return
+
+        await this.api.deleteMessages(target.messageids)
+
         if (target.owner) {
             let id = files.deindex(target.owner, uploadId, noWrite)
             if (id) await id
         }
-
-        await this.api.deleteMessages(target.messageids)
-
         delete this.files[uploadId]
-        if (noWrite) return
-        return this.write().catch((err) => {
+
+        if (!noWrite) this.write().catch((err) => {
             throw err
         })
     }

@@ -212,8 +212,8 @@ export default function (files: Files) {
         requiresPermissions("manage"),
         async (ctx) => {
             const body = await ctx.req.json() as UserUpdateParameters
-            const actor = ctx.get("account")! as Accounts.Account
-            const target = ctx.get("target")! as Accounts.Account
+            const actor = ctx.get("account")!
+            const target = ctx.get("target")!
             if (Array.isArray(body))
                 return ServeError(ctx, 400, "invalid body")
 
@@ -240,9 +240,7 @@ export default function (files: Files) {
     )
 
     router.delete("/:user", requiresAccount, noAPIAccess, async (ctx) => {
-        let acc = ctx.req.param("user") == "me" ? ctx.get("account") : Accounts.getFromId(ctx.req.param("user"))
-        if (acc != ctx.get("account") && !ctx.get("account")?.admin) return ServeError(ctx, 403, "you are not an administrator")
-        if (!acc) return ServeError(ctx, 404, "account does not exist")
+        let acc = ctx.get("target")
 
         auth.AuthTokens.filter((e) => e.account == acc?.id).forEach(
             (token) => {
@@ -265,6 +263,8 @@ export default function (files: Files) {
         
         return ctx.text("account deleted")
     })
+
+    router.get("/:user")
 
     return router
 }
