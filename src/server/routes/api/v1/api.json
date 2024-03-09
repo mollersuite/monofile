@@ -3,13 +3,7 @@
     "baseURL": "/api/v1",
     "mount": [
         "account",
-        "admin",
-        "public",
         "file",
-        "session",
-        {
-            "file": "customization",
-            "to": "/account/customization"
-        }
+        "session"
     ]
 }

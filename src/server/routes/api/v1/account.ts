@@ -28,7 +28,7 @@ const router = new Hono<{
     }
 }>()
 
-type UserUpdateParameters = Partial<Accounts.Account & { password: string, newPassword?: string }>
+type UserUpdateParameters = Partial<Omit<Accounts.Account, "password"> & { password: string, currentPassword?: string }>
 type Message = [200 | 400 | 401 | 403 | 501, string]
 
 // there's probably a less stupid way to do this than `K in keyof Pick<UserUpdateParameters, T>`
@@ -51,6 +51,68 @@ const validators: {
     },
     email(actor, target, params) {
         return [501, "not implemented"]
+    },
+    password(actor, target, params) {
+        if (
+            !params.currentPassword
+            || (params.currentPassword && Accounts.password.check(actor.id, params.currentPassword))
+        ) return [401, "current password incorrect"]
+
+        if (
+            typeof params.password != "string"
+            || params.password.length < 8
+        ) return [400, "password must be 8 characters or longer"]
+
+        if (target.email) {
+            sendMail(
+                target.email,
+                `Your login details have been updated`,
+                `<b>Hello there!</b> Your password on your account, <span username>${target.username}</span>, has been updated`
+                + `${actor != target ? ` by <span username>${actor.username}</span>` : ""}. `
+                + `Please update your saved login details accordingly.`
+            ).catch()
+        }
+
+        return Accounts.password.hash(params.password)
+
+    },
+    username(actor, target, params) {
+        if (!params.currentPassword
+            || (params.currentPassword && Accounts.password.check(actor.id, params.currentPassword))) 
+            return [401, "current password incorrect"]
+
+        if (
+            typeof params.username != "string"
+            || params.username.length < 3
+            || params.username.length > 20
+        ) return [400, "username must be between 3 and 20 characters in length"]
+
+        if (Accounts.getFromUsername(params.username))
+            return [400, "account with this username already exists"]
+
+        if ((params.username.match(/[A-Za-z0-9_\-\.]+/) || [])[0] != params.username)
+            return [400, "username has invalid characters"]
+
+        if (target.email) {
+            sendMail(
+                target.email,
+                `Your login details have been updated`,
+                `<b>Hello there!</b> Your username on your account, <span username>${target.username}</span>, has been updated`
+                + `${actor != target ? ` by <span username>${actor.username}</span>` : ""} to <span username>${params.username}</span>. `
+                + `Please update your saved login details accordingly.`
+            ).catch()
+        }
+
+        return params.username
+
+    },
+    customCSS(actor, target, params) {
+        if (
+            !params.customCSS ||
+            (params.customCSS.match(id_check_regex)?.[0] == params.customCSS &&
+                params.customCSS.length <= Configuration.maxUploadIdLength)
+        ) return params.customCSS
+        else return [400, "bad file id"]
     },
     admin(actor, target, params) {
         if (actor.admin && !target.admin) return params.admin
@@ -79,6 +141,13 @@ router.all("/:user", async (ctx, next) => {
 
     return next()
 })
+
+function isMessage(object: any): object is Message {
+    return Array.isArray(object) 
+        && object.length == 2
+        && typeof object[0] == "number"
+        && typeof object[1] == "string"
+}
 
 export default function (files: Files) {
 
@@ -142,27 +211,31 @@ export default function (files: Files) {
         requiresAccount,
         requiresPermissions("manage"),
         async (ctx) => {
-            let body = await ctx.req.json() as UserUpdateParameters
-            
-        }
-    )
-
-    router.patch(
-        "/:user",
-        requiresAccount,
-        requiresPermissions("manage"),
-        async (ctx) => {
             const body = await ctx.req.json() as UserUpdateParameters
             const actor = ctx.get("account")! as Accounts.Account
             const target = ctx.get("target")! as Accounts.Account
             if (Array.isArray(body))
                 return ServeError(ctx, 400, "invalid body")
 
-            Object.entries(body).filter(e => e[1]).map(([x]) => {
-                if (x in validators) {
-                    validators[x](actor, target, body as any)
-                }
+            let results: [keyof Accounts.Account, Accounts.Account[keyof Accounts.Account]|Message][] = Object.entries(body).filter(e => e[1] && e[0] !== "currentPassword").map(([x]) =>
+                [
+                    x as keyof Accounts.Account, 
+                    x in validators
+                    ? validators[x as keyof Accounts.Account]!(actor, target, body as any)
+                    : [400, `the ${x} parameter cannot be set or is not a valid parameter`] as Message
+                ]
+            )
+
+            let allMsgs = results.map(([x,v]) => {
+                if (isMessage(v))
+                    return v
+                target[x] = v as never // lol
+                return [200, "OK"] as Message
             })
+
+            if (allMsgs.length == 1)
+                return ctx.body(...allMsgs[0]!.reverse() as [Message[1], Message[0]]) // im sorry
+            else return ctx.json(allMsgs)
         }
     )
 
@@ -191,95 +264,6 @@ export default function (files: Files) {
         }
         
         return ctx.text("account deleted")
-    })
-
-    router.put("/:user/password", requiresAccount, noAPIAccess, async (ctx) => {
-        let acc = ctx.req.param("user") == "me" ? ctx.get("account") : Accounts.getFromId(ctx.req.param("user"))
-        if (acc != ctx.get("account") && !ctx.get("account")?.admin) return ServeError(ctx, 403, "you are not an administrator")
-        if (!acc) return ServeError(ctx, 404, "account does not exist")
-        const body = await ctx.req.json()
-        const newPassword = body.newPassword
-
-        if (
-            typeof body.password != "string" ||
-            !Accounts.password.check(acc.id, body.password)
-        ) {
-            return ServeError(
-                ctx,
-                403,
-                "previous password not supplied"
-            )
-        }
-
-        if (
-            typeof newPassword != "string" ||
-            newPassword.length < 8
-        ) {
-            return ServeError(
-                ctx,
-                400,
-                "password must be 8 characters or longer"
-            )
-        }
-
-        Accounts.password.set(acc.id, newPassword)
-        Accounts.save()
-
-        if (acc.email) {
-            await sendMail(
-                acc.email,
-                `Your login details have been updated`,
-                `<b>Hello there!</b> Your password has been updated. Please update your saved login details accordingly.`
-            ).catch()
-            return ctx.text("OK")
-        }
-    })
-
-    router.put("/:user/username", requiresAccount, noAPIAccess, async (ctx) => {
-        let acc = ctx.req.param("user") == "me" ? ctx.get("account") : Accounts.getFromId(ctx.req.param("user"))
-        if (acc != ctx.get("account") && !ctx.get("account")?.admin) return ServeError(ctx, 403, "you are not an administrator")
-        if (!acc) return ServeError(ctx, 404, "account does not exist")
-        const body = await ctx.req.json()
-        const newUsername = body.username
-
-        if (
-            typeof newUsername != "string" ||
-            newUsername.length < 3 ||
-            newUsername.length > 20
-        ) {
-            return ServeError(
-                ctx,
-                400,
-                "username must be between 3 and 20 characters in length"
-            )
-        }
-
-        if (Accounts.getFromUsername(newUsername)) {
-            return ServeError(
-                ctx,
-                400,
-                "account with this username already exists"
-            )
-        }
-
-        if (
-            (newUsername.match(/[A-Za-z0-9_\-\.]+/) || [])[0] != body.username
-        ) {
-            ServeError(ctx, 400, "username contains invalid characters")
-            return
-        }
-
-        acc.username = newUsername
-        Accounts.save()
-
-        if (acc.email) {
-            await sendMail(
-                acc.email,
-                `Your login details have been updated`,
-                `<b>Hello there!</b> Your username has been updated to <span username>${newUsername}</span>. Please update your saved login details accordingly.`
-            ).catch()
-            return ctx.text("OK")
-        }
     })
 
     return router
