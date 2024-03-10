@@ -85,6 +85,23 @@ const apiRouter = new APIRouter(files)
 apiRouter.loadAPIMethods().then(() => {
     app.route("/", apiRouter.root)
     console.log("API OK!")
+
+    // listen on 3000 or MONOFILE_PORT
+    // moved here to prevent a crash if someone manages to access monofile before api routes are mounted
+    
+    serve(
+        {
+            fetch: app.fetch,
+            port: Number(process.env.MONOFILE_PORT || 3000),
+            serverOptions: {
+                //@ts-ignore
+                requestTimeout: config.requestTimeout
+            }
+        },
+        (info) => {
+            console.log("Web OK!", info.port, info.address)
+        }
+    )
 })
 
 // index, clone
@@ -103,21 +120,5 @@ app.get("/", async (ctx) =>
     dl pages
     file serving
 */
-
-// listen on 3000 or MONOFILE_PORT
-
-serve(
-    {
-        fetch: app.fetch,
-        port: Number(process.env.MONOFILE_PORT || 3000),
-        serverOptions: {
-            //@ts-ignore
-            requestTimeout: config.requestTimeout
-        }
-    },
-    (info) => {
-        console.log("Web OK!", info.port, info.address)
-    }
-)
 
 export default app

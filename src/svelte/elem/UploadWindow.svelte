@@ -4,6 +4,7 @@
     import { fade } from "svelte/transition"
     import { circIn, circOut } from "svelte/easing"
     import { serverStats, refresh_stats, account } from "./stores.mjs"
+    import bytes from "bytes"
 
     import AttachmentZone from "./uploader/AttachmentZone.svelte"
 
@@ -213,9 +214,7 @@
                         {upload[1].name}
                         <span style:color="#999999" style:font-weight="400"
                             >{upload[1].type}{@html upload[1].type == "upload"
-                                ? `&nbsp;(${Math.round(
-                                      upload[1].file.size / 1048576
-                                  )}MiB)`
+                                ? `&nbsp;(${bytes(upload[1].file.size)})`
                                 : ""}</span
                         >
                     </h2>
@@ -372,11 +371,12 @@
             >{$serverStats.files || "•••"}</span
         >
         files — Maximum filesize is
-        <span class="number" style:font-weight="600"
-            >{(($serverStats.maxDiscordFileSize || 0) *
-                ($serverStats.maxDiscordFiles || 0)) /
-                1048576 || "•••"}MiB</span
-        >
+        <span class="number" style:font-weight="600">
+            {
+                $serverStats.maxDiscordFiles
+                ? bytes($serverStats.maxDiscordFileSize * $serverStats.maxDiscordFiles)
+                :  "•••"
+            }</span>
         <br />
     </p>
     <p style:color="#999999" style:text-align="center" style:font-size="12px">

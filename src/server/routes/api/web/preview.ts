@@ -107,9 +107,7 @@ export default function (files: Files) {
                             : `@${fileOwner?.username || "Deleted User"}`
                     )
             )
-        } else {
-            ServeError(ctx, 404, "file not found")
-        }
+        } else return ServeError(ctx, 404, "file not found")
     })
 
     return router
