@@ -32,6 +32,8 @@ export default function (files: Files) {
             ctx.header("Access-Control-Allow-Origin", "*")
             ctx.header("Content-Security-Policy", "sandbox allow-scripts")
             ctx.header("Content-Disposition", `${ctx.req.query("attachment") == "1" ? "attachment" : "inline"}; filename="${encodeURI(file.filename.replaceAll("\n","\\n"))}"`)
+            ctx.header("ETag", file.md5)
+            //if (file.lastModified) ctx.header("Last-Modified", new Date(file.lastModified).toTimeString())
 
             if (file) {
                 if (file.visibility == "private") {

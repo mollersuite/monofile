@@ -70,6 +70,8 @@ export interface FilePointer {
     visibility?: FileVisibility
     reserved?: boolean
     chunkSize?: number
+    lastModified?: number
+    md5?: string
 }
 
 export interface StatusCodeError {
@@ -315,6 +317,8 @@ export class UploadStream extends Writable {
 
     error?: Error
 
+    hash: crypto.Hash = crypto.createHash("md5")
+
     constructor(files: Files, owner?: string) {
         super()
         this.owner = owner
@@ -327,6 +331,8 @@ export class UploadStream extends Writable {
         console.log("Write to stream attempted")
         if (this.filled + data.byteLength > (this.files.config.maxDiscordFileSize*this.files.config.maxDiscordFiles))
             return this.destroy(new WebError(413, "maximum file size exceeded"))
+
+        this.hash.update(data)
 
         // cut up the buffer into message sized chunks
 
@@ -431,7 +437,10 @@ export class UploadStream extends Writable {
             // so that json.stringify doesnt include tag:undefined
             ...((ogf||{}).tag ? {tag:ogf.tag} : {}),
 
-            chunkSize: this.files.config.maxDiscordFileSize
+            chunkSize: this.files.config.maxDiscordFileSize,
+
+            md5: this.hash.digest("hex"),
+            lastModified: Date.now()
         }
 
         delete this.files.locks[this.uploadId!]
