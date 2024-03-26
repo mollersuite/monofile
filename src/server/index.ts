@@ -87,7 +87,16 @@ apiRouter.loadAPIMethods().then(() => {
     console.log("API OK!")
 
     // moved here to ensure it's matched last
-    app.get("/:fileId", async (ctx) => app.fetch(ctx.req.raw, ctx.env))
+    app.get("/:fileId", async (ctx) => 
+        app.fetch(
+            new Request(
+                (new URL(
+                    `/api/v1/file/${ctx.req.param("fileId")}`, ctx.req.raw.url)).href, 
+                    ctx.req.raw
+            ), 
+            ctx.env
+        )
+    )
 
     // listen on 3000 or MONOFILE_PORT
     // moved here to prevent a crash if someone manages to access monofile before api routes are mounted

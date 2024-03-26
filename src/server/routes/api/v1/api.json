@@ -3,7 +3,14 @@
     "baseURL": "/api/v1",
     "mount": [
         "account",
-        "file",
-        "session"
+        "session",
+        {
+            "file": "file/index",
+            "to": "/file"
+        },
+        {
+            "file": "file/individual",
+            "to": "/file"
+        }
     ]
 }
