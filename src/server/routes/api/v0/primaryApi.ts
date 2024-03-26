@@ -20,9 +20,9 @@ export let primaryApi = new Hono<{
 
 primaryApi.all("*", getAccount)
 
-export default function (files: Files) {
+export default function (files: Files, apiRoot: Hono) {
     primaryApi.get("/file/:fileId", async (ctx) => 
-        primaryApi.fetch(
+        apiRoot.fetch(
             new Request(
                 (new URL(
                     `/api/v1/file/${ctx.req.param("fileId")}`, ctx.req.raw.url)).href, 

@@ -26,22 +26,24 @@ function resolveMount(mount: APIMountResolvable): APIMount {
 class APIVersion {
     readonly definition: APIDefinition
     readonly apiPath: string
+    readonly apiRoot: Hono
     readonly root: Hono = new Hono()
     readonly files: Files
 
-    constructor(definition: APIDefinition, files: Files) {
+    constructor(definition: APIDefinition, files: Files, apiRoot: Hono) {
         this.definition = definition
         this.apiPath = APIDirectory + "/" + definition.name
         this.files = files
+        this.apiRoot = apiRoot
     }
 
     async load() {
         for (let _mount of this.definition.mount) {
             let mount = resolveMount(_mount);
             // no idea if there's a better way to do this but this is all i can think of
-            let { default: route } = await import(`${this.apiPath}/${mount.file}.js`) as { default: (files: Files) => Hono }
+            let { default: route } = await import(`${this.apiPath}/${mount.file}.js`) as { default: (files: Files, apiRoot: Hono) => Hono }
             
-            this.root.route(mount.to, route(this.files))
+            this.root.route(mount.to, route(this.files, this.apiRoot))
         }
     }
 }
@@ -62,7 +64,7 @@ export default class APIRouter {
     private async mount(definition: APIDefinition) {
         console.log(`mounting APIDefinition ${definition.name}`)
 
-        let def = new APIVersion(definition, this.files)
+        let def = new APIVersion(definition, this.files, this.root)
         await def.load()
 
         this.root.route(
