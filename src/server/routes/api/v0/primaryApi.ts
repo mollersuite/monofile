@@ -21,7 +21,7 @@ export let primaryApi = new Hono<{
 primaryApi.all("*", getAccount)
 
 export default function (files: Files) {
-    primaryApi.get("/:fileId", async (ctx) => 
+    primaryApi.get("/file/:fileId", async (ctx) => 
         primaryApi.fetch(
             new Request(
                 (new URL(
