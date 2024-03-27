@@ -39,7 +39,7 @@ export default function(files: Files, apiRoot: Hono) {
                 let lm = new Date(file.lastModified)
                 // TERRIFYING
                 ctx.header("Last-Modified", 
-                    `${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][lm.getUTCDay()]}, ${lm.getUTCDay()} `
+                    `${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][lm.getUTCDay()]}, ${lm.getUTCDate()} `
                     + `${['Jan','Feb','Mar','Apr','May','Jun',"Jul",'Aug','Sep','Oct','Nov','Dec'][lm.getUTCMonth()]}`
                     + ` ${lm.getUTCFullYear()} ${lm.getUTCHours().toString().padStart(2,"0")}`
                     + `:${lm.getUTCMinutes().toString().padStart(2,"0")}:${lm.getUTCSeconds().toString().padStart(2,"0")} GMT`
