@@ -32,133 +32,18 @@ export default function (files: Files, apiRoot: Hono) {
         )
     )
 
-    primaryApi.post(
-        "/upload",
-        requiresPermissions("upload"),
-        (ctx) => { return new Promise((resolve,reject) => {
-            ctx.env.incoming.removeAllListeners("data") // remove hono's buffering
-
-            let errEscalated = false
-            function escalate(err:Error) {
-                if (errEscalated) return
-                errEscalated = true
-                
-                if ("httpCode" in err)
-                    ctx.status(err.httpCode as StatusCode)
-                else if (err instanceof WebError) 
-                    ctx.status(err.statusCode as StatusCode)
-                else ctx.status(400)
-                resolve(ctx.body(err.message))
-            }
-
-            let acc = ctx.get("account") as Accounts.Account | undefined
-
-            if (!ctx.req.header("Content-Type")?.startsWith("multipart/form-data"))
-                return resolve(ctx.body("must be multipart/form-data", 400))
-
-            if (!ctx.req.raw.body)
-                return resolve(ctx.body("body must be supplied", 400))
-
-            let file = files.createWriteStream(acc?.id)
-            let parser = formidable({
-                maxFieldsSize: 65536,
-                maxFileSize: files.config.maxDiscordFileSize*files.config.maxDiscordFiles,
-                maxFiles: 1
-            })
-
-            parser.onPart = function(part) {
-                if (!part.originalFilename || !part.mimetype) {
-                    parser._handlePart(part)
-                    return
-                }
-                // lol
-                if (part.name == "file") {
-                    file.setName(part.originalFilename || "")
-                    file.setType(part.mimetype || "")
-
-                    file.on("drain", () => ctx.env.incoming.resume())
-                    file.on("error", (err) => part.emit("error", err))
-
-                    part.on("data", (data: Buffer) => {
-                        if (!file.write(data))
-                            ctx.env.incoming.pause()
-                    })
-                    part.on("end", () => file.end())
-                }
-            }
-
-            parser.on("field", (k,v) => {
-                if (k == "uploadId")
-                    file.setUploadId(v)
-            })
-
-            parser.parse(ctx.env.incoming).catch(e => console.error(e))
-
-            parser.on('error', (err) => {
-                escalate(err)
-                if (!file.destroyed) file.destroy(err)
-            })
-            file.on("error", escalate)
-
-            file.on("finish", async () => {
-                if (!ctx.env.incoming.readableEnded) await new Promise(res => ctx.env.incoming.once("end", res))
-                file.commit()
-                    .then(id => resolve(ctx.body(id!)))
-                    .catch(escalate)
-            })
-
-        })}
-    )
-
-    primaryApi.post(
-        "/clone",
-        requiresPermissions("upload"),
-        ctx => new Promise(async resolve => {
-
-            let acc = ctx.get("account") as Accounts.Account
-
-            let requestParameters
-            try {
-                requestParameters = await ctx.req.json()
-            } catch (err: any) {return ctx.text(err.toString(), 400)}
-            
-            let res = await fetch(requestParameters.url, {
-                headers: {
-                    "user-agent": `monofile ${pkg.version} (+https://${ctx.req.header("Host")})`
-                }
-            })
-            if (!res.ok) return ctx.text(`got ${res.status} ${res.statusText}`, 500)
-            if (!res.body) return ctx.text(`Internal Server Error`, 500)
-            if (
-                res.headers.has("Content-Length")
-                && !Number.isNaN(parseInt(res.headers.get("Content-Length")!,10))
-                && parseInt(res.headers.get("Content-Length")!,10) > files.config.maxDiscordFileSize*files.config.maxDiscordFiles
-            ) 
-                return ctx.text(`file reports to be too large`, 413)
-
-            let file = files.createWriteStream(acc?.id)
-            
-            Readable.fromWeb(res.body as StreamWebReadable)
-                .pipe(file)
-                .on("error", (err) => resolve(ctx.text(err.message, err instanceof WebError ? err.statusCode as StatusCode : 500)))
-
-            file
-                .setName(
-                    requestParameters.url.split("/")[
-                        requestParameters.url.split("/").length - 1
-                    ] || "generic"
-                )
-            
-            if (res.headers.has("content-type")) file.setType(res.headers.get("content-type")!)
-            if (requestParameters.uploadId) file.setUploadId(requestParameters.uploadId)
-
-            file.once("finish", () => {
-                file.commit()
-                    .then(id => resolve(ctx.text(id!)))
-                    .catch((err) => resolve(ctx.text(err.message, err instanceof WebError ? err.statusCode as StatusCode : 500)))
-            })
-
-        })
+    primaryApi.post("/upload", async (ctx) => 
+        apiRoot.fetch(
+            new Request(
+                (new URL(
+                    `/api/v1/file`, ctx.req.raw.url)).href, 
+                    {
+                        ...ctx.req.raw,
+                        method: "PUT"
+                    }
+            ), 
+            ctx.env
+        )
     )
     
     return primaryApi

@@ -106,5 +106,7 @@ export default function(files: Files) {
         }
     })
 
+    router.post("/:id")
+
     return router
 }

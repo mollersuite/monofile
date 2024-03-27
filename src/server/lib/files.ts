@@ -139,8 +139,10 @@ export class ReadStream extends Readable {
 
         if (useRanges)
             this.ranges.scan_msg_begin = Math.floor(this.ranges.scan_files_begin / 10),
-            this.ranges.scan_msg_end = Math.ceil(this.ranges.scan_files_end / 10)-1,
+            this.ranges.scan_msg_end = Math.ceil(this.ranges.scan_files_end / 10),
             this.msgIdx = this.ranges.scan_msg_begin
+        
+        console.log(this.ranges)
     }
 
     async _read() {/*

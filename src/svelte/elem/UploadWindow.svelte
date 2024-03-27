@@ -113,30 +113,14 @@
             // quick patch-in to allow for a switch to have everything upload sequentially
             // switch will have a proper menu option later, for now i'm lazy so it's just gonna be a Secret
             let hdl = () => {
-                switch (v.type) {
-                    case "upload":
-                        let fd = new FormData()
-                        if (v.params.uploadId) fd.append("uploadId", v.params.uploadId)
-                        fd.append("file", v.file)
+                let fd = new FormData()
+                if (v.params.uploadId) fd.append("uploadId", v.params.uploadId)
+                fd.append("file", v.type == "clone" ? v.url : v.file)
 
-                        return handle_fetch_promise(x,fetch("/upload",{
-                            method: "POST",
-                            body: fd
-                        }))
-                    break
-                    case "clone":
-                        return handle_fetch_promise(
-                            x,
-                            fetch("/clone", {
-                                method: "POST",
-                                body: JSON.stringify({
-                                    url: v.url,
-                                    ...v.params,
-                                }),
-                            })
-                        )
-                        break
-                }
+                return handle_fetch_promise(x,fetch("/api/v1/file",{
+                    method: "PUT",
+                    body: fd
+                }))
             }
 
             if (sequential) await hdl()
