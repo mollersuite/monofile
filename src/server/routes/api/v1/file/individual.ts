@@ -20,7 +20,7 @@ const router = new Hono<{
 }>()
 router.all("*", getAccount)
 
-export default function(files: Files) {
+export default function(files: Files, apiRoot: Hono) {
 
     router.get("/:id", async (ctx) => {
         const fileId = ctx.req.param("id")
@@ -106,7 +106,23 @@ export default function(files: Files) {
         }
     })
 
-    router.post("/:id")
+    router.on(["PUT", "POST"], "/:id", async (ctx) => {
+        ctx.env.incoming.push(
+            `--${ctx.req.header("content-type")?.match(/boundary=(\S+)/)?.[1]}\r\n`
+            + `Content-Disposition: form-data; name="uploadId"\r\n\r\n`
+            + ctx.req.param("id")
+            + "\r\n"
+        )
+
+        return apiRoot.fetch(
+            new Request(
+                (new URL(
+                    `/api/v1/file`, ctx.req.raw.url)).href, 
+                    ctx.req.raw
+            ), 
+            ctx.env
+        )
+    })
 
     return router
 }

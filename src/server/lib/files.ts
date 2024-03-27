@@ -381,7 +381,7 @@ export class UploadStream extends Writable {
     async _destroy(error: Error | null, callback: (err?: Error|null) => void) {
         this.error = error || undefined
         await this.abort()
-        callback()
+        callback(error)
     }
 
     /** 

@@ -52,6 +52,16 @@ export default function(files: Files) {
                 return resolve(ctx.body("body must be supplied", 400))
 
             let file = files.createWriteStream(acc?.id)
+
+            file
+                .on("error", escalate) 
+                .on("finish", async () => {
+                    if (!ctx.env.incoming.readableEnded) await new Promise(res => ctx.env.incoming.once("end", res))
+                    file.commit()
+                        .then(id => resolve(ctx.body(id!)))
+                        .catch(escalate)
+                })
+
             let parser = formidable({
                 maxFieldsSize: 65536,
                 maxFileSize: files.config.maxDiscordFileSize*files.config.maxDiscordFiles,
@@ -136,14 +146,6 @@ export default function(files: Files) {
             parser.on('error', (err) => {
                 escalate(err)
                 if (!file.destroyed) file.destroy(err)
-            })
-            file.on("error", escalate)
-
-            file.on("finish", async () => {
-                if (!ctx.env.incoming.readableEnded) await new Promise(res => ctx.env.incoming.once("end", res))
-                file.commit()
-                    .then(id => resolve(ctx.body(id!)))
-                    .catch(escalate)
             })
 
         })}
