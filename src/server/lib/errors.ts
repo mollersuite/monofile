@@ -24,13 +24,13 @@ export default async function ServeError(
     
 
     // serve error
-    return ctx.html(
+    return ctx.req.header("accept").includes("text/html") ? ctx.html(
         errorPage
             .replaceAll("$code", code.toString())
             .replaceAll("$text", reason),
-        code as StatusCode,
+        code as StatusCode/*,
         {
             "x-backup-status-message": reason, // glitch default nginx configuration
-        }
-    )
+        }*/
+    ) : ctx.text(reason, code as StatusCode)
 }
