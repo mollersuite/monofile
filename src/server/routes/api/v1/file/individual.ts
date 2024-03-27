@@ -35,7 +35,16 @@ export default function(files: Files, apiRoot: Hono) {
         if (file) {
             ctx.header("Content-Disposition", `${ctx.req.query("attachment") == "1" ? "attachment" : "inline"}; filename="${encodeURI(file.filename.replaceAll("\n","\\n"))}"`)
             ctx.header("ETag", file.md5)
-            //if (file.lastModified) ctx.header("Last-Modified", new Date(file.lastModified).toTimeString())
+            if (file.lastModified) {
+                let lm = new Date(file.lastModified)
+                // TERRIFYING
+                ctx.header("Last-Modified", 
+                    `${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][lm.getUTCDay()]}, ${lm.getUTCDay()} `
+                    + `${['Jan','Feb','Mar','Apr','May','Jun',"Jul",'Aug','Sep','Oct','Nov','Dec'][lm.getUTCMonth()]}`
+                    + ` ${lm.getUTCFullYear()} ${lm.getUTCHours().toString().padStart(2,"0")}`
+                    + `:${lm.getUTCMinutes().toString().padStart(2,"0")}:${lm.getUTCSeconds().toString().padStart(2,"0")} GMT`
+                )
+            }
             
             if (file.visibility == "private") {
                 if (acc?.id != file.owner) {
