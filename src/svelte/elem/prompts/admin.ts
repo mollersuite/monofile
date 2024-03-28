@@ -1,7 +1,8 @@
-import { fetchAccountData, fetchFilePointers, account } from "../stores.mjs"
+import { fetchAccountData, fetchFilePointers, account } from "../stores"
 import { get } from "svelte/store";
+import type OptionPicker from "./OptionPicker.svelte";
 
-export function pwdReset(optPicker) {
+export function pwdReset(optPicker: OptionPicker) {
     optPicker.picker("Reset password",[
         {
             name: "Target user",
@@ -39,7 +40,7 @@ export function pwdReset(optPicker) {
     })
 }
 
-export function chgOwner(optPicker) {
+export function chgOwner(optPicker: OptionPicker) {
     optPicker.picker("Transfer file ownership",[
         {
             name: "File ID",
@@ -75,7 +76,7 @@ export function chgOwner(optPicker) {
     })
 }
 
-export function chgId(optPicker) {
+export function chgId(optPicker: OptionPicker) {
     optPicker.picker("Change file ID",[
         {
             name: "Target file",
@@ -111,7 +112,7 @@ export function chgId(optPicker) {
     })
 }
 
-export function delFile(optPicker) {
+export function delFile(optPicker: OptionPicker) {
     optPicker.picker("Delete file",[
         {
             name: "File ID",
@@ -140,7 +141,7 @@ export function delFile(optPicker) {
     })
 }
 
-export function elevateUser(optPicker) {
+export function elevateUser(optPicker: OptionPicker) {
     optPicker.picker("Elevate user",[
         {
             name: "Username",
@@ -171,7 +172,7 @@ export function elevateUser(optPicker) {
 
 // im really lazy so i just stole this from account.js
 
-export function deleteAccount(optPicker) {
+export function deleteAccount(optPicker: OptionPicker) {
     optPicker.picker("What should we do with the target account's files?",[
         {
             name: "Delete files",

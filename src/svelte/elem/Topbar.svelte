@@ -1,14 +1,11 @@
-<script>
+<script lang="ts">
     import { circOut } from "svelte/easing";
     import { scale } from "svelte/transition";
     import PulldownManager, {pulldownOpen} from "./PulldownManager.svelte";
-    import { account } from "./stores.mjs";
-    import { _void } from "./transition/_void";
+    import { account } from "./stores.js";
+    import { _void } from "./transition/_void.js";
 
-    /**
-     * @type PulldownManager
-     */
-    export let pulldown;
+    export let pulldown: PulldownManager;
 </script>
 
 <div id="topbar">
@@ -23,7 +20,7 @@
     <!-- too lazy to make this better -->
 
     <button class="menuBtn" on:click={() => pulldown.openPulldown("files")}>files</button>
-    <button class="menuBtn" on:click={() => pulldown.openPulldown("account")}>{$account.username ? `@${$account.username}` : "account"}</button>
+    <button class="menuBtn" on:click={() => pulldown.openPulldown("account")}>{$account?.username ? `@${$account.username}` : "account"}</button>
     <button class="menuBtn" on:click={() => pulldown.openPulldown("help")}>help</button>
 
     <div /> <!-- not sure what's offcenter but something is

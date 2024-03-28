@@ -24,7 +24,7 @@ export default async function ServeError(
     
 
     // serve error
-    return ctx.req.header("accept").includes("text/html") ? ctx.html(
+    return ctx.req.header("accept")?.includes("text/html") ? ctx.html(
         errorPage
             .replaceAll("$code", code.toString())
             .replaceAll("$text", reason),

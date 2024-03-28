@@ -13,7 +13,7 @@
             span {
                 position:relative;
 
-                &._add_files_txt {
+                &.add_files_txt {
                     font-size:16px;
                     top:-4px;
                     left:10px;
@@ -29,7 +29,7 @@
             @media screen and (max-width:500px) {
                 font-size: 40px;
 
-                span._add_files_txt {
+                span.add_files_txt {
                     font-size:20px;
                     top:-6px;
                     left:10px;
@@ -45,7 +45,7 @@
             flex-direction:row;
             column-gap:10px;
 
-            button, input[type=text] {
+            button, input[type=text], input[type=submit] {
                 background-color:#333333;
                 color:#DDDDDD;
                 border:none;
@@ -63,7 +63,7 @@
                 }
             }
 
-            button {
+            button, input[type=submit] {
                 cursor:pointer;
 
                 &:hover {

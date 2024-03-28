@@ -1,4 +1,4 @@
-<script context="module">
+<script context="module" lang="ts">
     import { writable } from "svelte/store";
 
     // can't find a better way to do this
@@ -13,10 +13,10 @@
         .set("help",Help)
         .set("files",Files)
 
-    export const pulldownOpen = writable(false); 
+    export const pulldownOpen = writable<string|false>(false); 
 </script>
 
-<script>
+<script lang="ts">
     import { onMount } from "svelte";
     import { fade, scale } from "svelte/transition";
 
@@ -24,7 +24,7 @@
         return $pulldownOpen
     }
 
-    export function openPulldown(name) {
+    export function openPulldown(name: string) {
         pulldownOpen.set(name)
     }
 

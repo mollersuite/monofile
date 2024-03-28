@@ -1,5 +1,6 @@
 import { defineConfig } from "vite"
 import { svelte } from "@sveltejs/vite-plugin-svelte"
+import autoPreprocess from "svelte-preprocess"
 import { resolve } from "path"
 export default defineConfig({
     root: "./src",
@@ -14,5 +15,7 @@ export default defineConfig({
             },
         },
     },
-    plugins: [svelte({})],
+    plugins: [svelte({
+        preprocess: autoPreprocess()
+    })],
 })

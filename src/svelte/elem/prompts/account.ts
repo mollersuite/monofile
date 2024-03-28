@@ -1,7 +1,8 @@
-import { fetchAccountData, account, refreshNeeded } from "../stores.mjs"
+import { fetchAccountData, account, refreshNeeded } from "../stores"
 import { get } from "svelte/store";
+import type OptionPicker from "./OptionPicker.svelte";
 
-export function deleteAccount(optPicker) {
+export function deleteAccount(optPicker: OptionPicker) {
     optPicker.picker("What should we do with your files?",[
         {
             name: "Delete my files",
@@ -56,7 +57,7 @@ export function deleteAccount(optPicker) {
     })
 }
 
-export function userChange(optPicker) {
+export function userChange(optPicker: OptionPicker) {
     optPicker.picker("Change username",[
         {
             name: "New username",
@@ -86,7 +87,7 @@ export function userChange(optPicker) {
     })
 }
 
-export function forgotPassword(optPicker) {
+export function forgotPassword(optPicker: OptionPicker) {
     optPicker.picker("Forgot your password?",[
         {
             name: "Username",
@@ -115,7 +116,7 @@ export function forgotPassword(optPicker) {
     })
 }
 
-export function emailPotentialRemove(optPicker) {
+export function emailPotentialRemove(optPicker: OptionPicker) {
     optPicker.picker("What would you like to do?",[
         {
             name: "Set a new email",
@@ -148,7 +149,7 @@ export function emailPotentialRemove(optPicker) {
     })
 }
 
-export function emailChange(optPicker) {
+export function emailChange(optPicker: OptionPicker) {
     optPicker.picker("Change email",[
         {
             name: "New email",
@@ -177,7 +178,7 @@ export function emailChange(optPicker) {
     })
 }
 
-export function pwdChng(optPicker) {
+export function pwdChng(optPicker: OptionPicker) {
     optPicker.picker("Change password",[
         {
             name: "New password",
@@ -209,7 +210,7 @@ export function pwdChng(optPicker) {
     })
 }
 
-export function customcss(optPicker) {
+export function customcss(optPicker: OptionPicker) {
     optPicker.picker("Set custom CSS",[
         {
             name: "Enter a file ID",
@@ -250,7 +251,7 @@ export function customcss(optPicker) {
 }
 
 
-export function embedColor(optPicker) {
+export function embedColor(optPicker: OptionPicker) {
     optPicker.picker("Set embed color",[
         {
             name: "FFFFFF",
@@ -290,7 +291,7 @@ export function embedColor(optPicker) {
 }
 
 
-export function embedSize(optPicker) {
+export function embedSize(optPicker: OptionPicker) {
     optPicker.picker("Set embed image size",[
         {
             name: "Large",

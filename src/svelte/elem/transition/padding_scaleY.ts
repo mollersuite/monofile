@@ -1,12 +1,13 @@
 import { circIn, circOut } from "svelte/easing"
 
-export function padding_scaleY(node, { duration, easingFunc, padY, padX, op }) {
+function padding_scaleY(node: HTMLElement, options?: { duration?: number, easingFunc?: (a: number) => number, padY?: number, padX?: number, op?: boolean }) {
+    const { duration = 300, easingFunc = circOut, padY, padX, op } = options ?? {}
     let rect = node.getBoundingClientRect()
 
     return {
-        duration: duration||300,
-        css: t => {
-            let eased = (easingFunc || circOut)(t)
+        duration,
+        css: (t:number) => {
+            let eased = easingFunc(t)
 
             return `
                 height: ${eased*(rect.height-(padY||0))}px;
@@ -16,3 +17,5 @@ export function padding_scaleY(node, { duration, easingFunc, padY, padX, op }) {
         }
     }
 }
+    
+export {padding_scaleY}
