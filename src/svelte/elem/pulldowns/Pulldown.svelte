@@ -1,13 +1,13 @@
-<script>
+<script lang=ts>
 
     import { fade } from "svelte/transition";
 
-    export let name;
+    export let name: string;
 
 </script>
 <div 
     class="pulldown_display"
-    name={name}
+    data-name={name}
     transition:fade={{duration:150}} 
 >
     <slot />

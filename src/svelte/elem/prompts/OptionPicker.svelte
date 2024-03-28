@@ -1,28 +1,30 @@
-<script>
+<script lang="ts">
     import { fade, slide } from "svelte/transition";
 
+    interface BaseModalOption {
+        name:string,
+        icon:string,
+        id: string | number | symbol | boolean
+    }
 
-    let activeModal;
-    let modalResults;
+    type ModalOption = BaseModalOption & {inputSettings: {password?: boolean}, id: any} | BaseModalOption & { description: string }
 
-    /**
-     * 
-     * @param mdl {name:string,icon:string,description:string,id:string}[]
-     * @returns Promise
-     */
-    export function picker(title,mdl) {
+    type ModalOptions = ModalOption[]
+    type OptionPickerReturns =  {selected: any} & Record<any,any> | null
+    let activeModal: {resolve: (val: OptionPickerReturns) => void, title: string, modal: ModalOptions } | undefined;
+    let modalResults: Record<string | number | symbol, string> = {};
+
+    export function picker(title: string,mdl: ModalOptions): Promise<OptionPickerReturns> {
         if (activeModal) forceCancel()
 
-        return new Promise((resolve,reject) => {
+        return new Promise<OptionPickerReturns>((resolve,reject) => {
             activeModal = {
                 resolve,
                 title,
                 modal:mdl
             }
 
-            modalResults = {
-
-            }
+            modalResults = {}
         })
     }
 
@@ -30,7 +32,7 @@
         if (activeModal && activeModal.resolve) {
             activeModal.resolve(null)
         }
-        activeModal = null
+        activeModal = undefined
     }
 </script>
 
@@ -46,9 +48,9 @@
                 </div>
                 
                 {#each activeModal.modal as option (option.id)}
-                    {#if option.inputSettings}
+                    {#if "inputSettings" in option}
                         <div class="inp">
-                            <img src={option.icon} alt={option.id}>
+                            <img src={option.icon} alt={option.id.toString()}>
 
                             <!-- i have to do this stupidness because of svelte but -->
                             <!-- its reason for blocking this is pretty good sooooo -->
@@ -60,8 +62,8 @@
                             {/if}
                         </div>
                     {:else}
-                        <button on:click={() => {activeModal.resolve({...modalResults,selected:option.id});activeModal=null;modalResults=null;}}>
-                            <img src={option.icon} alt={option.id}>
+                        <button on:click={() => {activeModal?.resolve({...modalResults,selected:option.id});activeModal=undefined;modalResults={};}}>
+                            <img src={option.icon} alt={option.id.toString()}>
                             <p>{option.name}<span><br />{option.description}</span></p>
                         </button>
                     {/if}

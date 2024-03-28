@@ -1,5 +1,7 @@
-import { fetchAccountData, fetchFilePointers, account } from "../stores.mjs"
+import { fetchAccountData, fetchFilePointers, account } from "../stores"
 import { get } from "svelte/store";
+import type OptionPicker from "./OptionPicker.svelte"
+import type { FilePointer } from "../../../server/lib/files";
 
 export let options = {
     FV: [
@@ -51,7 +53,7 @@ export let options = {
     ]
 }
 
-export function dfv(optPicker) {
+export function dfv(optPicker: OptionPicker) {
     optPicker.picker("Default file visibility",options.FV).then((exp) => {
         if (exp && exp.selected) {
             fetch(`/auth/dfv`,{method:"POST", body:JSON.stringify({
@@ -68,21 +70,21 @@ export function dfv(optPicker) {
     })
 }
 
-export function update_all_files(optPicker) {
+export function update_all_files(optPicker: OptionPicker) {
     optPicker.picker("You sure?",[
         {
             name: "Yeah",
             icon: "/static/assets/icons/update.svg",
-            description: `This will make all of your files ${get(account).defaultFileVisibility || "public"}`,
+            description: `This will make all of your files ${get(account)?.defaultFileVisibility || "public"}`,
             id: true
         }
     ]).then((exp) => {
         if (exp && exp.selected) {
             fetch(`/files/manage`,{method:"POST", body:JSON.stringify({
-                target:get(account).files,
+                target:get(account)?.files,
                 action: "changeFileVisibility",
                 
-                value: get(account).defaultFileVisibility
+                value: get(account)?.defaultFileVisibility
             })}).then((response) => {
                 
                 if (response.status != 200) {
@@ -95,7 +97,7 @@ export function update_all_files(optPicker) {
     })
 }
 
-export function fileOptions(optPicker,file) {
+export function fileOptions(optPicker: OptionPicker, file: FilePointer & {id:string}) {
     optPicker.picker(file.filename,[
         {
             name: file.tag ? "Remove tag" : "Tag file",

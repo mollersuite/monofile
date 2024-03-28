@@ -1,9 +1,10 @@
-<script>
+<script lang="ts">
     import { _void } from "./transition/_void.js"
     import { padding_scaleY } from "./transition/padding_scaleY.js"
     import { fade } from "svelte/transition"
     import { circIn, circOut } from "svelte/easing"
-    import { serverStats, refresh_stats, account } from "./stores.mjs"
+    import { serverStats, refresh_stats, account } from "./stores.js"
+    import bytes from "bytes"
 
     import AttachmentZone from "./uploader/AttachmentZone.svelte"
 
@@ -13,56 +14,48 @@
 
     // uploads
 
+    interface Upload {
+        file: string | File
+
+        params: {
+            uploadId?: string
+        }
+
+        uploadStatus: {
+            fileId?: string,
+            error?: string,
+        }
+
+        maximized?: boolean,
+        viewingUrl?: boolean
+    }
+
     let attachmentZone
-    let uploads = {}
+    let uploads: Record<string, Upload> = {}
     let uploadInProgress = false
     let notificationPermission =
         globalThis?.Notification?.permission ?? "denied"
-    let handle_file_upload = (ev) => {
-        if (ev.detail.type == "clone") {
-            uploads[Math.random().toString().slice(2)] = {
-                type: "clone",
-                name: ev.detail.url,
-                url: ev.detail.url,
+    let handle_file_upload = (file: Event & { detail: File|string }) => {
 
-                params: {
-                    uploadId: "",
-                },
+        uploads[Math.random().toString().slice(2)] = {
+            file: file.detail,
 
-                uploadStatus: {
-                    fileId: null,
-                    error: null,
-                },
-            }
+            params: {
+                uploadId: "",
+            },
 
-            uploads = uploads
-        } else if (ev.detail.type == "upload") {
-            ev.detail.files.forEach((v, x) => {
-                uploads[Math.random().toString().slice(2)] = {
-                    type: "upload",
-                    name: v.name,
-                    file: v,
-
-                    params: {
-                        uploadId: "",
-                    },
-
-                    uploadStatus: {
-                        fileId: null,
-                        error: null,
-                    },
-                }
-            })
-
-            uploads = uploads
+            uploadStatus: {}
         }
+
+        uploads = uploads
+
     }
 
-    let handle_fetch_promise = (x, prom) => {
+    let handle_fetch_promise = (x: string, prom: Promise<Response>) => {
         return prom
             .then(async (res) => {
                 let txt = await res.text()
-                if (txt.startsWith("[err]")) uploads[x].uploadStatus.error = txt
+                if (!res.ok) uploads[x].uploadStatus.error = txt
                 else {
                     uploads[x].uploadStatus.fileId = txt
                     try {
@@ -80,8 +73,8 @@
                             ],
                         }).addEventListener(
                             "notificationclick",
-                            ({ action }) => {
-                                if (action === "open") {
+                            (event) => {
+                                if ("action" in event && event.action === "open") {
                                     open(
                                         "/download/" +
                                             uploads[x].uploadStatus.fileId
@@ -112,35 +105,14 @@
             // quick patch-in to allow for a switch to have everything upload sequentially
             // switch will have a proper menu option later, for now i'm lazy so it's just gonna be a Secret
             let hdl = () => {
-                switch (v.type) {
-                    case "upload":
-                        let fd = new FormData()
-                        fd.append("file", v.file)
+                let fd = new FormData()
+                if (v.params.uploadId) fd.append("uploadId", v.params.uploadId)
+                fd.append("file", v.file)
 
-                        return handle_fetch_promise(
-                            x,
-                            fetch("/upload", {
-                                headers: {
-                                    "monofile-params": JSON.stringify(v.params),
-                                },
-                                method: "POST",
-                                body: fd,
-                            })
-                        )
-                        break
-                    case "clone":
-                        return handle_fetch_promise(
-                            x,
-                            fetch("/clone", {
-                                method: "POST",
-                                body: JSON.stringify({
-                                    url: v.url,
-                                    ...v.params,
-                                }),
-                            })
-                        )
-                        break
-                }
+                return handle_fetch_promise(x,fetch("/api/v1/file",{
+                    method: "PUT",
+                    body: fd
+                }))
             }
 
             if (sequential) await hdl()
@@ -150,10 +122,10 @@
 
     // animation
 
-    function fileTransition(node) {
+    function fileTransition(node: HTMLElement) {
         return {
             duration: 300,
-            css: (t) => {
+            css: (t: number) => {
                 let eased = circOut(t)
 
                 return `
@@ -195,7 +167,7 @@
     </h1>
     <p style:color="#999999">
         <span class="number"
-            >{$serverStats.version ? `v${$serverStats.version}` : "•••"}</span
+            >{$serverStats?.version ? `v${$serverStats?.version}` : "•••"}</span
         >&nbsp;&nbsp;—&nbsp;&nbsp;Discord based file sharing
     </p>
 
@@ -215,14 +187,9 @@
                         : ""}
                 >
                     <h2>
-                        {upload[1].name}
+                        {typeof upload[1].file == "string" ? upload[1].file : upload[1].file.name}
                         <span style:color="#999999" style:font-weight="400"
-                            >{upload[1].type}{@html upload[1].type == "upload"
-                                ? `&nbsp;(${Math.round(
-                                      upload[1].file.size / 1048576
-                                  )}MiB)`
-                                : ""}</span
-                        >
+                            >{@html typeof upload[1].file == "string" ? "clone" : `upload&nbsp;(${bytes(upload[1].file.size)})`}</span>
                     </h2>
 
                     {#if upload[1].maximized && !uploadInProgress}
@@ -341,7 +308,7 @@
 
     {#if uploadInProgress == false}
         <!-- if required for upload, check if logged in -->
-        {#if ($serverStats.accounts || {}).requiredForUpload ? !!$account.username : true}
+        {#if $serverStats?.accounts?.requiredForUpload ? !!$account?.username : true}
             <AttachmentZone
                 bind:this={attachmentZone}
                 on:addFiles={handle_file_upload}
@@ -374,14 +341,15 @@
 
     <p style:color="#999999" style:text-align="center">
         Hosting <span class="number" style:font-weight="600"
-            >{$serverStats.files || "•••"}</span
+            >{$serverStats?.files ?? "•••"}</span
         >
         files — Maximum filesize is
-        <span class="number" style:font-weight="600"
-            >{(($serverStats.maxDiscordFileSize || 0) *
-                ($serverStats.maxDiscordFiles || 0)) /
-                1048576 || "•••"}MiB</span
-        >
+        <span class="number" style:font-weight="600">
+            {
+                $serverStats?.maxDiscordFiles
+                ? bytes($serverStats.maxDiscordFileSize * $serverStats.maxDiscordFiles)
+                :  "•••"
+            }</span>
         <br />
     </p>
     <p style:color="#999999" style:text-align="center" style:font-size="12px">

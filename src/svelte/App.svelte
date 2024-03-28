@@ -1,19 +1,13 @@
-<script>
+<script lang="ts">
     import { onMount } from "svelte";
     import Topbar from "./elem/Topbar.svelte";
     import PulldownManager from "./elem/PulldownManager.svelte";
     import UploadWindow from "./elem/UploadWindow.svelte";
-    import { pulldownManager } from "./elem/stores.mjs";
+    import { pulldownManager } from "./elem/stores.js";
     
-    /** 
-     * @type Topbar
-     */
-    let topbar;
+    let topbar: Topbar;
 
-    /**
-     * @type PulldownManager
-    */
-    let pulldown;
+    let pulldown: PulldownManager;
 
     onMount(() => {
         pulldownManager.set(pulldown)

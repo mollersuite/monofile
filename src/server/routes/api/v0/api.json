@@ -1,0 +1,10 @@
+{
+    "name": "v0",
+    "baseURL": "/",
+    "mount": [
+        { "file": "primaryApi", "to": "/" },
+        { "file": "adminRoutes", "to": "/admin" },
+        { "file": "authRoutes", "to": "/auth" },
+        { "file": "fileApiRoutes", "to": "/files" }
+    ]
+}

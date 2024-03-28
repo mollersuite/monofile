@@ -1,4 +1,4 @@
-.pulldown_display[name=accounts] {
+.pulldown_display[data-name=accounts] {
     .notLoggedIn {
         .container_div {
             position:absolute;
@@ -182,6 +182,44 @@
             p {
                 text-align:left;
             }
+        }
+    }
+}
+
+@keyframes bounce {
+    0% {
+        top: 0.25em;
+    }/*
+    25% {
+        top: 0.25em;
+    }
+    75% {
+        top: -0.25em;
+    }*/
+    100% {
+        top: -0.25em;
+    }
+}
+
+.loader {
+    i {
+        font-style: normal;
+        position: relative;
+        
+        animation-name: bounce;
+        animation-duration: 500ms;
+        animation-iteration-count: infinite;
+        animation-direction: alternate;
+        top:0.25em;
+
+        &:nth-of-type(1) {
+            animation-delay: 0ms;
+        }
+        &:nth-of-type(2) {
+            animation-delay: 125ms;
+        }
+        &:nth-of-type(3) {
+            animation-delay: 250ms;
         }
     }
 }

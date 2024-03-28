@@ -1,56 +1,35 @@
-<script>
+<script lang="ts">
     import { createEventDispatcher } from "svelte";
-    import { circIn, circOut } from "svelte/easing"
-    import { fade } from "svelte/transition";
+    import { circOut } from "svelte/easing"
     import { _void } from "../transition/_void"
 
-    let uploadTypes = {
-        files: 1,
-        clone: 2
+    enum UploadTypes {
+        None,
+        Files,
+        Clone
     }
 
-    let uploadType = undefined
+    let uploadType: UploadTypes = UploadTypes.None
     let dispatch = createEventDispatcher();
 
     // file upload
-
-    /**
-     * @type HTMLInputElement
-     */
-    let fileUpload;
-
-    $: {
-        if (fileUpload) {
-            fileUpload.addEventListener("change",() => {
-                dispatch("addFiles",{
-                    type: "upload",
-                    files: Array.from(fileUpload.files)
-                })
-                uploadType = undefined
-            })
-        }
+    let files: FileList | undefined
+    $: if (files) {
+        [...files].forEach(file=>dispatch("addFiles", file))
+        uploadType = UploadTypes.None
     }
 
     // file clone
-    /**
-     * @type HTMLButtonElement
-     */
-    let cloneButton;
-
-    /**
-     * @type HTMLInputElement
-     */
-    let cloneUrlTextbox;
+    let cloneUrlTextbox: HTMLInputElement;
+    let cloneForm: HTMLFormElement;
 
     $: {
-        if (cloneButton && cloneUrlTextbox) {
-            cloneButton.addEventListener("click",() => {
+        if (cloneForm && cloneUrlTextbox) {
+            cloneForm.addEventListener("submit",(e) => {
+                e.preventDefault()
                 if (cloneUrlTextbox.value) {
-                    dispatch("addFiles",{
-                        type: "clone",
-                        url: cloneUrlTextbox.value
-                    })
-                    uploadType = undefined;
+                    dispatch("addFiles",cloneUrlTextbox.value)
+                    uploadType = UploadTypes.None;
                 } else {
                     cloneUrlTextbox.animate([
                         {"transform":"translateX(0px)"},
@@ -68,26 +47,26 @@
 
 <div id="add_new_files" transition:_void={{duration:200}}>
     <p>
-        +<span class="_add_files_txt">add files</span>
+        +<span class="add_files_txt">add files</span>
     </p>
-    {#if !uploadType}
+    {#if uploadType == UploadTypes.None}
         <div id="file_add_btns" out:_void in:_void={{easingFunc:circOut}}>
-            <button on:click={() => uploadType = uploadTypes.files} >upload files...</button>
-            <button on:click={() => uploadType = uploadTypes.clone} >clone url...</button>
+            <button on:click={() => uploadType = UploadTypes.Files} >upload files...</button>
+            <button on:click={() => uploadType = UploadTypes.Clone} >clone url...</button>
         </div>
     {:else}
-        {#if uploadType == uploadTypes.files}
+        {#if uploadType == UploadTypes.Files}
             <div id="file_add_btns" out:_void in:_void={{easingFunc:circOut}}>
                 <div class="fileUpload">
                     <p>click/tap to browse<br/>or drag files into this box</p>
-                    <input type="file" multiple bind:this={fileUpload}>
+                    <input type="file" multiple bind:files={files}>
                 </div>
             </div>
-        {:else if uploadType == uploadTypes.clone}
-            <div id="file_add_btns" out:_void in:_void={{easingFunc:circOut}}>
+        {:else if uploadType == UploadTypes.Clone}
+            <form id="file_add_btns" out:_void in:_void={{easingFunc:circOut}} bind:this={cloneForm}>
                 <input placeholder="url" type="text" bind:this={cloneUrlTextbox}>
-                <button style:flex-basis="30%" bind:this={cloneButton}>add file</button>
-            </div>
+                <input type="submit" value="add file" style:flex-basis="30%">
+            </form>
         {/if}
     {/if}
 </div>

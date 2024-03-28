@@ -1,26 +1,26 @@
-<script>
+<script lang="ts">
     import Pulldown from "./Pulldown.svelte"
     import { padding_scaleY } from "../transition/padding_scaleY"
     import { circIn,circOut } from "svelte/easing"
-    import { account, fetchAccountData, serverStats, refreshNeeded } from "../stores.mjs";
+    import { account, fetchAccountData, serverStats, refreshNeeded } from "../stores";
     import { fade } from "svelte/transition";
     import OptionPicker from "../prompts/OptionPicker.svelte";
     import * as accOpts from "../prompts/account";
     import * as uplOpts from "../prompts/uploads";
     import * as admOpts from "../prompts/admin";
 
-    let targetAction
-    let inProgress
-    let authError
+    let targetAction: "login"|"create"
+    let inProgress: boolean
+    let authError:{status:number,message:string}|undefined
 
-    let pwErr
+    let pwErr: HTMLDivElement
 
-    let optPicker;
+    let optPicker: OptionPicker;
 
     // lazy
 
-    let username
-    let password
+    let username: string
+    let password: string
 
     let execute = () => {
         if (inProgress) return
@@ -43,7 +43,7 @@
                     }
                 })
             } else {
-                authError = null, username = "", password = "";
+                authError = undefined, username = "", password = "";
                 fetchAccountData();
             }
         }).catch(() => {})
@@ -66,55 +66,7 @@
 
 <Pulldown name="accounts">
     <OptionPicker bind:this={optPicker} />
-    {#if Object.keys($account).length == 0}
-
-        <div class="notLoggedIn" transition:fade={{duration:200}}>
-            <div class="container_div">
-                <h1>monofile <span style:color="#999999">accounts</span></h1>
-                <p class="flavor">Gain control of your uploads.</p>
-
-                {#if targetAction}
-
-                    <div class="fields" out:padding_scaleY|local={{easingFunc:circIn}} in:padding_scaleY|local>
-                        {#if !$serverStats.accounts.registrationEnabled && targetAction == "create"}
-                            <div class="pwError">
-                                <div style:background-color="#554C33">
-                                    <p>Account registration has been disabled by this instance's owner</p>
-                                </div>
-                            </div>
-                        {/if}
-                        
-                        {#if authError}
-                            <div class="pwError" out:padding_scaleY|local={{easingFunc:circIn}} in:padding_scaleY|local>
-                                <div bind:this={pwErr}>
-                                    <p><strong>{authError.status}</strong> {authError.message}</p>
-                                </div>
-                            </div>
-                        {/if}
-
-                        <input placeholder="username" type="text" bind:value={username}>
-                        <input placeholder="password" type="password" bind:value={password}>
-                        <button on:click={execute}>{ inProgress ? "• • •" : (targetAction=="login" ? "Log in" : "Create account") }</button>
-
-                        {#if targetAction == "login"}
-                            <button class="flavor" on:click={() => accOpts.forgotPassword(optPicker)}>I forgot my password</button>
-                        {/if}
-
-                    </div>
-
-                {:else}
-
-                    <div class="lgBtnContainer" out:padding_scaleY|local={{easingFunc:circIn}} in:padding_scaleY|local>
-                        <button on:click={() => targetAction="login"}>Log in</button>
-                        <button on:click={() => targetAction="create"}>Sign up</button>
-                    </div>
-
-                {/if}
-            </div>
-        </div>
-
-    {:else}
-
+    {#if $account}
         <div class="loggedIn" transition:fade={{duration:200}}>
             <h1>
                 Hey there, <span class="monospace">@{$account.username}</span>
@@ -131,7 +83,7 @@
                     <p>Change username</p>
                 </button>
 
-                <button on:click={() => ($account.email ? accOpts.emailPotentialRemove : accOpts.emailChange)(optPicker)}>
+                <button on:click={() => ($account?.email ? accOpts.emailPotentialRemove : accOpts.emailChange)(optPicker)}>
                     <img src="/static/assets/icons/mail.svg" alt="change email">
                     <p>Change email{#if $account.email}<span class="monospaceText"><br />{$account.email}</span>{/if}</p>
                 </button>
@@ -182,7 +134,7 @@
                 </button>
 
                 {#if $refreshNeeded}
-                    <button on:click={() => window.location.reload(true)} transition:fade={{duration: 200}}>
+                    <button on:click={() => window.location.reload()} transition:fade={{duration: 200}}>
                         <img src="/static/assets/icons/refresh.svg" alt="refresh">
                         <p>Refresh<span><br />Changes were made which require a refresh</span></p>
                     </button>
@@ -194,12 +146,12 @@
 
                 <button on:click={() => fetch(`/auth/logout_sessions`,{method:"POST"}).then(() => fetchAccountData())}>
                     <img src="/static/assets/icons/logout_all.svg" alt="logout_all">
-                    <p>Log out all sessions<span><br />{$account.sessionCount} session(s) active</span></p>
+                    <p>Log out all sessions<span><br />{$account?.sessionCount} session(s) active</span></p>
                 </button>
 
                 <button on:click={() => fetch(`/auth/logout`,{method:"POST"}).then(() => fetchAccountData())}>
                     <img src="/static/assets/icons/logout.svg" alt="logout">
-                    <p>Log out<span><br />Session expires {new Date($account.sessionExpires).toLocaleDateString()}</span></p>
+                    <p>Log out<span><br />Session expires {new Date($account?.sessionExpires).toLocaleDateString()}</span></p>
                 </button>
 
                 {#if $account.admin}
@@ -242,6 +194,50 @@
                 <p style="font-size:12px;color:#AAAAAA;text-align:center;" class="monospace"><br />{$account.id}</p>
             </div>
         </div>
-        
+    {:else}
+        <div class="notLoggedIn" transition:fade={{duration:200}}>
+            <div class="container_div">
+                <h1>monofile <span style:color="#999999">accounts</span></h1>
+                <p class="flavor">Gain control of your uploads.</p>
+
+                {#if targetAction}
+
+                    <div class="fields" out:padding_scaleY|local={{easingFunc:circIn}} in:padding_scaleY|local>
+                        {#if !$serverStats?.accounts.registrationEnabled && targetAction == "create"}
+                            <div class="pwError">
+                                <div style:background-color="#554C33">
+                                    <p>Account registration has been disabled by this instance's owner</p>
+                                </div>
+                            </div>
+                        {/if}
+                        
+                        {#if authError}
+                            <div class="pwError" out:padding_scaleY|local={{easingFunc:circIn}} in:padding_scaleY|local>
+                                <div bind:this={pwErr}>
+                                    <p><strong>{authError.status}</strong> {authError.message}</p>
+                                </div>
+                            </div>
+                        {/if}
+
+                        <input placeholder="username" type="text" bind:value={username}>
+                        <input placeholder="password" type="password" bind:value={password}>
+                        <button on:click={execute}>{@html inProgress ? "<span class=loader><i>•</i> <i>•</i> <i>•</i></span>" : (targetAction=="login" ? "Log in" : "Create account") }</button>
+
+                        {#if targetAction == "login"}
+                            <button class="flavor" on:click={() => accOpts.forgotPassword(optPicker)}>I forgot my password</button>
+                        {/if}
+
+                    </div>
+
+                {:else}
+
+                    <div class="lgBtnContainer" out:padding_scaleY|local={{easingFunc:circIn}} in:padding_scaleY|local>
+                        <button on:click={() => targetAction="login"}>Log in</button>
+                        <button on:click={() => targetAction="create"}>Sign up</button>
+                    </div>
+
+                {/if}
+            </div>
+        </div>
     {/if}
 </Pulldown>

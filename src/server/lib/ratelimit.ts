@@ -1,49 +1,49 @@
-import { RequestHandler } from "express"
-import { type Account } from "./accounts"
-import ServeError from "./errors"
+import type { Handler } from "hono"
+import ServeError from "./errors.js"
 
 interface RatelimitSettings {
-
     requests: number
     per: number
-
 }
 
 /**
- * @description Ratelimits a route based on res.locals.acc
+ * @description Ratelimits a route based on ctx.get("account")
  * @param settings Ratelimit settings
  * @returns Express middleware
  */
-export function accountRatelimit( settings: RatelimitSettings ): RequestHandler {
+export function accountRatelimit(settings: RatelimitSettings): Handler {
     let activeLimits: {
-        [ key: string ]: {
-            requests: number,
+        [key: string]: {
+            requests: number
             expirationHold: NodeJS.Timeout
         }
     } = {}
 
-    return (req, res, next) => {
-        if (res.locals.acc) {
-            let accId = res.locals.acc.id
+    return (ctx, next) => {
+        if (ctx.get("account")) {
+            let accId = ctx.get("account").id
             let aL = activeLimits[accId]
-            
+
             if (!aL) {
                 activeLimits[accId] = {
                     requests: 0,
-                    expirationHold: setTimeout(() => delete activeLimits[accId], settings.per)
+                    expirationHold: setTimeout(
+                        () => delete activeLimits[accId],
+                        settings.per
+                    ),
                 }
                 aL = activeLimits[accId]
             }
 
             if (aL.requests < settings.requests) {
-                res.locals.undoCount = () => {
+                ctx.set("undoCount", () => {
                     if (activeLimits[accId]) {
                         activeLimits[accId].requests--
                     }
-                }
-                next()
+                })
+                return next()
             } else {
-                ServeError(res, 429, "too many requests")
+                return ServeError(ctx, 429, "too many requests")
             }
         }
     }

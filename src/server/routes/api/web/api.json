@@ -1,0 +1,8 @@
+{
+    "name": "web",
+    "baseURL": "/",
+    "mount": [
+        { "file": "preview", "to": "/download" },
+        "go"
+    ]
+}

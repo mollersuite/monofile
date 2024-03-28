@@ -1,0 +1,16 @@
+{
+    "name": "v1",
+    "baseURL": "/api/v1",
+    "mount": [
+        "account",
+        "session",
+        {
+            "file": "file/index",
+            "to": "/file"
+        },
+        {
+            "file": "file/individual",
+            "to": "/file"
+        }
+    ]
+}

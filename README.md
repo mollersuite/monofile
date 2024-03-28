@@ -26,7 +26,6 @@ Invite your bot to a server, and create a new `config.json` in the project root:
 {
     "maxDiscordFiles": 20,
     "maxDiscordFileSize": 26214400,
-    "targetGuild": "1024080490677936248",
     "targetChannel": "1024080525993971913",
     "requestTimeout":120000,
     "maxUploadIdLength":30,
@@ -72,3 +71,4 @@ Although we believe monofile is not against Discord's developer terms of service
 Code written by Etcetera is currently licensed under [Unlicense](./LICENSE).
 
 Icons under `/assets/icons` were created by Microsoft, and as such are licensed under [different terms](./assets/icons/README.md) (MIT).
+

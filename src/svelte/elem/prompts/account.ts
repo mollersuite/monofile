@@ -1,7 +1,8 @@
-import { fetchAccountData, account, refreshNeeded } from "../stores.mjs"
+import { fetchAccountData, account, refreshNeeded } from "../stores"
 import { get } from "svelte/store";
+import type OptionPicker from "./OptionPicker.svelte";
 
-export function deleteAccount(optPicker) {
+export function deleteAccount(optPicker: OptionPicker) {
     optPicker.picker("What should we do with your files?",[
         {
             name: "Delete my files",
@@ -56,7 +57,7 @@ export function deleteAccount(optPicker) {
     })
 }
 
-export function userChange(optPicker) {
+export function userChange(optPicker: OptionPicker) {
     optPicker.picker("Change username",[
         {
             name: "New username",
@@ -86,7 +87,7 @@ export function userChange(optPicker) {
     })
 }
 
-export function forgotPassword(optPicker) {
+export function forgotPassword(optPicker: OptionPicker) {
     optPicker.picker("Forgot your password?",[
         {
             name: "Username",
@@ -115,7 +116,7 @@ export function forgotPassword(optPicker) {
     })
 }
 
-export function emailPotentialRemove(optPicker) {
+export function emailPotentialRemove(optPicker: OptionPicker) {
     optPicker.picker("What would you like to do?",[
         {
             name: "Set a new email",
@@ -148,7 +149,7 @@ export function emailPotentialRemove(optPicker) {
     })
 }
 
-export function emailChange(optPicker) {
+export function emailChange(optPicker: OptionPicker) {
     optPicker.picker("Change email",[
         {
             name: "New email",
@@ -177,7 +178,7 @@ export function emailChange(optPicker) {
     })
 }
 
-export function pwdChng(optPicker) {
+export function pwdChng(optPicker: OptionPicker) {
     optPicker.picker("Change password",[
         {
             name: "New password",
@@ -209,7 +210,7 @@ export function pwdChng(optPicker) {
     })
 }
 
-export function customcss(optPicker) {
+export function customcss(optPicker: OptionPicker) {
     optPicker.picker("Set custom CSS",[
         {
             name: "Enter a file ID",
@@ -225,23 +226,32 @@ export function customcss(optPicker) {
         }
     ]).then((exp) => {
         if (exp && exp.selected) {
-            fetch(`/auth/customcss`,{method:"POST", body:JSON.stringify({
-                fileId:exp.fileid
-            })}).then((response) => {
-                
+            fetch(`/api/v1/account/customization/css`, {
+                method: "PUT",
+                body: JSON.stringify({
+                    fileId: exp.fileid,
+                }),
+            }).then((response) => {
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
+                    optPicker.picker(
+                        `${response.status} ${
+                            response.headers.get("x-backup-status-message") ||
+                            response.statusText ||
+                            ""
+                        }`,
+                        []
+                    )
                 }
 
                 fetchAccountData()
-                refreshNeeded.set(true);
+                refreshNeeded.set(true)
             })
         }
     })
 }
 
 
-export function embedColor(optPicker) {
+export function embedColor(optPicker: OptionPicker) {
     optPicker.picker("Set embed color",[
         {
             name: "FFFFFF",
@@ -257,12 +267,21 @@ export function embedColor(optPicker) {
         }
     ]).then((exp) => {
         if (exp && exp.selected) {
-            fetch(`/auth/embedcolor`,{method:"POST", body:JSON.stringify({
-                color:exp.color
-            })}).then((response) => {
-                
+            fetch(`/api/v1/account/customization/embed/color`, {
+                method: "POST",
+                body: JSON.stringify({
+                    color: exp.color,
+                }),
+            }).then((response) => {
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
+                    optPicker.picker(
+                        `${response.status} ${
+                            response.headers.get("x-backup-status-message") ||
+                            response.statusText ||
+                            ""
+                        }`,
+                        []
+                    )
                 }
 
                 fetchAccountData()
@@ -272,7 +291,7 @@ export function embedColor(optPicker) {
 }
 
 
-export function embedSize(optPicker) {
+export function embedSize(optPicker: OptionPicker) {
     optPicker.picker("Set embed image size",[
         {
             name: "Large",
@@ -288,12 +307,21 @@ export function embedSize(optPicker) {
         }
     ]).then((exp) => {
         if (exp && exp.selected !== null) {
-            fetch(`/auth/embedsize`,{method:"POST", body:JSON.stringify({
-                largeImage:exp.selected
-            })}).then((response) => {
-                
+            fetch(`/api/v1/account/customization/embed/size`, {
+                method: "POST",
+                body: JSON.stringify({
+                    largeImage: exp.selected,
+                }),
+            }).then((response) => {
                 if (response.status != 200) {
-                    optPicker.picker(`${response.status} ${response.headers.get("x-backup-status-message") || response.statusText || ""}`,[])
+                    optPicker.picker(
+                        `${response.status} ${
+                            response.headers.get("x-backup-status-message") ||
+                            response.statusText ||
+                            ""
+                        }`,
+                        []
+                    )
                 }
 
                 fetchAccountData()
